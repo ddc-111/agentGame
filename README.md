@@ -147,12 +147,25 @@ GM管理端默认运行在 `http://localhost:5174`
 
 ### 服务端配置
 
-创建 `server/config.yaml`:
+复制 `server/config.example.yaml` 为 `server/config.yaml`:
 
 ```yaml
 server:
   port: 8080
   mode: debug
+
+database:
+  # 使用SQLite（默认，无需额外安装）
+  driver: sqlite
+  dsn: game.db
+  
+  # 使用MySQL（取消注释以下配置）
+  # driver: mysql
+  # host: localhost
+  # port: 3306
+  # user: root
+  # password: your_password
+  # dbname: agentgame
 
 ai:
   provider: openai
@@ -163,6 +176,19 @@ game:
   max_players: 100
   tick_rate: 20
 ```
+
+### 数据库说明
+
+项目使用GORM作为ORM框架，支持以下数据库：
+
+| 数据库 | 驱动 | 说明 |
+|--------|------|------|
+| SQLite | `sqlite` | 默认数据库，无需额外安装，数据存储在 `game.db` 文件 |
+| MySQL | `mysql` | 需要MySQL服务端，适合生产环境 |
+
+首次启动时会自动：
+1. 创建数据库表结构
+2. 导入初始种子数据（场景、NPC、智能体、商店、道具、任务等）
 
 ## 项目模块说明
 
@@ -175,8 +201,11 @@ game:
 
 ### 服务端模块 (server/internal/)
 - `agent/` - AI Agent系统，NPC智能对话
+- `database/` - 数据库层（GORM）
+  - `models/` - 数据模型定义
+  - `repository/` - 数据访问层
 - `game/` - 游戏逻辑、状态管理
-- `network/` - 网络层、消息处理
+- `network/` - 网络层、API处理
 - `config/` - 配置管理
 
 ### GM管理端模块 (gm/src/)

@@ -38,6 +38,14 @@ server/vendor/
 *.so
 *.dylib
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Config
+server/config.yaml
+
 # Temp
 tmp/
 temp/

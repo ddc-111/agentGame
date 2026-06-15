@@ -7,14 +7,25 @@ import (
 )
 
 type Config struct {
-	Server ServerConfig `yaml:"server"`
-	AI     AIConfig     `yaml:"ai"`
-	Game   GameConfig   `yaml:"game"`
+	Server   ServerConfig   `yaml:"server"`
+	Database DatabaseConfig `yaml:"database"`
+	AI       AIConfig       `yaml:"ai"`
+	Game     GameConfig     `yaml:"game"`
 }
 
 type ServerConfig struct {
 	Port int    `yaml:"port"`
 	Mode string `yaml:"mode"`
+}
+
+type DatabaseConfig struct {
+	Driver   string `yaml:"driver"`   // sqlite 或 mysql
+	DSN      string `yaml:"dsn"`      // 数据库连接字符串
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"dbname"`
 }
 
 type AIConfig struct {
@@ -33,6 +44,10 @@ func Default() *Config {
 		Server: ServerConfig{
 			Port: 8080,
 			Mode: "debug",
+		},
+		Database: DatabaseConfig{
+			Driver: "sqlite",
+			DSN:    "game.db",
 		},
 		AI: AIConfig{
 			Provider: "openai",
