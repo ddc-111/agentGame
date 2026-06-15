@@ -1,0 +1,18 @@
+{
+  "name": "agentgame-client",
+  "version": "1.0.0",
+  "description": "古风RPG Agent游戏客户端",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
