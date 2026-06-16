@@ -15,8 +15,9 @@ func (s *Server) registerSkillRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleGetSkills(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	skills, total, err := s.repo.GetSkillsPaginated(p.Offset, p.PageSize)
+	skills, total, err := s.repo.GetSkillsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -26,6 +27,7 @@ func (s *Server) handleGetSkills(c *gin.Context) {
 }
 
 func (s *Server) handleUseSkill(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint              `json:"player_id"`
 		SkillID  uint              `json:"skill_id"`
@@ -50,13 +52,13 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	skillModel, err := s.repo.GetSkillByID(req.SkillID)
+	skillModel, err := s.repo.GetSkillByID(ctx, req.SkillID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Skill"))
 		return
@@ -106,14 +108,14 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		}
 		player.HP = newState.PlayerHP
 		player.MP = newState.PlayerMP
-		if err := s.repo.UpdatePlayer(player); err != nil {
+		if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 			respondInternalError(c, err)
 			return
 		}
 	} else {
 		player.HP = newState.PlayerHP
 		player.MP = newState.PlayerMP
-		if err := s.repo.UpdatePlayer(player); err != nil {
+		if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 			respondInternalError(c, err)
 			return
 		}

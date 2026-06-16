@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetProviders(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	providers, total, err := s.repo.GetProvidersPaginated(p.Offset, p.PageSize)
+	providers, total, err := s.repo.GetProvidersPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,6 +21,7 @@ func (s *Server) handleGetProviders(c *gin.Context) {
 }
 
 func (s *Server) handleCreateProvider(c *gin.Context) {
+	ctx := c.Request.Context()
 	var provider models.LLMProvider
 	if err := c.ShouldBindJSON(&provider); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -30,7 +32,7 @@ func (s *Server) handleCreateProvider(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateProvider(&provider); err != nil {
+	if err := s.repo.CreateProvider(ctx, &provider); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -38,7 +40,11 @@ func (s *Server) handleCreateProvider(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateProvider(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var provider models.LLMProvider
 	if err := c.ShouldBindJSON(&provider); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -49,8 +55,8 @@ func (s *Server) handleUpdateProvider(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	provider.ID = uint(id)
-	if err := s.repo.UpdateProvider(&provider); err != nil {
+	provider.ID = id
+	if err := s.repo.UpdateProvider(ctx, &provider); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -58,8 +64,12 @@ func (s *Server) handleUpdateProvider(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteProvider(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteProvider(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteProvider(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

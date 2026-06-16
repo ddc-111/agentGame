@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -59,7 +60,8 @@ func (s *Server) handleWebSocket(c *gin.Context) {
 }
 
 func (s *Server) sendInitialState(client *Client, playerID uint, sceneID string) {
-	player, err := s.repo.GetPlayerByID(playerID)
+	ctx := context.Background()
+	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		log.Printf("Failed to get player for initial state: %v", err)
 		return
@@ -67,15 +69,15 @@ func (s *Server) sendInitialState(client *Client, playerID uint, sceneID string)
 
 	stateData, _ := json.Marshal(map[string]interface{}{
 		"player": map[string]interface{}{
-			"id":      player.ID,
-			"name":    player.Name,
-			"level":   player.Level,
-			"hp":      player.HP,
-			"mp":      player.MP,
+			"id":       player.ID,
+			"name":     player.Name,
+			"level":    player.Level,
+			"hp":       player.HP,
+			"mp":       player.MP,
 			"scene_id": player.SceneID,
-			"pos_x":   player.PosX,
-			"pos_y":   player.PosY,
-			"gold":    player.Gold,
+			"pos_x":    player.PosX,
+			"pos_y":    player.PosY,
+			"gold":     player.Gold,
 		},
 		"online_count": s.hub.GetOnlineCount(),
 	})
@@ -95,7 +97,8 @@ func (s *Server) BroadcastPlayerPosition(playerID uint, sceneID string, posX, po
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(playerID)
+	ctx := context.Background()
+	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		return
 	}
@@ -181,7 +184,8 @@ func (s *Server) BroadcastCombatEvent(playerID uint, targetID uint, targetType, 
 		return
 	}
 
-	player, _ := s.repo.GetPlayerByID(playerID)
+	ctx := context.Background()
+	player, _ := s.repo.GetPlayerByID(ctx, playerID)
 	sceneID := ""
 	if player != nil {
 		sceneID = player.SceneID
@@ -219,7 +223,8 @@ func (s *Server) BroadcastItemPickup(playerID uint, itemID uint, itemCode, itemN
 		return
 	}
 
-	player, _ := s.repo.GetPlayerByID(playerID)
+	ctx := context.Background()
+	player, _ := s.repo.GetPlayerByID(ctx, playerID)
 	sceneID := ""
 	if player != nil {
 		sceneID = player.SceneID

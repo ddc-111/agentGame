@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,6 +21,7 @@ func (s *Server) registerCombatRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleStartCombat(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID  uint   `json:"player_id"`
 		EnemyType string `json:"enemy_type"`
@@ -38,7 +40,7 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -57,6 +59,7 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 }
 
 func (s *Server) handleCombatAction(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint              `json:"player_id"`
 		Action   string            `json:"action"`
@@ -84,7 +87,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -106,7 +109,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			respondError(c, http.StatusBadRequest, BadRequest("Skill ID is required"))
 			return
 		}
-		skillModel, err := s.repo.GetSkillByID(req.SkillID)
+		skillModel, err := s.repo.GetSkillByID(ctx, req.SkillID)
 		if err != nil {
 			respondError(c, http.StatusNotFound, NotFound("Skill"))
 			return
@@ -132,7 +135,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		player.SkillsUsed++
 
 	case "item":
-		item, err := s.repo.GetItemByID(req.ItemID)
+		item, err := s.repo.GetItemByID(ctx, req.ItemID)
 		if err != nil {
 			respondError(c, http.StatusBadRequest, BadRequest("Item not found"))
 			return
@@ -149,7 +152,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		newItemsJSON, _, err := im.UseItem(player.Items, req.ItemID, effect)
 		if err == nil {
 			player.Items = newItemsJSON
-			if err := s.repo.UpdatePlayer(player); err != nil {
+			if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 				respondInternalError(c, err)
 				return
 			}
@@ -183,7 +186,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			player.HP = newState.PlayerHP
 			player.MP = newState.PlayerMP
 
-			if err := s.repo.UpdatePlayer(player); err != nil {
+			if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 				respondInternalError(c, err)
 				return
 			}
@@ -194,7 +197,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		} else {
 			player.HP = newState.PlayerHP
 			player.MP = newState.PlayerMP
-			if err := s.repo.UpdatePlayer(player); err != nil {
+			if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 				respondInternalError(c, err)
 				return
 			}
@@ -221,7 +224,7 @@ func (s *Server) calcPlayerStats(p *models.Player) *game.PlayerStats {
 
 func (s *Server) itemEffectLookup() game.ItemLookupFunc {
 	return func(itemID uint) (map[string]int, error) {
-		item, err := s.repo.GetItemByID(itemID)
+		item, err := s.repo.GetItemByID(context.Background(), itemID)
 		if err != nil {
 			return nil, err
 		}

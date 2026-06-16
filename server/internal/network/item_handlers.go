@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetItems(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	items, total, err := s.repo.GetItemsPaginated(p.Offset, p.PageSize)
+	items, total, err := s.repo.GetItemsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,6 +21,7 @@ func (s *Server) handleGetItems(c *gin.Context) {
 }
 
 func (s *Server) handleCreateItem(c *gin.Context) {
+	ctx := c.Request.Context()
 	var item models.Item
 	if err := c.ShouldBindJSON(&item); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -41,7 +43,7 @@ func (s *Server) handleCreateItem(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateItem(&item); err != nil {
+	if err := s.repo.CreateItem(ctx, &item); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -49,7 +51,11 @@ func (s *Server) handleCreateItem(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateItem(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var item models.Item
 	if err := c.ShouldBindJSON(&item); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -71,8 +77,8 @@ func (s *Server) handleUpdateItem(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	item.ID = uint(id)
-	if err := s.repo.UpdateItem(&item); err != nil {
+	item.ID = id
+	if err := s.repo.UpdateItem(ctx, &item); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -80,8 +86,12 @@ func (s *Server) handleUpdateItem(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteItem(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteItem(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteItem(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

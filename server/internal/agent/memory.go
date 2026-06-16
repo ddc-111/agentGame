@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -207,7 +208,7 @@ func (s *DBMemoryStore) cacheKey(playerID, npcID uint) string {
 	return GetMemoryKey(playerID, npcID)
 }
 
-func (s *DBMemoryStore) getOrLoadCache(playerID, npcID uint) *PlayerMemory {
+func (s *DBMemoryStore) getOrLoadCache(ctx context.Context, playerID, npcID uint) *PlayerMemory {
 	key := s.cacheKey(playerID, npcID)
 	if cached, ok := s.cache.Load(key); ok {
 		return cached.(*PlayerMemory)
@@ -219,21 +220,21 @@ func (s *DBMemoryStore) getOrLoadCache(playerID, npcID uint) *PlayerMemory {
 		Extra:    make(map[string]string),
 	}
 
-	ctx, err := s.repo.GetConversationContext(playerID, npcID)
+	pctx, err := s.repo.GetConversationContext(ctx, playerID, npcID)
 	if err == nil {
-		mem.PlayerName = ctx.PlayerName
-		mem.PlayerLevel = ctx.PlayerLevel
-		mem.TalkCount = ctx.TalkCount
-		mem.Summary = ctx.Summary
-		if ctx.Extra != "" {
+		mem.PlayerName = pctx.PlayerName
+		mem.PlayerLevel = pctx.PlayerLevel
+		mem.TalkCount = pctx.TalkCount
+		mem.Summary = pctx.Summary
+		if pctx.Extra != "" {
 			var extra map[string]string
-			if json.Unmarshal([]byte(ctx.Extra), &extra) == nil {
+			if json.Unmarshal([]byte(pctx.Extra), &extra) == nil {
 				mem.Extra = extra
 			}
 		}
 	}
 
-	convs, err := s.repo.GetConversationsByPair(playerID, npcID, s.maxWindow)
+	convs, err := s.repo.GetConversationsByPair(ctx, playerID, npcID, s.maxWindow)
 	if err == nil {
 		for i := len(convs) - 1; i >= 0; i-- {
 			mem.Messages = append(mem.Messages, Message{
@@ -247,7 +248,7 @@ func (s *DBMemoryStore) getOrLoadCache(playerID, npcID uint) *PlayerMemory {
 	return mem
 }
 
-func (s *DBMemoryStore) saveContext(mem *PlayerMemory) {
+func (s *DBMemoryStore) saveContext(ctx context.Context, mem *PlayerMemory) {
 	extraJSON := "{}"
 	if mem.Extra != nil {
 		if data, err := json.Marshal(mem.Extra); err == nil {
@@ -255,7 +256,7 @@ func (s *DBMemoryStore) saveContext(mem *PlayerMemory) {
 		}
 	}
 
-	ctx := &models.PlayerConversationContext{
+	pctx := &models.PlayerConversationContext{
 		PlayerID:    mem.PlayerID,
 		NPCID:       mem.NPCID,
 		PlayerName:  mem.PlayerName,
@@ -265,13 +266,13 @@ func (s *DBMemoryStore) saveContext(mem *PlayerMemory) {
 		Extra:       extraJSON,
 	}
 
-	if err := s.repo.UpsertConversationContext(ctx); err != nil {
+	if err := s.repo.UpsertConversationContext(ctx, pctx); err != nil {
 		log.Printf("Failed to save conversation context: %v", err)
 	}
 }
 
 func (s *DBMemoryStore) GetRecentMessages(playerID, npcID uint, limit int) []Message {
-	mem := s.getOrLoadCache(playerID, npcID)
+	mem := s.getOrLoadCache(context.Background(), playerID, npcID)
 
 	if len(mem.Messages) == 0 {
 		return nil
@@ -292,7 +293,8 @@ func (s *DBMemoryStore) GetRecentMessages(playerID, npcID uint, limit int) []Mes
 }
 
 func (s *DBMemoryStore) AddMessage(playerID, npcID uint, role, content string) {
-	mem := s.getOrLoadCache(playerID, npcID)
+	ctx := context.Background()
+	mem := s.getOrLoadCache(ctx, playerID, npcID)
 
 	mem.Messages = append(mem.Messages, Message{
 		Role:    role,
@@ -311,28 +313,31 @@ func (s *DBMemoryStore) AddMessage(playerID, npcID uint, role, content string) {
 		Role:     role,
 		Content:  content,
 	}
-	if err := s.repo.CreateConversation(conv); err != nil {
+	if err := s.repo.CreateConversation(ctx, conv); err != nil {
 		log.Printf("Failed to save conversation: %v", err)
 	}
 
-	s.saveContext(mem)
+	s.saveContext(ctx, mem)
 }
 
 func (s *DBMemoryStore) UpdatePlayerInfo(playerID, npcID uint, name string, level int) {
-	mem := s.getOrLoadCache(playerID, npcID)
+	ctx := context.Background()
+	mem := s.getOrLoadCache(ctx, playerID, npcID)
 	mem.PlayerName = name
 	mem.PlayerLevel = level
-	s.saveContext(mem)
+	s.saveContext(ctx, mem)
 }
 
 func (s *DBMemoryStore) SetExtra(playerID, npcID uint, key, value string) {
-	mem := s.getOrLoadCache(playerID, npcID)
+	ctx := context.Background()
+	mem := s.getOrLoadCache(ctx, playerID, npcID)
 	mem.Extra[key] = value
-	s.saveContext(mem)
+	s.saveContext(ctx, mem)
 }
 
 func (s *DBMemoryStore) SummarizeConversation(playerID, npcID uint) string {
-	mem := s.getOrLoadCache(playerID, npcID)
+	ctx := context.Background()
+	mem := s.getOrLoadCache(ctx, playerID, npcID)
 
 	if len(mem.Messages) < 5 {
 		return mem.Summary
@@ -345,13 +350,13 @@ func (s *DBMemoryStore) SummarizeConversation(playerID, npcID uint) string {
 	}
 
 	mem.Summary = summary
-	s.saveContext(mem)
+	s.saveContext(ctx, mem)
 
 	return summary
 }
 
 func (s *DBMemoryStore) GetNPCContext(playerID, npcID uint) string {
-	mem := s.getOrLoadCache(playerID, npcID)
+	mem := s.getOrLoadCache(context.Background(), playerID, npcID)
 
 	ctx := ""
 	if mem.PlayerName != "" {

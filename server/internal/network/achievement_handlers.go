@@ -16,16 +16,20 @@ func (s *Server) registerAchievementRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
-	playerID, _ := strconv.ParseUint(c.Param("player_id"), 10, 32)
+	ctx := c.Request.Context()
+	playerID, ok := parseID(c, "player_id")
+	if !ok {
+		return
+	}
 	p := parsePagination(c)
 
-	allAchievements, total, err := s.repo.GetAchievementsPaginated(p.Offset, p.PageSize)
+	allAchievements, total, err := s.repo.GetAchievementsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
 
-	playerAchievements, err := s.repo.GetPlayerAchievements(uint(playerID))
+	playerAchievements, err := s.repo.GetPlayerAchievements(ctx, playerID)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -51,7 +55,7 @@ func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 
 	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
 	c.JSON(http.StatusOK, gin.H{
-		"player_id":    playerID,
+		"player_id":    uint(playerID),
 		"achievements": result,
 		"total":        total,
 		"unlocked":     len(playerAchievements),
@@ -59,6 +63,7 @@ func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 }
 
 func (s *Server) handleCheckAchievements(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint `json:"player_id"`
 	}
@@ -73,19 +78,19 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	allAchievements, err := s.repo.GetAchievements()
+	allAchievements, err := s.repo.GetAchievements(ctx)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
 
-	playerAchievements, err := s.repo.GetPlayerAchievements(req.PlayerID)
+	playerAchievements, err := s.repo.GetPlayerAchievements(ctx, req.PlayerID)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -106,7 +111,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	}
 
 	completedQuests := make(map[string]bool)
-	tasks, _ := s.repo.GetTasks()
+	tasks, _ := s.repo.GetTasks(ctx)
 	questCount := 0
 	for _, t := range tasks {
 		if t.Status == "completed" {
@@ -157,7 +162,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 			PlayerID:      req.PlayerID,
 			AchievementID: ach.ID,
 		}
-		s.repo.CreatePlayerAchievement(pa)
+		s.repo.CreatePlayerAchievement(ctx, pa)
 
 		reward := am.GetReward(ach.Reward)
 		player.Exp += reward.Exp
@@ -167,7 +172,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	}
 
 	if len(newAchievements) > 0 {
-		if err := s.repo.UpdatePlayer(player); err != nil {
+		if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 			respondInternalError(c, err)
 			return
 		}

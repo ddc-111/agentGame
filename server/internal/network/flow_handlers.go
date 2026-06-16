@@ -9,8 +9,12 @@ import (
 )
 
 func (s *Server) handleGetFlow(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	flow, err := s.repo.GetFlowByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	flow, err := s.repo.GetFlowByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Flow"))
 		return
@@ -19,8 +23,9 @@ func (s *Server) handleGetFlow(c *gin.Context) {
 }
 
 func (s *Server) handleGetFlows(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	flows, total, err := s.repo.GetFlowsPaginated(p.Offset, p.PageSize)
+	flows, total, err := s.repo.GetFlowsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -30,6 +35,7 @@ func (s *Server) handleGetFlows(c *gin.Context) {
 }
 
 func (s *Server) handleCreateFlow(c *gin.Context) {
+	ctx := c.Request.Context()
 	var flow models.Flow
 	if err := c.ShouldBindJSON(&flow); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -40,7 +46,7 @@ func (s *Server) handleCreateFlow(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateFlow(&flow); err != nil {
+	if err := s.repo.CreateFlow(ctx, &flow); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -48,7 +54,11 @@ func (s *Server) handleCreateFlow(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateFlow(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var flow models.Flow
 	if err := c.ShouldBindJSON(&flow); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -59,8 +69,8 @@ func (s *Server) handleUpdateFlow(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	flow.ID = uint(id)
-	if err := s.repo.UpdateFlow(&flow); err != nil {
+	flow.ID = id
+	if err := s.repo.UpdateFlow(ctx, &flow); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -68,8 +78,12 @@ func (s *Server) handleUpdateFlow(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteFlow(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteFlow(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteFlow(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

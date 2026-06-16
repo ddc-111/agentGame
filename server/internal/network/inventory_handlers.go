@@ -3,7 +3,6 @@ package network
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/game"
@@ -17,9 +16,13 @@ func (s *Server) registerInventoryRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleGetInventory(c *gin.Context) {
-	playerID, _ := strconv.ParseUint(c.Param("player_id"), 10, 32)
+	ctx := c.Request.Context()
+	playerID, ok := parseID(c, "player_id")
+	if !ok {
+		return
+	}
 
-	player, err := s.repo.GetPlayerByID(uint(playerID))
+	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -39,7 +42,7 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 
 	var itemDetails []ItemDetail
 	for _, invItem := range items {
-		item, err := s.repo.GetItemByID(invItem.ItemID)
+		item, err := s.repo.GetItemByID(ctx, invItem.ItemID)
 		if err != nil {
 			continue
 		}
@@ -70,7 +73,7 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"player_id": playerID,
+		"player_id": uint(playerID),
 		"items":     itemDetails,
 		"equipment": equipment,
 		"gold":      player.Gold,
@@ -84,6 +87,7 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 }
 
 func (s *Server) handleEquipItem(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint `json:"player_id"`
 		ItemID   uint `json:"item_id"`
@@ -102,13 +106,13 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	item, err := s.repo.GetItemByID(req.ItemID)
+	item, err := s.repo.GetItemByID(ctx, req.ItemID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Item"))
 		return
@@ -128,7 +132,7 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 	player.Items = newItemsJSON
 	player.Equipment = newEquipJSON
 
-	if err := s.repo.UpdatePlayer(player); err != nil {
+	if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -141,6 +145,7 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 }
 
 func (s *Server) handleUnequipItem(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint   `json:"player_id"`
 		Slot     string `json:"slot"`
@@ -160,7 +165,7 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -180,7 +185,7 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 	player.Items = newItemsJSON
 	player.Equipment = newEquipJSON
 
-	if err := s.repo.UpdatePlayer(player); err != nil {
+	if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -192,6 +197,7 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 }
 
 func (s *Server) handleUseItem(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint `json:"player_id"`
 		ItemID   uint `json:"item_id"`
@@ -210,13 +216,13 @@ func (s *Server) handleUseItem(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	item, err := s.repo.GetItemByID(req.ItemID)
+	item, err := s.repo.GetItemByID(ctx, req.ItemID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Item"))
 		return
@@ -243,7 +249,7 @@ func (s *Server) handleUseItem(c *gin.Context) {
 	}
 
 	player.Items = newItemsJSON
-	if err := s.repo.UpdatePlayer(player); err != nil {
+	if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}

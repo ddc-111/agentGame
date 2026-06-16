@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -12,29 +13,22 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
-// GetGameInit 获取游戏初始化数据
 func (s *Server) handleGetGameInit(c *gin.Context) {
-	// 获取配置
+	ctx := c.Request.Context()
+
 	configs := make(map[string]string)
 	keys := []string{"game_name", "start_scene", "start_x", "start_y", "player_speed", "default_hp", "default_mp", "default_gold"}
 	for _, key := range keys {
-		cfg, err := s.repo.GetConfig(key)
+		cfg, err := s.repo.GetConfig(ctx, key)
 		if err == nil {
 			configs[key] = cfg.Value
 		}
 	}
 
-	// 获取场景列表（带NPC和传送点）
-	scenes, _ := s.repo.GetScenes()
-
-	// 获取所有任务
-	tasks, _ := s.repo.GetTasks()
-
-	// 获取所有道具
-	items, _ := s.repo.GetItems()
-
-	// 获取所有技能
-	skills, _ := s.repo.GetSkills()
+	scenes, _ := s.repo.GetScenes(ctx)
+	tasks, _ := s.repo.GetTasks(ctx)
+	items, _ := s.repo.GetItems(ctx)
+	skills, _ := s.repo.GetSkills(ctx)
 
 	type npcWithBehavior struct {
 		models.NPC
@@ -42,7 +36,7 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 		BehaviorMood  string `json:"behavior_mood"`
 	}
 
-	npcList, _ := s.repo.GetNPCs()
+	npcList, _ := s.repo.GetNPCs(ctx)
 	npcsWithBehavior := make([]npcWithBehavior, 0, len(npcList))
 	for _, npc := range npcList {
 		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
@@ -63,8 +57,8 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 	})
 }
 
-// CreatePlayer 创建玩家
 func (s *Server) handleCreatePlayer(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		Name    string `json:"name"`
 		Account string `json:"account"`
@@ -80,21 +74,19 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 		return
 	}
 
-	// 检查账号是否已存在
-	existing, _ := s.repo.GetPlayerByAccount(req.Account)
+	existing, _ := s.repo.GetPlayerByAccount(ctx, req.Account)
 	if existing != nil && existing.ID > 0 {
 		c.JSON(http.StatusOK, gin.H{"data": existing})
 		return
 	}
 
-	// 获取起始配置
-	startX, _ := strconv.Atoi(getConfigValue(s, "start_x", "200"))
-	startY, _ := strconv.Atoi(getConfigValue(s, "start_y", "450"))
-	defaultHP, _ := strconv.Atoi(getConfigValue(s, "default_hp", "100"))
-	defaultMP, _ := strconv.Atoi(getConfigValue(s, "default_mp", "50"))
-	defaultGold, _ := strconv.Atoi(getConfigValue(s, "default_gold", "500"))
+	startX, _ := strconv.Atoi(getConfigValue(ctx, s, "start_x", "200"))
+	startY, _ := strconv.Atoi(getConfigValue(ctx, s, "start_y", "450"))
+	defaultHP, _ := strconv.Atoi(getConfigValue(ctx, s, "default_hp", "100"))
+	defaultMP, _ := strconv.Atoi(getConfigValue(ctx, s, "default_mp", "50"))
+	defaultGold, _ := strconv.Atoi(getConfigValue(ctx, s, "default_gold", "500"))
 
-	startScene := getConfigValue(s, "start_scene", "scene_village_entrance")
+	startScene := getConfigValue(ctx, s, "start_scene", "scene_village_entrance")
 	startVisited, _ := json.Marshal([]string{startScene})
 
 	player := &models.Player{
@@ -111,7 +103,7 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 		VisitedScenes: string(startVisited),
 	}
 
-	if err := s.repo.CreatePlayer(player); err != nil {
+	if err := s.repo.CreatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -119,10 +111,13 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
-// GetPlayer 获取玩家信息
 func (s *Server) handleGetPlayer(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	player, err := s.repo.GetPlayerByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	player, err := s.repo.GetPlayerByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -130,10 +125,13 @@ func (s *Server) handleGetPlayer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
-// UpdatePlayer 更新玩家信息
 func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	player, err := s.repo.GetPlayerByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	player, err := s.repo.GetPlayerByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -182,7 +180,7 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	player.PosX = req.PosX
 	player.PosY = req.PosY
 
-	if err := s.repo.UpdatePlayer(player); err != nil {
+	if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -190,10 +188,10 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
-// GetSceneByCode 通过code获取场景
 func (s *Server) handleGetSceneByCode(c *gin.Context) {
+	ctx := c.Request.Context()
 	code := c.Param("code")
-	scene, err := s.repo.GetSceneByCode(code)
+	scene, err := s.repo.GetSceneByCode(ctx, code)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Scene"))
 		return
@@ -201,10 +199,10 @@ func (s *Server) handleGetSceneByCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": scene})
 }
 
-// GetNPCByCode 通过code获取NPC
 func (s *Server) handleGetNPCByCode(c *gin.Context) {
+	ctx := c.Request.Context()
 	code := c.Param("code")
-	npc, err := s.repo.GetNPCByCode(code)
+	npc, err := s.repo.GetNPCByCode(ctx, code)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
@@ -218,9 +216,9 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 	})
 }
 
-// GetTasksByPlayer 获取玩家的任务列表
 func (s *Server) handleGetPlayerTasks(c *gin.Context) {
-	tasks, err := s.repo.GetTasks()
+	ctx := c.Request.Context()
+	tasks, err := s.repo.GetTasks(ctx)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -228,8 +226,8 @@ func (s *Server) handleGetPlayerTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": tasks})
 }
 
-// NPC Chat - 与NPC对话（AI驱动）
 func (s *Server) handleNPCChat(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint   `json:"player_id"`
 		NPCID    uint   `json:"npc_id"`
@@ -250,8 +248,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 		return
 	}
 
-	// 获取NPC和Agent信息
-	npc, err := s.repo.GetNPCByID(req.NPCID)
+	npc, err := s.repo.GetNPCByID(ctx, req.NPCID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
@@ -260,23 +257,24 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
 	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "talk")
 
-	// 获取玩家信息
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
+	if len(scenes) > 0 {
+		s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
+	}
+
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	// 获取对话历史
-	history, _ := s.repo.GetConversations(req.PlayerID, req.NPCID, 10)
+	history, _ := s.repo.GetConversations(ctx, req.PlayerID, req.NPCID, 10)
 
-	// 构建对话上下文（用于fallback）
 	messages := buildChatMessages(npc, player, history, req.Message)
 
 	dialogMood := s.behaviorMgr.GetDialogMood(behavior)
 	behaviorContext := s.behaviorMgr.GetDialogContext(behavior)
 
-	// 调用AI生成回复
 	var reply string
 	if s.chatMgr != nil && s.chatMgr.IsEnabled() && npc.Agent != nil && npc.Agent.SystemPrompt != "" {
 		persona := &agent.NPCPersona{
@@ -289,7 +287,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 		chatHistory := convertToChatMessages(history)
 
 		aiReply, err := s.chatMgr.ChatWithNPC(
-			c.Request.Context(),
+			ctx,
 			persona,
 			playerContext,
 			chatHistory,
@@ -303,13 +301,11 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 			reply = aiReply
 		}
 	} else if npc.Agent != nil && npc.Agent.SystemPrompt != "" {
-		// AI服务未启用，使用简单回复
 		reply = generateSimpleReply(npc.Agent, messages)
 	} else {
 		reply = "你好，客官！"
 	}
 
-	// 保存对话记录
 	conv := &models.Conversation{
 		PlayerID: req.PlayerID,
 		NPCID:    req.NPCID,
@@ -320,7 +316,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	if npc.Agent != nil {
 		conv.AgentID = npc.Agent.ID
 	}
-	s.repo.CreateConversation(conv)
+	s.repo.CreateConversation(ctx, conv)
 
 	convReply := &models.Conversation{
 		PlayerID: req.PlayerID,
@@ -332,9 +328,8 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	if npc.Agent != nil {
 		convReply.AgentID = npc.Agent.ID
 	}
-	s.repo.CreateConversation(convReply)
+	s.repo.CreateConversation(ctx, convReply)
 
-	// 更新内存记忆
 	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "user", req.Message)
 	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "assistant", reply)
 	agent.DefaultMemoryStore.UpdatePlayerInfo(req.PlayerID, req.NPCID, player.Name, player.Level)
@@ -351,16 +346,15 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	})
 }
 
-// GetShopItems 获取商店商品
 func (s *Server) handleGetShopItems(c *gin.Context) {
+	ctx := c.Request.Context()
 	code := c.Param("code")
-	shop, err := s.repo.GetShopByCode(code)
+	shop, err := s.repo.GetShopByCode(ctx, code)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Shop"))
 		return
 	}
 
-	// 获取商品详情
 	type ShopItemDetail struct {
 		models.ShopItem
 		ItemName        string `json:"item_name"`
@@ -371,7 +365,7 @@ func (s *Server) handleGetShopItems(c *gin.Context) {
 
 	var details []ShopItemDetail
 	for _, si := range shop.Items {
-		item, err := s.repo.GetItemByID(si.ItemID)
+		item, err := s.repo.GetItemByID(ctx, si.ItemID)
 		if err != nil {
 			continue
 		}
@@ -390,8 +384,8 @@ func (s *Server) handleGetShopItems(c *gin.Context) {
 	})
 }
 
-// BuyItem 购买道具
 func (s *Server) handleBuyItem(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint   `json:"player_id"`
 		ShopCode string `json:"shop_code"`
@@ -417,21 +411,18 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 		req.Count = 1
 	}
 
-	// 获取玩家
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
-	// 获取商店商品
-	shop, err := s.repo.GetShopByCode(req.ShopCode)
+	shop, err := s.repo.GetShopByCode(ctx, req.ShopCode)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Shop"))
 		return
 	}
 
-	// 查找商品
 	var shopItem *models.ShopItem
 	for _, si := range shop.Items {
 		if si.ItemID == req.ItemID {
@@ -445,25 +436,20 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 		return
 	}
 
-	// 检查库存
 	if shopItem.Stock < req.Count {
 		respondError(c, http.StatusBadRequest, BadRequest("Not enough stock"))
 		return
 	}
 
-	// 计算总价
 	totalPrice := shopItem.Price * req.Count
 
-	// 检查金币
 	if player.Gold < totalPrice {
 		respondError(c, http.StatusBadRequest, BadRequest("Not enough gold"))
 		return
 	}
 
-	// 扣除金币
 	player.Gold -= totalPrice
 
-	// 添加道具到背包
 	var items map[string]int
 	json.Unmarshal([]byte(player.Items), &items)
 	if items == nil {
@@ -474,26 +460,23 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	itemsJSON, _ := json.Marshal(items)
 	player.Items = string(itemsJSON)
 
-	// 更新库存
 	shopItem.Stock -= req.Count
 
-	// 保存
-	s.repo.UpdatePlayer(player)
-	s.repo.SaveShopItem(shopItem)
+	s.repo.UpdatePlayer(ctx, player)
+	s.repo.SaveShopItem(ctx, shopItem)
 
 	if shop.OwnerNPC != "" {
-		npc, err := s.repo.GetNPCByCode(shop.OwnerNPC)
+		npc, err := s.repo.GetNPCByCode(ctx, shop.OwnerNPC)
 		if err == nil {
 			behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
 			s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "gift")
-			scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+			scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 			if len(scenes) > 0 {
 				s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
 			}
 		}
 	}
 
-	// 解析装备信息返回
 	equipment := map[string]interface{}{
 		"weapon_id": nil,
 		"armor_id":  nil,
@@ -523,9 +506,8 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	})
 }
 
-// 辅助函数
-func getConfigValue(s *Server, key, defaultVal string) string {
-	cfg, err := s.repo.GetConfig(key)
+func getConfigValue(ctx context.Context, s *Server, key, defaultVal string) string {
+	cfg, err := s.repo.GetConfig(ctx, key)
 	if err != nil {
 		return defaultVal
 	}
@@ -535,7 +517,6 @@ func getConfigValue(s *Server, key, defaultVal string) string {
 func buildChatMessages(npc *models.NPC, player *models.Player, history []models.Conversation, userMsg string) []map[string]string {
 	var messages []map[string]string
 
-	// System prompt
 	if npc.Agent != nil {
 		messages = append(messages, map[string]string{
 			"role":    "system",
@@ -543,7 +524,6 @@ func buildChatMessages(npc *models.NPC, player *models.Player, history []models.
 		})
 	}
 
-	// History
 	for i := len(history) - 1; i >= 0; i-- {
 		messages = append(messages, map[string]string{
 			"role":    history[i].Role,
@@ -551,7 +531,6 @@ func buildChatMessages(npc *models.NPC, player *models.Player, history []models.
 		})
 	}
 
-	// Current user message with context
 	contextMsg := "【玩家信息】姓名：" + player.Name + "，等级：" + strconv.Itoa(player.Level) + "\n"
 	contextMsg += "【玩家消息】" + userMsg
 
@@ -563,7 +542,6 @@ func buildChatMessages(npc *models.NPC, player *models.Player, history []models.
 	return messages
 }
 
-// convertToChatMessages converts conversation history to chat messages
 func convertToChatMessages(history []models.Conversation) []agent.ChatMessage {
 	var messages []agent.ChatMessage
 	for i := len(history) - 1; i >= 0; i-- {
@@ -575,7 +553,6 @@ func convertToChatMessages(history []models.Conversation) []agent.ChatMessage {
 	return messages
 }
 
-// buildPlayerContext builds player context string
 func buildPlayerContext(player *models.Player) string {
 	contextMsg := "【玩家信息】姓名：" + player.Name + "，等级：" + strconv.Itoa(player.Level)
 	if player.Gold > 0 {
@@ -585,7 +562,6 @@ func buildPlayerContext(player *models.Player) string {
 }
 
 func generateSimpleReply(agent *models.Agent, messages []map[string]string) string {
-	// 获取用户最后一条消息
 	userMsg := ""
 	for i := len(messages) - 1; i >= 0; i-- {
 		if messages[i]["role"] == "user" {
@@ -594,7 +570,6 @@ func generateSimpleReply(agent *models.Agent, messages []map[string]string) stri
 		}
 	}
 
-	// 简单的关键词回复
 	switch agent.Code {
 	case "agent_chief_chen":
 		if contains(userMsg, "你好") || contains(userMsg, "村长") {
@@ -634,8 +609,9 @@ func contains(s, substr string) bool {
 }
 
 func (s *Server) handleGetNPCBehavior(c *gin.Context) {
+	ctx := c.Request.Context()
 	code := c.Param("code")
-	npc, err := s.repo.GetNPCByCode(code)
+	npc, err := s.repo.GetNPCByCode(ctx, code)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
@@ -649,8 +625,9 @@ func (s *Server) handleGetNPCBehavior(c *gin.Context) {
 }
 
 func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
+	ctx := c.Request.Context()
 	code := c.Param("code")
-	npc, err := s.repo.GetNPCByCode(code)
+	npc, err := s.repo.GetNPCByCode(ctx, code)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
@@ -678,7 +655,7 @@ func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
 	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
 	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, req.Action)
 
-	scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+	scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 	if len(scenes) > 0 {
 		s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
 	}
@@ -689,6 +666,7 @@ func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
 }
 
 func (s *Server) handleGameTick(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		Hour int `json:"hour"`
 	}
@@ -704,10 +682,10 @@ func (s *Server) handleGameTick(c *gin.Context) {
 
 	s.behaviorMgr.UpdateAllBehaviors(s.behaviorStore, req.Hour)
 
-	npcs, _ := s.repo.GetNPCs()
+	npcs, _ := s.repo.GetNPCs(ctx)
 	for _, npc := range npcs {
 		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
-		scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+		scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 		if len(scenes) > 0 {
 			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
 		}
@@ -720,8 +698,9 @@ func (s *Server) handleGameTick(c *gin.Context) {
 }
 
 func (s *Server) handleGetPlayers(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	players, total, err := s.repo.GetPlayersPaginated(p.Offset, p.PageSize)
+	players, total, err := s.repo.GetPlayersPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -731,7 +710,11 @@ func (s *Server) handleGetPlayers(c *gin.Context) {
 }
 
 func (s *Server) handleUpdatePlayer(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var player models.Player
 	if err := c.ShouldBindJSON(&player); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -742,8 +725,8 @@ func (s *Server) handleUpdatePlayer(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	player.ID = uint(id)
-	if err := s.repo.UpdatePlayer(&player); err != nil {
+	player.ID = id
+	if err := s.repo.UpdatePlayer(ctx, &player); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -751,11 +734,18 @@ func (s *Server) handleUpdatePlayer(c *gin.Context) {
 }
 
 func (s *Server) handleGetConversations(c *gin.Context) {
-	playerID, _ := strconv.ParseUint(c.Query("player_id"), 10, 32)
-	npcID, _ := strconv.ParseUint(c.Query("npc_id"), 10, 32)
+	ctx := c.Request.Context()
+	playerID, ok1 := parseQueryID(c, "player_id")
+	if !ok1 {
+		return
+	}
+	npcID, ok2 := parseQueryID(c, "npc_id")
+	if !ok2 {
+		return
+	}
 	p := parsePagination(c)
 
-	conversations, total, err := s.repo.GetConversationsPaginated(uint(playerID), uint(npcID), p.Offset, p.PageSize)
+	conversations, total, err := s.repo.GetConversationsPaginated(ctx, playerID, npcID, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -765,6 +755,7 @@ func (s *Server) handleGetConversations(c *gin.Context) {
 }
 
 func (s *Server) handleCreateConversation(c *gin.Context) {
+	ctx := c.Request.Context()
 	var conv models.Conversation
 	if err := c.ShouldBindJSON(&conv); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -780,7 +771,7 @@ func (s *Server) handleCreateConversation(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateConversation(&conv); err != nil {
+	if err := s.repo.CreateConversation(ctx, &conv); err != nil {
 		respondInternalError(c, err)
 		return
 	}

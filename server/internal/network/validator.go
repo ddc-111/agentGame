@@ -144,6 +144,19 @@ func parseID(c *gin.Context, param string) (uint, bool) {
 	return uint(id), true
 }
 
+func parseQueryID(c *gin.Context, param string) (uint, bool) {
+	raw := c.Query(param)
+	if raw == "" {
+		return 0, true
+	}
+	id, err := strconv.ParseUint(raw, 10, 32)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, BadRequest("invalid "+param))
+		return 0, false
+	}
+	return uint(id), true
+}
+
 type Pagination struct {
 	Page     int
 	PageSize int

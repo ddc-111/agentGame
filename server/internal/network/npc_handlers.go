@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetNPCs(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	npcs, total, err := s.repo.GetNPCsPaginated(p.Offset, p.PageSize)
+	npcs, total, err := s.repo.GetNPCsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,8 +21,12 @@ func (s *Server) handleGetNPCs(c *gin.Context) {
 }
 
 func (s *Server) handleGetNPC(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	npc, err := s.repo.GetNPCByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	npc, err := s.repo.GetNPCByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
@@ -30,6 +35,7 @@ func (s *Server) handleGetNPC(c *gin.Context) {
 }
 
 func (s *Server) handleCreateNPC(c *gin.Context) {
+	ctx := c.Request.Context()
 	var npc models.NPC
 	if err := c.ShouldBindJSON(&npc); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -51,7 +57,7 @@ func (s *Server) handleCreateNPC(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateNPC(&npc); err != nil {
+	if err := s.repo.CreateNPC(ctx, &npc); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -59,7 +65,11 @@ func (s *Server) handleCreateNPC(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateNPC(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var npc models.NPC
 	if err := c.ShouldBindJSON(&npc); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -81,8 +91,8 @@ func (s *Server) handleUpdateNPC(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	npc.ID = uint(id)
-	if err := s.repo.UpdateNPC(&npc); err != nil {
+	npc.ID = id
+	if err := s.repo.UpdateNPC(ctx, &npc); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -90,8 +100,12 @@ func (s *Server) handleUpdateNPC(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteNPC(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteNPC(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteNPC(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

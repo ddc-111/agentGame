@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetTasks(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	tasks, total, err := s.repo.GetTasksPaginated(p.Offset, p.PageSize)
+	tasks, total, err := s.repo.GetTasksPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,8 +21,12 @@ func (s *Server) handleGetTasks(c *gin.Context) {
 }
 
 func (s *Server) handleGetTask(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	task, err := s.repo.GetTaskByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	task, err := s.repo.GetTaskByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Task"))
 		return
@@ -30,6 +35,7 @@ func (s *Server) handleGetTask(c *gin.Context) {
 }
 
 func (s *Server) handleCreateTask(c *gin.Context) {
+	ctx := c.Request.Context()
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -56,7 +62,7 @@ func (s *Server) handleCreateTask(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateTask(&task); err != nil {
+	if err := s.repo.CreateTask(ctx, &task); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -64,7 +70,11 @@ func (s *Server) handleCreateTask(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateTask(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -91,8 +101,8 @@ func (s *Server) handleUpdateTask(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	task.ID = uint(id)
-	if err := s.repo.UpdateTask(&task); err != nil {
+	task.ID = id
+	if err := s.repo.UpdateTask(ctx, &task); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -100,8 +110,12 @@ func (s *Server) handleUpdateTask(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteTask(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteTask(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteTask(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

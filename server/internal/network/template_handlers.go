@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetTemplates(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	templates, total, err := s.repo.GetTemplatesPaginated(p.Offset, p.PageSize)
+	templates, total, err := s.repo.GetTemplatesPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,6 +21,7 @@ func (s *Server) handleGetTemplates(c *gin.Context) {
 }
 
 func (s *Server) handleCreateTemplate(c *gin.Context) {
+	ctx := c.Request.Context()
 	var template models.PromptTemplate
 	if err := c.ShouldBindJSON(&template); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -30,7 +32,7 @@ func (s *Server) handleCreateTemplate(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateTemplate(&template); err != nil {
+	if err := s.repo.CreateTemplate(ctx, &template); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -38,7 +40,11 @@ func (s *Server) handleCreateTemplate(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateTemplate(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var template models.PromptTemplate
 	if err := c.ShouldBindJSON(&template); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -49,8 +55,8 @@ func (s *Server) handleUpdateTemplate(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	template.ID = uint(id)
-	if err := s.repo.UpdateTemplate(&template); err != nil {
+	template.ID = id
+	if err := s.repo.UpdateTemplate(ctx, &template); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -58,8 +64,12 @@ func (s *Server) handleUpdateTemplate(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteTemplate(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteTemplate(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteTemplate(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

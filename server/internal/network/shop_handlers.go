@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetShops(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	shops, total, err := s.repo.GetShopsPaginated(p.Offset, p.PageSize)
+	shops, total, err := s.repo.GetShopsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,8 +21,12 @@ func (s *Server) handleGetShops(c *gin.Context) {
 }
 
 func (s *Server) handleGetShop(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	shop, err := s.repo.GetShopByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	shop, err := s.repo.GetShopByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Shop"))
 		return
@@ -30,6 +35,7 @@ func (s *Server) handleGetShop(c *gin.Context) {
 }
 
 func (s *Server) handleCreateShop(c *gin.Context) {
+	ctx := c.Request.Context()
 	var shop models.Shop
 	if err := c.ShouldBindJSON(&shop); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -54,7 +60,7 @@ func (s *Server) handleCreateShop(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateShop(&shop); err != nil {
+	if err := s.repo.CreateShop(ctx, &shop); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -62,7 +68,11 @@ func (s *Server) handleCreateShop(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateShop(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var shop models.Shop
 	if err := c.ShouldBindJSON(&shop); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -87,8 +97,8 @@ func (s *Server) handleUpdateShop(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	shop.ID = uint(id)
-	if err := s.repo.UpdateShop(&shop); err != nil {
+	shop.ID = id
+	if err := s.repo.UpdateShop(ctx, &shop); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -96,8 +106,12 @@ func (s *Server) handleUpdateShop(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteShop(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteShop(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteShop(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

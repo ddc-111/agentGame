@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -246,11 +247,11 @@ func TestDBMemoryStore_RepositoryContext(t *testing.T) {
 		Summary:     "测试摘要",
 		Extra:       `{"key":"value"}`,
 	}
-	if err := repo.CreateConversationContext(ctx); err != nil {
+	if err := repo.CreateConversationContext(context.Background(), ctx); err != nil {
 		t.Fatalf("Failed to create context: %v", err)
 	}
 
-	got, err := repo.GetConversationContext(1, 1)
+	got, err := repo.GetConversationContext(context.Background(), 1, 1)
 	if err != nil {
 		t.Fatalf("Failed to get context: %v", err)
 	}
@@ -267,11 +268,11 @@ func TestDBMemoryStore_RepositoryContext(t *testing.T) {
 	ctx.ID = got.ID
 	ctx.PlayerLevel = 20
 	ctx.TalkCount = 10
-	if err := repo.UpsertConversationContext(ctx); err != nil {
+	if err := repo.UpsertConversationContext(context.Background(), ctx); err != nil {
 		t.Fatalf("Failed to upsert context: %v", err)
 	}
 
-	got2, err := repo.GetConversationContext(1, 1)
+	got2, err := repo.GetConversationContext(context.Background(), 1, 1)
 	if err != nil {
 		t.Fatalf("Failed to get context after upsert: %v", err)
 	}
@@ -291,11 +292,11 @@ func TestDBMemoryStore_RepositoryConversations(t *testing.T) {
 	conv2 := &models.Conversation{PlayerID: 1, NPCID: 1, Role: "assistant", Content: "reply1"}
 	conv3 := &models.Conversation{PlayerID: 1, NPCID: 2, Role: "user", Content: "other"}
 
-	repo.CreateConversation(conv1)
-	repo.CreateConversation(conv2)
-	repo.CreateConversation(conv3)
+	repo.CreateConversation(context.Background(), conv1)
+	repo.CreateConversation(context.Background(), conv2)
+	repo.CreateConversation(context.Background(), conv3)
 
-	convs, err := repo.GetConversationsByPair(1, 1, 10)
+	convs, err := repo.GetConversationsByPair(context.Background(), 1, 1, 10)
 	if err != nil {
 		t.Fatalf("Failed to get conversations: %v", err)
 	}
@@ -303,17 +304,17 @@ func TestDBMemoryStore_RepositoryConversations(t *testing.T) {
 		t.Errorf("Expected 2 conversations for pair (1,1), got %d", len(convs))
 	}
 
-	err = repo.DeleteConversationsByPair(1, 1)
+	err = repo.DeleteConversationsByPair(context.Background(), 1, 1)
 	if err != nil {
 		t.Fatalf("Failed to delete conversations: %v", err)
 	}
 
-	convs, _ = repo.GetConversationsByPair(1, 1, 10)
+	convs, _ = repo.GetConversationsByPair(context.Background(), 1, 1, 10)
 	if len(convs) != 0 {
 		t.Errorf("Expected 0 conversations after delete, got %d", len(convs))
 	}
 
-	convs, _ = repo.GetConversationsByPair(1, 2, 10)
+	convs, _ = repo.GetConversationsByPair(context.Background(), 1, 2, 10)
 	if len(convs) != 1 {
 		t.Errorf("Expected 1 conversation for pair (1,2) still present, got %d", len(convs))
 	}

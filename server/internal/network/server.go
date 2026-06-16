@@ -303,7 +303,8 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) initNPCBehaviors() {
-	npcs, err := s.repo.GetNPCs()
+	ctx := context.Background()
+	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
 		log.Printf("Failed to load NPCs for behavior init: %v", err)
 		return
@@ -342,7 +343,8 @@ func (s *Server) startGameLoop() {
 }
 
 func (s *Server) broadcastAllNPCStates() {
-	npcs, err := s.repo.GetNPCs()
+	ctx := context.Background()
+	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
 		return
 	}
@@ -351,7 +353,7 @@ func (s *Server) broadcastAllNPCStates() {
 		if behavior == nil {
 			continue
 		}
-		scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+		scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 		if len(scenes) > 0 {
 			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
 		}

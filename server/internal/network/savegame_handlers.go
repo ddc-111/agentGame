@@ -2,7 +2,6 @@ package network
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
@@ -16,6 +15,7 @@ func (s *Server) registerSavegameRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleSaveGame(c *gin.Context) {
+	ctx := c.Request.Context()
 	var req struct {
 		PlayerID uint   `json:"player_id"`
 		Slot     int    `json:"slot"`
@@ -42,7 +42,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -73,7 +73,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		return
 	}
 
-	existingSave, _ := s.repo.GetSaveGame(req.PlayerID, req.Slot)
+	existingSave, _ := s.repo.GetSaveGame(ctx, req.PlayerID, req.Slot)
 
 	saveName := req.Name
 	if saveName == "" {
@@ -83,7 +83,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 	if existingSave != nil && existingSave.ID > 0 {
 		existingSave.Name = saveName
 		existingSave.Snapshot = snapshotJSON
-		if err := s.repo.UpdateSaveGame(existingSave); err != nil {
+		if err := s.repo.UpdateSaveGame(ctx, existingSave); err != nil {
 			respondInternalError(c, err)
 			return
 		}
@@ -98,7 +98,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 			Name:     saveName,
 			Snapshot: snapshotJSON,
 		}
-		if err := s.repo.CreateSaveGame(save); err != nil {
+		if err := s.repo.CreateSaveGame(ctx, save); err != nil {
 			respondInternalError(c, err)
 			return
 		}
@@ -110,9 +110,13 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 }
 
 func (s *Server) handleGetSaves(c *gin.Context) {
-	playerID, _ := strconv.ParseUint(c.Param("player_id"), 10, 32)
+	ctx := c.Request.Context()
+	playerID, ok := parseID(c, "player_id")
+	if !ok {
+		return
+	}
 
-	saves, err := s.repo.GetSaveGames(uint(playerID))
+	saves, err := s.repo.GetSaveGames(ctx, playerID)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -152,7 +156,11 @@ func (s *Server) handleGetSaves(c *gin.Context) {
 }
 
 func (s *Server) handleLoadGame(c *gin.Context) {
-	saveID, _ := strconv.ParseUint(c.Param("save_id"), 10, 32)
+	ctx := c.Request.Context()
+	saveID, ok := parseID(c, "save_id")
+	if !ok {
+		return
+	}
 
 	var req struct {
 		PlayerID uint `json:"player_id"`
@@ -168,7 +176,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 		return
 	}
 
-	saves, err := s.repo.GetSaveGames(req.PlayerID)
+	saves, err := s.repo.GetSaveGames(ctx, req.PlayerID)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -176,7 +184,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 
 	var targetSave *models.SaveGame
 	for _, save := range saves {
-		if save.ID == uint(saveID) {
+		if save.ID == saveID {
 			targetSave = &save
 			break
 		}
@@ -194,7 +202,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 		return
 	}
 
-	player, err := s.repo.GetPlayerByID(req.PlayerID)
+	player, err := s.repo.GetPlayerByID(ctx, req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
@@ -217,7 +225,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	player.SkillsUsed = snapshot.SkillsUsed
 	player.VisitedScenes = snapshot.VisitedScenes
 
-	if err := s.repo.UpdatePlayer(player); err != nil {
+	if err := s.repo.UpdatePlayer(ctx, player); err != nil {
 		respondInternalError(c, err)
 		return
 	}

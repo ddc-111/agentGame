@@ -359,97 +359,97 @@ func (s *Server) handleToolsCall(ctx context.Context, req MCPRequest) MCPRespons
 func (s *Server) callTool(ctx context.Context, name string, args map[string]interface{}) (*ToolResult, error) {
 	switch name {
 	case "list_scenes":
-		return s.listScenes()
+		return s.listScenes(ctx)
 	case "get_scene":
 		id, _ := args["id"].(float64)
-		return s.getScene(uint(id))
+		return s.getScene(ctx, uint(id))
 	case "create_scene":
-		return s.createScene(args)
+		return s.createScene(ctx, args)
 	case "update_scene":
 		id, _ := args["id"].(float64)
-		return s.updateScene(uint(id), args)
+		return s.updateScene(ctx, uint(id), args)
 	case "delete_scene":
 		id, _ := args["id"].(float64)
-		return s.deleteScene(uint(id))
+		return s.deleteScene(ctx, uint(id))
 	case "list_npcs":
-		return s.listNPCs()
+		return s.listNPCs(ctx)
 	case "get_npc":
 		id, _ := args["id"].(float64)
-		return s.getNPC(uint(id))
+		return s.getNPC(ctx, uint(id))
 	case "create_npc":
-		return s.createNPC(args)
+		return s.createNPC(ctx, args)
 	case "update_npc":
 		id, _ := args["id"].(float64)
-		return s.updateNPC(uint(id), args)
+		return s.updateNPC(ctx, uint(id), args)
 	case "delete_npc":
 		id, _ := args["id"].(float64)
-		return s.deleteNPC(uint(id))
+		return s.deleteNPC(ctx, uint(id))
 	case "list_agents":
-		return s.listAgents()
+		return s.listAgents(ctx)
 	case "get_agent":
 		id, _ := args["id"].(float64)
-		return s.getAgent(uint(id))
+		return s.getAgent(ctx, uint(id))
 	case "create_agent":
-		return s.createAgent(args)
+		return s.createAgent(ctx, args)
 	case "update_agent":
 		id, _ := args["id"].(float64)
-		return s.updateAgent(uint(id), args)
+		return s.updateAgent(ctx, uint(id), args)
 	case "delete_agent":
 		id, _ := args["id"].(float64)
-		return s.deleteAgent(uint(id))
+		return s.deleteAgent(ctx, uint(id))
 	case "list_shops":
-		return s.listShops()
+		return s.listShops(ctx)
 	case "get_shop":
 		id, _ := args["id"].(float64)
-		return s.getShop(uint(id))
+		return s.getShop(ctx, uint(id))
 	case "create_shop":
-		return s.createShop(args)
+		return s.createShop(ctx, args)
 	case "update_shop":
 		id, _ := args["id"].(float64)
-		return s.updateShop(uint(id), args)
+		return s.updateShop(ctx, uint(id), args)
 	case "delete_shop":
 		id, _ := args["id"].(float64)
-		return s.deleteShop(uint(id))
+		return s.deleteShop(ctx, uint(id))
 	case "list_items":
-		return s.listItems()
+		return s.listItems(ctx)
 	case "get_item":
 		id, _ := args["id"].(float64)
-		return s.getItem(uint(id))
+		return s.getItem(ctx, uint(id))
 	case "create_item":
-		return s.createItem(args)
+		return s.createItem(ctx, args)
 	case "update_item":
 		id, _ := args["id"].(float64)
-		return s.updateItem(uint(id), args)
+		return s.updateItem(ctx, uint(id), args)
 	case "delete_item":
 		id, _ := args["id"].(float64)
-		return s.deleteItem(uint(id))
+		return s.deleteItem(ctx, uint(id))
 	case "list_tasks":
-		return s.listTasks()
+		return s.listTasks(ctx)
 	case "get_task":
 		id, _ := args["id"].(float64)
-		return s.getTask(uint(id))
+		return s.getTask(ctx, uint(id))
 	case "create_task":
-		return s.createTask(args)
+		return s.createTask(ctx, args)
 	case "update_task":
 		id, _ := args["id"].(float64)
-		return s.updateTask(uint(id), args)
+		return s.updateTask(ctx, uint(id), args)
 	case "delete_task":
 		id, _ := args["id"].(float64)
-		return s.deleteTask(uint(id))
+		return s.deleteTask(ctx, uint(id))
 	case "list_flows":
-		return s.listFlows()
+		return s.listFlows(ctx)
 	case "create_flow":
-		return s.createFlow(args)
+		return s.createFlow(ctx, args)
 	case "list_templates":
-		return s.listTemplates()
+		return s.listTemplates(ctx)
 	case "create_template":
-		return s.createTemplate(args)
+		return s.createTemplate(ctx, args)
 	case "generate_config":
 		return s.generateConfig(ctx, args)
 	case "export_data":
-		return s.exportData()
+		return s.exportData(ctx)
 	case "get_game_stats":
-		return s.getGameStats()
+		return s.getGameStats(ctx)
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", name)
 	}
@@ -489,23 +489,23 @@ func (s *Server) errorResult(err error) *ToolResult {
 
 // ==================== 场景操作 ====================
 
-func (s *Server) listScenes() (*ToolResult, error) {
-	scenes, err := s.repo.GetScenes()
+func (s *Server) listScenes(ctx context.Context) (*ToolResult, error) {
+	scenes, err := s.repo.GetScenes(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(scenes), nil
 }
 
-func (s *Server) getScene(id uint) (*ToolResult, error) {
-	scene, err := s.repo.GetSceneByID(id)
+func (s *Server) getScene(ctx context.Context, id uint) (*ToolResult, error) {
+	scene, err := s.repo.GetSceneByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(scene), nil
 }
 
-func (s *Server) createScene(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createScene(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	scene := &models.Scene{
 		Name:        getString(args, "name"),
 		Code:        getString(args, "code"),
@@ -513,14 +513,14 @@ func (s *Server) createScene(args map[string]interface{}) (*ToolResult, error) {
 		Width:       getInt(args, "width", 1920),
 		Height:      getInt(args, "height", 1080),
 	}
-	if err := s.repo.CreateScene(scene); err != nil {
+	if err := s.repo.CreateScene(ctx, scene); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(scene), nil
 }
 
-func (s *Server) updateScene(id uint, args map[string]interface{}) (*ToolResult, error) {
-	scene, err := s.repo.GetSceneByID(id)
+func (s *Server) updateScene(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	scene, err := s.repo.GetSceneByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -536,14 +536,14 @@ func (s *Server) updateScene(id uint, args map[string]interface{}) (*ToolResult,
 	if v, ok := args["height"].(float64); ok {
 		scene.Height = int(v)
 	}
-	if err := s.repo.UpdateScene(scene); err != nil {
+	if err := s.repo.UpdateScene(ctx, scene); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(scene), nil
 }
 
-func (s *Server) deleteScene(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteScene(id); err != nil {
+func (s *Server) deleteScene(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteScene(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "Scene deleted"}), nil
@@ -551,37 +551,37 @@ func (s *Server) deleteScene(id uint) (*ToolResult, error) {
 
 // ==================== NPC操作 ====================
 
-func (s *Server) listNPCs() (*ToolResult, error) {
-	npcs, err := s.repo.GetNPCs()
+func (s *Server) listNPCs(ctx context.Context) (*ToolResult, error) {
+	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(npcs), nil
 }
 
-func (s *Server) getNPC(id uint) (*ToolResult, error) {
-	npc, err := s.repo.GetNPCByID(id)
+func (s *Server) getNPC(ctx context.Context, id uint) (*ToolResult, error) {
+	npc, err := s.repo.GetNPCByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(npc), nil
 }
 
-func (s *Server) createNPC(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createNPC(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	npc := &models.NPC{
 		Name:        getString(args, "name"),
 		Code:        getString(args, "code"),
 		Title:       getString(args, "title"),
 		Description: getString(args, "description"),
 	}
-	if err := s.repo.CreateNPC(npc); err != nil {
+	if err := s.repo.CreateNPC(ctx, npc); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(npc), nil
 }
 
-func (s *Server) updateNPC(id uint, args map[string]interface{}) (*ToolResult, error) {
-	npc, err := s.repo.GetNPCByID(id)
+func (s *Server) updateNPC(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	npc, err := s.repo.GetNPCByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -594,14 +594,14 @@ func (s *Server) updateNPC(id uint, args map[string]interface{}) (*ToolResult, e
 	if v, ok := args["description"].(string); ok {
 		npc.Description = v
 	}
-	if err := s.repo.UpdateNPC(npc); err != nil {
+	if err := s.repo.UpdateNPC(ctx, npc); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(npc), nil
 }
 
-func (s *Server) deleteNPC(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteNPC(id); err != nil {
+func (s *Server) deleteNPC(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteNPC(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "NPC deleted"}), nil
@@ -609,37 +609,37 @@ func (s *Server) deleteNPC(id uint) (*ToolResult, error) {
 
 // ==================== 智能体操作 ====================
 
-func (s *Server) listAgents() (*ToolResult, error) {
-	agents, err := s.repo.GetAgents()
+func (s *Server) listAgents(ctx context.Context) (*ToolResult, error) {
+	agents, err := s.repo.GetAgents(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(agents), nil
 }
 
-func (s *Server) getAgent(id uint) (*ToolResult, error) {
-	agent, err := s.repo.GetAgentByID(id)
+func (s *Server) getAgent(ctx context.Context, id uint) (*ToolResult, error) {
+	agent, err := s.repo.GetAgentByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(agent), nil
 }
 
-func (s *Server) createAgent(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createAgent(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	agent := &models.Agent{
 		Name:         getString(args, "name"),
 		Code:         getString(args, "code"),
 		SystemPrompt: getString(args, "system_prompt"),
 		LLMModel:     getString(args, "llm_model"),
 	}
-	if err := s.repo.CreateAgent(agent); err != nil {
+	if err := s.repo.CreateAgent(ctx, agent); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(agent), nil
 }
 
-func (s *Server) updateAgent(id uint, args map[string]interface{}) (*ToolResult, error) {
-	agent, err := s.repo.GetAgentByID(id)
+func (s *Server) updateAgent(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	agent, err := s.repo.GetAgentByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -652,14 +652,14 @@ func (s *Server) updateAgent(id uint, args map[string]interface{}) (*ToolResult,
 	if v, ok := args["llm_model"].(string); ok {
 		agent.LLMModel = v
 	}
-	if err := s.repo.UpdateAgent(agent); err != nil {
+	if err := s.repo.UpdateAgent(ctx, agent); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(agent), nil
 }
 
-func (s *Server) deleteAgent(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteAgent(id); err != nil {
+func (s *Server) deleteAgent(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteAgent(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "Agent deleted"}), nil
@@ -667,37 +667,37 @@ func (s *Server) deleteAgent(id uint) (*ToolResult, error) {
 
 // ==================== 商店操作 ====================
 
-func (s *Server) listShops() (*ToolResult, error) {
-	shops, err := s.repo.GetShops()
+func (s *Server) listShops(ctx context.Context) (*ToolResult, error) {
+	shops, err := s.repo.GetShops(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(shops), nil
 }
 
-func (s *Server) getShop(id uint) (*ToolResult, error) {
-	shop, err := s.repo.GetShopByID(id)
+func (s *Server) getShop(ctx context.Context, id uint) (*ToolResult, error) {
+	shop, err := s.repo.GetShopByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(shop), nil
 }
 
-func (s *Server) createShop(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createShop(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	shop := &models.Shop{
 		Name:     getString(args, "name"),
 		Code:     getString(args, "code"),
 		Type:     getString(args, "type"),
 		OwnerNPC: getString(args, "owner_npc"),
 	}
-	if err := s.repo.CreateShop(shop); err != nil {
+	if err := s.repo.CreateShop(ctx, shop); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(shop), nil
 }
 
-func (s *Server) updateShop(id uint, args map[string]interface{}) (*ToolResult, error) {
-	shop, err := s.repo.GetShopByID(id)
+func (s *Server) updateShop(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	shop, err := s.repo.GetShopByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -707,14 +707,14 @@ func (s *Server) updateShop(id uint, args map[string]interface{}) (*ToolResult, 
 	if v, ok := args["description"].(string); ok {
 		shop.Description = v
 	}
-	if err := s.repo.UpdateShop(shop); err != nil {
+	if err := s.repo.UpdateShop(ctx, shop); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(shop), nil
 }
 
-func (s *Server) deleteShop(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteShop(id); err != nil {
+func (s *Server) deleteShop(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteShop(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "Shop deleted"}), nil
@@ -722,37 +722,37 @@ func (s *Server) deleteShop(id uint) (*ToolResult, error) {
 
 // ==================== 道具操作 ====================
 
-func (s *Server) listItems() (*ToolResult, error) {
-	items, err := s.repo.GetItems()
+func (s *Server) listItems(ctx context.Context) (*ToolResult, error) {
+	items, err := s.repo.GetItems(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(items), nil
 }
 
-func (s *Server) getItem(id uint) (*ToolResult, error) {
-	item, err := s.repo.GetItemByID(id)
+func (s *Server) getItem(ctx context.Context, id uint) (*ToolResult, error) {
+	item, err := s.repo.GetItemByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(item), nil
 }
 
-func (s *Server) createItem(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createItem(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	item := &models.Item{
 		Name:        getString(args, "name"),
 		Code:        getString(args, "code"),
 		Category:    getString(args, "category"),
 		Description: getString(args, "description"),
 	}
-	if err := s.repo.CreateItem(item); err != nil {
+	if err := s.repo.CreateItem(ctx, item); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(item), nil
 }
 
-func (s *Server) updateItem(id uint, args map[string]interface{}) (*ToolResult, error) {
-	item, err := s.repo.GetItemByID(id)
+func (s *Server) updateItem(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	item, err := s.repo.GetItemByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -765,14 +765,14 @@ func (s *Server) updateItem(id uint, args map[string]interface{}) (*ToolResult, 
 	if v, ok := args["effect"].(string); ok {
 		item.Effect = v
 	}
-	if err := s.repo.UpdateItem(item); err != nil {
+	if err := s.repo.UpdateItem(ctx, item); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(item), nil
 }
 
-func (s *Server) deleteItem(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteItem(id); err != nil {
+func (s *Server) deleteItem(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteItem(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "Item deleted"}), nil
@@ -780,37 +780,37 @@ func (s *Server) deleteItem(id uint) (*ToolResult, error) {
 
 // ==================== 任务操作 ====================
 
-func (s *Server) listTasks() (*ToolResult, error) {
-	tasks, err := s.repo.GetTasks()
+func (s *Server) listTasks(ctx context.Context) (*ToolResult, error) {
+	tasks, err := s.repo.GetTasks(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(tasks), nil
 }
 
-func (s *Server) getTask(id uint) (*ToolResult, error) {
-	task, err := s.repo.GetTaskByID(id)
+func (s *Server) getTask(ctx context.Context, id uint) (*ToolResult, error) {
+	task, err := s.repo.GetTaskByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(task), nil
 }
 
-func (s *Server) createTask(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createTask(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	task := &models.Task{
 		Name:        getString(args, "name"),
 		Code:        getString(args, "code"),
 		Type:        getString(args, "type"),
 		Description: getString(args, "description"),
 	}
-	if err := s.repo.CreateTask(task); err != nil {
+	if err := s.repo.CreateTask(ctx, task); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(task), nil
 }
 
-func (s *Server) updateTask(id uint, args map[string]interface{}) (*ToolResult, error) {
-	task, err := s.repo.GetTaskByID(id)
+func (s *Server) updateTask(ctx context.Context, id uint, args map[string]interface{}) (*ToolResult, error) {
+	task, err := s.repo.GetTaskByID(ctx, id)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
@@ -823,14 +823,14 @@ func (s *Server) updateTask(id uint, args map[string]interface{}) (*ToolResult, 
 	if v, ok := args["status"].(string); ok {
 		task.Status = v
 	}
-	if err := s.repo.UpdateTask(task); err != nil {
+	if err := s.repo.UpdateTask(ctx, task); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(task), nil
 }
 
-func (s *Server) deleteTask(id uint) (*ToolResult, error) {
-	if err := s.repo.DeleteTask(id); err != nil {
+func (s *Server) deleteTask(ctx context.Context, id uint) (*ToolResult, error) {
+	if err := s.repo.DeleteTask(ctx, id); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(map[string]string{"message": "Task deleted"}), nil
@@ -838,21 +838,21 @@ func (s *Server) deleteTask(id uint) (*ToolResult, error) {
 
 // ==================== 流程操作 ====================
 
-func (s *Server) listFlows() (*ToolResult, error) {
-	flows, err := s.repo.GetFlows()
+func (s *Server) listFlows(ctx context.Context) (*ToolResult, error) {
+	flows, err := s.repo.GetFlows(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(flows), nil
 }
 
-func (s *Server) createFlow(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createFlow(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	flow := &models.Flow{
 		Name:        getString(args, "name"),
 		Code:        getString(args, "code"),
 		Description: getString(args, "description"),
 	}
-	if err := s.repo.CreateFlow(flow); err != nil {
+	if err := s.repo.CreateFlow(ctx, flow); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(flow), nil
@@ -860,21 +860,21 @@ func (s *Server) createFlow(args map[string]interface{}) (*ToolResult, error) {
 
 // ==================== 模板操作 ====================
 
-func (s *Server) listTemplates() (*ToolResult, error) {
-	templates, err := s.repo.GetTemplates()
+func (s *Server) listTemplates(ctx context.Context) (*ToolResult, error) {
+	templates, err := s.repo.GetTemplates(ctx)
 	if err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(templates), nil
 }
 
-func (s *Server) createTemplate(args map[string]interface{}) (*ToolResult, error) {
+func (s *Server) createTemplate(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	template := &models.PromptTemplate{
 		Name:    getString(args, "name"),
 		Code:    getString(args, "code"),
 		Content: getString(args, "content"),
 	}
-	if err := s.repo.CreateTemplate(template); err != nil {
+	if err := s.repo.CreateTemplate(ctx, template); err != nil {
 		return s.errorResult(err), nil
 	}
 	return s.successResult(template), nil
@@ -905,38 +905,38 @@ func (s *Server) generateConfig(ctx context.Context, args map[string]interface{}
 
 // ==================== 数据操作 ====================
 
-func (s *Server) exportData() (*ToolResult, error) {
+func (s *Server) exportData(ctx context.Context) (*ToolResult, error) {
 	data := make(map[string]interface{})
 
-	scenes, _ := s.repo.GetScenes()
+	scenes, _ := s.repo.GetScenes(ctx)
 	data["scenes"] = scenes
 
-	npcs, _ := s.repo.GetNPCs()
+	npcs, _ := s.repo.GetNPCs(ctx)
 	data["npcs"] = npcs
 
-	agents, _ := s.repo.GetAgents()
+	agents, _ := s.repo.GetAgents(ctx)
 	data["agents"] = agents
 
-	shops, _ := s.repo.GetShops()
+	shops, _ := s.repo.GetShops(ctx)
 	data["shops"] = shops
 
-	items, _ := s.repo.GetItems()
+	items, _ := s.repo.GetItems(ctx)
 	data["items"] = items
 
-	tasks, _ := s.repo.GetTasks()
+	tasks, _ := s.repo.GetTasks(ctx)
 	data["tasks"] = tasks
 
 	return s.successResult(data), nil
 }
 
-func (s *Server) getGameStats() (*ToolResult, error) {
-	scenes, _ := s.repo.GetScenes()
-	npcs, _ := s.repo.GetNPCs()
-	agents, _ := s.repo.GetAgents()
-	shops, _ := s.repo.GetShops()
-	items, _ := s.repo.GetItems()
-	tasks, _ := s.repo.GetTasks()
-	flows, _ := s.repo.GetFlows()
+func (s *Server) getGameStats(ctx context.Context) (*ToolResult, error) {
+	scenes, _ := s.repo.GetScenes(ctx)
+	npcs, _ := s.repo.GetNPCs(ctx)
+	agents, _ := s.repo.GetAgents(ctx)
+	shops, _ := s.repo.GetShops(ctx)
+	items, _ := s.repo.GetItems(ctx)
+	tasks, _ := s.repo.GetTasks(ctx)
+	flows, _ := s.repo.GetFlows(ctx)
 
 	stats := map[string]interface{}{
 		"scenes":  len(scenes),

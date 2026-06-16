@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetAgents(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	agents, total, err := s.repo.GetAgentsPaginated(p.Offset, p.PageSize)
+	agents, total, err := s.repo.GetAgentsPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,8 +21,12 @@ func (s *Server) handleGetAgents(c *gin.Context) {
 }
 
 func (s *Server) handleGetAgent(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	agent, err := s.repo.GetAgentByID(uint(id))
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	agent, err := s.repo.GetAgentByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Agent"))
 		return
@@ -30,6 +35,7 @@ func (s *Server) handleGetAgent(c *gin.Context) {
 }
 
 func (s *Server) handleCreateAgent(c *gin.Context) {
+	ctx := c.Request.Context()
 	var agent models.Agent
 	if err := c.ShouldBindJSON(&agent); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -44,7 +50,7 @@ func (s *Server) handleCreateAgent(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateAgent(&agent); err != nil {
+	if err := s.repo.CreateAgent(ctx, &agent); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -52,7 +58,11 @@ func (s *Server) handleCreateAgent(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateAgent(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var agent models.Agent
 	if err := c.ShouldBindJSON(&agent); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -67,8 +77,8 @@ func (s *Server) handleUpdateAgent(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	agent.ID = uint(id)
-	if err := s.repo.UpdateAgent(&agent); err != nil {
+	agent.ID = id
+	if err := s.repo.UpdateAgent(ctx, &agent); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -76,8 +86,12 @@ func (s *Server) handleUpdateAgent(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteAgent(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteAgent(uint(id)); err != nil {
+	ctx := c.Request.Context()
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteAgent(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

@@ -9,8 +9,9 @@ import (
 )
 
 func (s *Server) handleGetScenes(c *gin.Context) {
+	ctx := c.Request.Context()
 	p := parsePagination(c)
-	scenes, total, err := s.repo.GetScenesPaginated(p.Offset, p.PageSize)
+	scenes, total, err := s.repo.GetScenesPaginated(ctx, p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -20,11 +21,12 @@ func (s *Server) handleGetScenes(c *gin.Context) {
 }
 
 func (s *Server) handleGetScene(c *gin.Context) {
+	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
 	if !ok {
 		return
 	}
-	scene, err := s.repo.GetSceneByID(id)
+	scene, err := s.repo.GetSceneByID(ctx, id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Scene"))
 		return
@@ -33,6 +35,7 @@ func (s *Server) handleGetScene(c *gin.Context) {
 }
 
 func (s *Server) handleCreateScene(c *gin.Context) {
+	ctx := c.Request.Context()
 	var scene models.Scene
 	if err := c.ShouldBindJSON(&scene); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -47,7 +50,7 @@ func (s *Server) handleCreateScene(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	if err := s.repo.CreateScene(&scene); err != nil {
+	if err := s.repo.CreateScene(ctx, &scene); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -55,6 +58,7 @@ func (s *Server) handleCreateScene(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateScene(c *gin.Context) {
+	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
 	if !ok {
 		return
@@ -74,7 +78,7 @@ func (s *Server) handleUpdateScene(c *gin.Context) {
 		return
 	}
 	scene.ID = id
-	if err := s.repo.UpdateScene(&scene); err != nil {
+	if err := s.repo.UpdateScene(ctx, &scene); err != nil {
 		respondInternalError(c, err)
 		return
 	}
@@ -82,11 +86,12 @@ func (s *Server) handleUpdateScene(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteScene(c *gin.Context) {
+	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
 	if !ok {
 		return
 	}
-	if err := s.repo.DeleteScene(id); err != nil {
+	if err := s.repo.DeleteScene(ctx, id); err != nil {
 		respondInternalError(c, err)
 		return
 	}
