@@ -154,6 +154,14 @@ func (s *Server) setupRoutes() {
 		api.GET("/mcp/tools", s.handleMCPTools)
 		api.POST("/mcp/call", s.handleMCPCall)
 
+		// MCP资源（兼容REST访问）
+		api.GET("/mcp/resources", s.handleMCPResources)
+		api.GET("/mcp/resources/read", s.handleMCPResourceRead)
+
+		// MCP提示词（兼容REST访问）
+		api.GET("/mcp/prompts", s.handleMCPPrompts)
+		api.POST("/mcp/prompts/get", s.handleMCPPromptGet)
+
 		// 场景API
 		api.GET("/scenes", s.handleGetScenes)
 		api.GET("/scenes/:id", s.handleGetScene)

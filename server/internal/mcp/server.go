@@ -12,40 +12,66 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/generator"
 )
 
-// Server MCP服务器
 type Server struct {
 	repo      *repository.Repository
 	generator *generator.Generator
 	tools     []Tool
+	resources []Resource
+	prompts   []Prompt
 }
 
-// Tool MCP工具定义
+type Resource struct {
+	URI         string `json:"uri"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	MIMEType    string `json:"mimeType,omitempty"`
+}
+
+type ResourceContent struct {
+	URI      string `json:"uri"`
+	MIMEType string `json:"mimeType,omitempty"`
+	Text     string `json:"text,omitempty"`
+}
+
+type Prompt struct {
+	Name        string           `json:"name"`
+	Description string           `json:"description,omitempty"`
+	Arguments   []PromptArgument `json:"arguments,omitempty"`
+}
+
+type PromptArgument struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Required    bool   `json:"required,omitempty"`
+}
+
+type PromptMessage struct {
+	Role    string  `json:"role"`
+	Content Content `json:"content"`
+}
+
 type Tool struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
 	InputSchema interface{} `json:"inputSchema"`
 }
 
-// ToolCall 工具调用
 type ToolCall struct {
 	Name      string          `json:"name"`
 	Arguments json.RawMessage `json:"arguments"`
 }
 
-// ToolResult 工具结果
 type ToolResult struct {
 	Content []Content `json:"content"`
 	IsError bool      `json:"isError,omitempty"`
 }
 
-// Content 内容
 type Content struct {
 	Type string      `json:"type"`
 	Text string      `json:"text,omitempty"`
 	Data interface{} `json:"data,omitempty"`
 }
 
-// MCPRequest MCP请求
 type MCPRequest struct {
 	JSONRPC string      `json:"jsonrpc"`
 	ID      interface{} `json:"id"`
@@ -53,7 +79,6 @@ type MCPRequest struct {
 	Params  interface{} `json:"params,omitempty"`
 }
 
-// MCPResponse MCP响应
 type MCPResponse struct {
 	JSONRPC string      `json:"jsonrpc"`
 	ID      interface{} `json:"id"`
@@ -61,26 +86,24 @@ type MCPResponse struct {
 	Error   *MCPError   `json:"error,omitempty"`
 }
 
-// MCPError MCP错误
 type MCPError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-// New 创建MCP服务器
 func New(repo *repository.Repository, gen *generator.Generator) *Server {
 	s := &Server{
 		repo:      repo,
 		generator: gen,
 	}
 	s.tools = s.initTools()
+	s.resources = s.initResources()
+	s.prompts = s.initPrompts()
 	return s
 }
 
-// initTools 初始化工具集
 func (s *Server) initTools() []Tool {
 	return []Tool{
-		// 场景工具
 		{
 			Name:        "list_scenes",
 			Description: "获取所有场景列表",
@@ -106,7 +129,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除场景",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "场景ID"}}, "required": []string{"id"}},
 		},
-		// NPC工具
 		{
 			Name:        "list_npcs",
 			Description: "获取所有NPC列表",
@@ -132,7 +154,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除NPC",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "NPC ID"}}, "required": []string{"id"}},
 		},
-		// 智能体工具
 		{
 			Name:        "list_agents",
 			Description: "获取所有智能体列表",
@@ -158,7 +179,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除智能体",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "智能体ID"}}, "required": []string{"id"}},
 		},
-		// 商店工具
 		{
 			Name:        "list_shops",
 			Description: "获取所有商店列表",
@@ -184,7 +204,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除商店",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "商店ID"}}, "required": []string{"id"}},
 		},
-		// 道具工具
 		{
 			Name:        "list_items",
 			Description: "获取所有道具列表",
@@ -210,7 +229,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除道具",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "道具ID"}}, "required": []string{"id"}},
 		},
-		// 任务工具
 		{
 			Name:        "list_tasks",
 			Description: "获取所有任务列表",
@@ -236,7 +254,6 @@ func (s *Server) initTools() []Tool {
 			Description: "删除任务",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"id": map[string]interface{}{"type": "number", "description": "任务ID"}}, "required": []string{"id"}},
 		},
-		// 流程工具
 		{
 			Name:        "list_flows",
 			Description: "获取所有流程列表",
@@ -247,7 +264,6 @@ func (s *Server) initTools() []Tool {
 			Description: "创建新流程",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"name": map[string]interface{}{"type": "string", "description": "流程名称"}, "code": map[string]interface{}{"type": "string", "description": "流程代码"}, "description": map[string]interface{}{"type": "string", "description": "描述"}}, "required": []string{"name", "code"}},
 		},
-		// 提示词模板工具
 		{
 			Name:        "list_templates",
 			Description: "获取所有提示词模板列表",
@@ -258,13 +274,11 @@ func (s *Server) initTools() []Tool {
 			Description: "创建新提示词模板",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"name": map[string]interface{}{"type": "string", "description": "模板名称"}, "code": map[string]interface{}{"type": "string", "description": "模板代码"}, "content": map[string]interface{}{"type": "string", "description": "模板内容"}}, "required": []string{"name", "code", "content"}},
 		},
-		// 生成工具
 		{
 			Name:        "generate_config",
 			Description: "使用AI生成游戏配置（NPC、场景、任务等）",
 			InputSchema: map[string]interface{}{"type": "object", "properties": map[string]interface{}{"type": map[string]interface{}{"type": "string", "description": "生成类型: npc, scene, task, shop, item, agent, dialogue, flow"}, "description": map[string]interface{}{"type": "string", "description": "描述/需求"}, "action": map[string]interface{}{"type": "string", "description": "操作: create, complete, expand"}}, "required": []string{"type", "description"}},
 		},
-		// 数据工具
 		{
 			Name:        "export_data",
 			Description: "导出所有游戏数据",
@@ -278,12 +292,71 @@ func (s *Server) initTools() []Tool {
 	}
 }
 
-// GetTools 获取工具列表
+func (s *Server) initResources() []Resource {
+	return []Resource{
+		{URI: "game_state://scenes", Name: "scenes", Description: "所有游戏场景列表", MIMEType: "application/json"},
+		{URI: "game_state://npcs", Name: "npcs", Description: "所有NPC列表", MIMEType: "application/json"},
+		{URI: "game_state://agents", Name: "agents", Description: "所有智能体列表", MIMEType: "application/json"},
+		{URI: "game_state://shops", Name: "shops", Description: "所有商店列表", MIMEType: "application/json"},
+		{URI: "game_state://items", Name: "items", Description: "所有道具列表", MIMEType: "application/json"},
+		{URI: "game_state://tasks", Name: "tasks", Description: "所有任务列表", MIMEType: "application/json"},
+		{URI: "game_state://overview", Name: "overview", Description: "游戏数据统计概览", MIMEType: "application/json"},
+	}
+}
+
+func (s *Server) initPrompts() []Prompt {
+	return []Prompt{
+		{
+			Name:        "npc_personality",
+			Description: "生成NPC人格设定提示词",
+			Arguments: []PromptArgument{
+				{Name: "name", Description: "NPC名称", Required: true},
+				{Name: "title", Description: "NPC称号", Required: false},
+				{Name: "background", Description: "背景故事描述", Required: false},
+			},
+		},
+		{
+			Name:        "npc_dialogue",
+			Description: "生成NPC对话风格提示词",
+			Arguments: []PromptArgument{
+				{Name: "name", Description: "NPC名称", Required: true},
+				{Name: "personality", Description: "人格特征", Required: false},
+				{Name: "scenario", Description: "对话场景", Required: false},
+			},
+		},
+		{
+			Name:        "scene_description",
+			Description: "生成场景描述提示词",
+			Arguments: []PromptArgument{
+				{Name: "name", Description: "场景名称", Required: true},
+				{Name: "type", Description: "场景类型", Required: false},
+				{Name: "atmosphere", Description: "氛围描述", Required: false},
+			},
+		},
+		{
+			Name:        "quest_design",
+			Description: "生成任务设计提示词",
+			Arguments: []PromptArgument{
+				{Name: "theme", Description: "任务主题", Required: true},
+				{Name: "difficulty", Description: "难度等级", Required: false},
+				{Name: "npc_involved", Description: "涉及的NPC", Required: false},
+			},
+		},
+	}
+}
+
 func (s *Server) GetTools() []Tool {
 	return s.tools
 }
 
-// HandleRequest 处理MCP请求
+func (s *Server) GetResources() []Resource {
+	return s.resources
+}
+
+func (s *Server) GetPrompts() []Prompt {
+	return s.prompts
+}
+
 func (s *Server) HandleRequest(ctx context.Context, req MCPRequest) MCPResponse {
 	switch req.Method {
 	case "initialize":
@@ -292,6 +365,14 @@ func (s *Server) HandleRequest(ctx context.Context, req MCPRequest) MCPResponse 
 		return s.handleToolsList(req)
 	case "tools/call":
 		return s.handleToolsCall(ctx, req)
+	case "resources/list":
+		return s.handleResourcesList(req)
+	case "resources/read":
+		return s.handleResourcesRead(ctx, req)
+	case "prompts/list":
+		return s.handlePromptsList(req)
+	case "prompts/get":
+		return s.handlePromptsGet(ctx, req)
 	default:
 		return MCPResponse{
 			JSONRPC: "2.0",
@@ -304,7 +385,6 @@ func (s *Server) HandleRequest(ctx context.Context, req MCPRequest) MCPResponse 
 	}
 }
 
-// handleInitialize 处理初始化
 func (s *Server) handleInitialize(req MCPRequest) MCPResponse {
 	return MCPResponse{
 		JSONRPC: "2.0",
@@ -312,17 +392,18 @@ func (s *Server) handleInitialize(req MCPRequest) MCPResponse {
 		Result: map[string]interface{}{
 			"protocolVersion": "2024-11-05",
 			"capabilities": map[string]interface{}{
-				"tools": map[string]interface{}{},
+				"tools":     map[string]interface{}{},
+				"resources": map[string]interface{}{},
+				"prompts":   map[string]interface{}{},
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "agentgame-mcp",
-				"version": "1.0.0",
+				"version": "1.1.0",
 			},
 		},
 	}
 }
 
-// handleToolsList 处理工具列表
 func (s *Server) handleToolsList(req MCPRequest) MCPResponse {
 	return MCPResponse{
 		JSONRPC: "2.0",
@@ -333,7 +414,6 @@ func (s *Server) handleToolsList(req MCPRequest) MCPResponse {
 	}
 }
 
-// handleToolsCall 处理工具调用
 func (s *Server) handleToolsCall(ctx context.Context, req MCPRequest) MCPResponse {
 	params, ok := req.Params.(map[string]interface{})
 	if !ok {
@@ -355,7 +435,248 @@ func (s *Server) handleToolsCall(ctx context.Context, req MCPRequest) MCPRespons
 	}
 }
 
-// callTool 调用工具
+func (s *Server) handleResourcesList(req MCPRequest) MCPResponse {
+	return MCPResponse{
+		JSONRPC: "2.0",
+		ID:      req.ID,
+		Result: map[string]interface{}{
+			"resources": s.resources,
+		},
+	}
+}
+
+func (s *Server) handleResourcesRead(ctx context.Context, req MCPRequest) MCPResponse {
+	params, ok := req.Params.(map[string]interface{})
+	if !ok {
+		return s.errorResponse(req.ID, -32602, "Invalid params")
+	}
+
+	uri, _ := params["uri"].(string)
+	if uri == "" {
+		return s.errorResponse(req.ID, -32602, "Missing uri parameter")
+	}
+
+	contents, err := s.readResource(ctx, uri)
+	if err != nil {
+		return s.errorResponse(req.ID, -32000, err.Error())
+	}
+
+	return MCPResponse{
+		JSONRPC: "2.0",
+		ID:      req.ID,
+		Result: map[string]interface{}{
+			"contents": contents,
+		},
+	}
+}
+
+func (s *Server) readResource(ctx context.Context, uri string) ([]ResourceContent, error) {
+	var data interface{}
+	var err error
+
+	switch uri {
+	case "game_state://scenes":
+		data, err = s.repo.GetScenes(ctx)
+	case "game_state://npcs":
+		data, err = s.repo.GetNPCs(ctx)
+	case "game_state://agents":
+		data, err = s.repo.GetAgents(ctx)
+	case "game_state://shops":
+		data, err = s.repo.GetShops(ctx)
+	case "game_state://items":
+		data, err = s.repo.GetItems(ctx)
+	case "game_state://tasks":
+		data, err = s.repo.GetTasks(ctx)
+	case "game_state://overview":
+		data, err = s.getOverviewData(ctx)
+	default:
+		return nil, fmt.Errorf("unknown resource: %s", uri)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return []ResourceContent{
+		{URI: uri, MIMEType: "application/json", Text: string(jsonData)},
+	}, nil
+}
+
+func (s *Server) getOverviewData(ctx context.Context) (map[string]interface{}, error) {
+	scenes, _ := s.repo.GetScenes(ctx)
+	npcs, _ := s.repo.GetNPCs(ctx)
+	agents, _ := s.repo.GetAgents(ctx)
+	shops, _ := s.repo.GetShops(ctx)
+	items, _ := s.repo.GetItems(ctx)
+	tasks, _ := s.repo.GetTasks(ctx)
+	flows, _ := s.repo.GetFlows(ctx)
+
+	return map[string]interface{}{
+		"scene_count": len(scenes),
+		"npc_count":   len(npcs),
+		"agent_count": len(agents),
+		"shop_count":  len(shops),
+		"item_count":  len(items),
+		"task_count":  len(tasks),
+		"flow_count":  len(flows),
+		"scenes":      scenes,
+		"npcs":        npcs,
+		"agents":      agents,
+	}, nil
+}
+
+func (s *Server) handlePromptsList(req MCPRequest) MCPResponse {
+	return MCPResponse{
+		JSONRPC: "2.0",
+		ID:      req.ID,
+		Result: map[string]interface{}{
+			"prompts": s.prompts,
+		},
+	}
+}
+
+func (s *Server) handlePromptsGet(ctx context.Context, req MCPRequest) MCPResponse {
+	params, ok := req.Params.(map[string]interface{})
+	if !ok {
+		return s.errorResponse(req.ID, -32602, "Invalid params")
+	}
+
+	name, _ := params["name"].(string)
+	if name == "" {
+		return s.errorResponse(req.ID, -32602, "Missing name parameter")
+	}
+
+	args, _ := params["arguments"].(map[string]interface{})
+
+	messages, err := s.getPromptMessages(ctx, name, args)
+	if err != nil {
+		return s.errorResponse(req.ID, -32000, err.Error())
+	}
+
+	return MCPResponse{
+		JSONRPC: "2.0",
+		ID:      req.ID,
+		Result: map[string]interface{}{
+			"description": s.getPromptDescription(name),
+			"messages":    messages,
+		},
+	}
+}
+
+func (s *Server) getPromptDescription(name string) string {
+	for _, p := range s.prompts {
+		if p.Name == name {
+			return p.Description
+		}
+	}
+	return ""
+}
+
+func (s *Server) getPromptMessages(ctx context.Context, name string, args map[string]interface{}) ([]PromptMessage, error) {
+	switch name {
+	case "npc_personality":
+		npcName := getString(args, "name")
+		if npcName == "" {
+			return nil, fmt.Errorf("name is required")
+		}
+		title := getString(args, "title")
+		background := getString(args, "background")
+
+		systemMsg := "你是一个游戏角色人格设定专家。请为以下NPC创建详细的人格设定。"
+		userMsg := fmt.Sprintf("请为NPC \"%s\" 创建人格设定。", npcName)
+		if title != "" {
+			userMsg += fmt.Sprintf(" 称号: \"%s\"。", title)
+		}
+		if background != "" {
+			userMsg += fmt.Sprintf(" 背景: %s。", background)
+		}
+		userMsg += " 包含性格特征、说话风格、行为模式、人际关系倾向。"
+
+		return []PromptMessage{
+			{Role: "system", Content: Content{Type: "text", Text: systemMsg}},
+			{Role: "user", Content: Content{Type: "text", Text: userMsg}},
+		}, nil
+
+	case "npc_dialogue":
+		npcName := getString(args, "name")
+		if npcName == "" {
+			return nil, fmt.Errorf("name is required")
+		}
+		personality := getString(args, "personality")
+		scenario := getString(args, "scenario")
+
+		systemMsg := fmt.Sprintf("你是NPC \"%s\"。请以该角色的身份进行对话。", npcName)
+		if personality != "" {
+			systemMsg += fmt.Sprintf(" 你的人格特征: %s。", personality)
+		}
+		systemMsg += " 保持角色一致性，回复简短自然。"
+
+		userMsg := "玩家走近了你。"
+		if scenario != "" {
+			userMsg = scenario
+		}
+
+		return []PromptMessage{
+			{Role: "system", Content: Content{Type: "text", Text: systemMsg}},
+			{Role: "user", Content: Content{Type: "text", Text: userMsg}},
+		}, nil
+
+	case "scene_description":
+		sceneName := getString(args, "name")
+		if sceneName == "" {
+			return nil, fmt.Errorf("name is required")
+		}
+		sceneType := getString(args, "type")
+		atmosphere := getString(args, "atmosphere")
+
+		systemMsg := "你是一个游戏场景描述专家。请为游戏场景创建生动的描述文字。"
+		userMsg := fmt.Sprintf("请为场景 \"%s\" 创建详细描述。", sceneName)
+		if sceneType != "" {
+			userMsg += fmt.Sprintf(" 类型: %s。", sceneType)
+		}
+		if atmosphere != "" {
+			userMsg += fmt.Sprintf(" 氛围: %s。", atmosphere)
+		}
+		userMsg += " 包含视觉、听觉、嗅觉等感官描述，200字以内。"
+
+		return []PromptMessage{
+			{Role: "system", Content: Content{Type: "text", Text: systemMsg}},
+			{Role: "user", Content: Content{Type: "text", Text: userMsg}},
+		}, nil
+
+	case "quest_design":
+		theme := getString(args, "theme")
+		if theme == "" {
+			return nil, fmt.Errorf("theme is required")
+		}
+		difficulty := getString(args, "difficulty")
+		npcInvolved := getString(args, "npc_involved")
+
+		systemMsg := "你是一个游戏任务设计专家。请设计有趣的游戏任务。"
+		userMsg := fmt.Sprintf("请设计一个主题为\"%s\"的游戏任务。", theme)
+		if difficulty != "" {
+			userMsg += fmt.Sprintf(" 难度: %s。", difficulty)
+		}
+		if npcInvolved != "" {
+			userMsg += fmt.Sprintf(" 涉及NPC: %s。", npcInvolved)
+		}
+		userMsg += " 包含任务目标、步骤、奖励、对话片段。"
+
+		return []PromptMessage{
+			{Role: "system", Content: Content{Type: "text", Text: systemMsg}},
+			{Role: "user", Content: Content{Type: "text", Text: userMsg}},
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown prompt: %s", name)
+	}
+}
+
 func (s *Server) callTool(ctx context.Context, name string, args map[string]interface{}) (*ToolResult, error) {
 	switch name {
 	case "list_scenes":
@@ -455,7 +776,6 @@ func (s *Server) callTool(ctx context.Context, name string, args map[string]inte
 	}
 }
 
-// errorResponse 创建错误响应
 func (s *Server) errorResponse(id interface{}, code int, message string) MCPResponse {
 	return MCPResponse{
 		JSONRPC: "2.0",
@@ -467,7 +787,6 @@ func (s *Server) errorResponse(id interface{}, code int, message string) MCPResp
 	}
 }
 
-// successResult 创建成功结果
 func (s *Server) successResult(data interface{}) *ToolResult {
 	jsonData, _ := json.MarshalIndent(data, "", "  ")
 	return &ToolResult{
@@ -477,7 +796,6 @@ func (s *Server) successResult(data interface{}) *ToolResult {
 	}
 }
 
-// errorResult 创建错误结果
 func (s *Server) errorResult(err error) *ToolResult {
 	return &ToolResult{
 		Content: []Content{
@@ -486,8 +804,6 @@ func (s *Server) errorResult(err error) *ToolResult {
 		IsError: true,
 	}
 }
-
-// ==================== 场景操作 ====================
 
 func (s *Server) listScenes(ctx context.Context) (*ToolResult, error) {
 	scenes, err := s.repo.GetScenes(ctx)
@@ -549,8 +865,6 @@ func (s *Server) deleteScene(ctx context.Context, id uint) (*ToolResult, error) 
 	return s.successResult(map[string]string{"message": "Scene deleted"}), nil
 }
 
-// ==================== NPC操作 ====================
-
 func (s *Server) listNPCs(ctx context.Context) (*ToolResult, error) {
 	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
@@ -606,8 +920,6 @@ func (s *Server) deleteNPC(ctx context.Context, id uint) (*ToolResult, error) {
 	}
 	return s.successResult(map[string]string{"message": "NPC deleted"}), nil
 }
-
-// ==================== 智能体操作 ====================
 
 func (s *Server) listAgents(ctx context.Context) (*ToolResult, error) {
 	agents, err := s.repo.GetAgents(ctx)
@@ -665,8 +977,6 @@ func (s *Server) deleteAgent(ctx context.Context, id uint) (*ToolResult, error) 
 	return s.successResult(map[string]string{"message": "Agent deleted"}), nil
 }
 
-// ==================== 商店操作 ====================
-
 func (s *Server) listShops(ctx context.Context) (*ToolResult, error) {
 	shops, err := s.repo.GetShops(ctx)
 	if err != nil {
@@ -719,8 +1029,6 @@ func (s *Server) deleteShop(ctx context.Context, id uint) (*ToolResult, error) {
 	}
 	return s.successResult(map[string]string{"message": "Shop deleted"}), nil
 }
-
-// ==================== 道具操作 ====================
 
 func (s *Server) listItems(ctx context.Context) (*ToolResult, error) {
 	items, err := s.repo.GetItems(ctx)
@@ -778,8 +1086,6 @@ func (s *Server) deleteItem(ctx context.Context, id uint) (*ToolResult, error) {
 	return s.successResult(map[string]string{"message": "Item deleted"}), nil
 }
 
-// ==================== 任务操作 ====================
-
 func (s *Server) listTasks(ctx context.Context) (*ToolResult, error) {
 	tasks, err := s.repo.GetTasks(ctx)
 	if err != nil {
@@ -836,8 +1142,6 @@ func (s *Server) deleteTask(ctx context.Context, id uint) (*ToolResult, error) {
 	return s.successResult(map[string]string{"message": "Task deleted"}), nil
 }
 
-// ==================== 流程操作 ====================
-
 func (s *Server) listFlows(ctx context.Context) (*ToolResult, error) {
 	flows, err := s.repo.GetFlows(ctx)
 	if err != nil {
@@ -857,8 +1161,6 @@ func (s *Server) createFlow(ctx context.Context, args map[string]interface{}) (*
 	}
 	return s.successResult(flow), nil
 }
-
-// ==================== 模板操作 ====================
 
 func (s *Server) listTemplates(ctx context.Context) (*ToolResult, error) {
 	templates, err := s.repo.GetTemplates(ctx)
@@ -880,8 +1182,6 @@ func (s *Server) createTemplate(ctx context.Context, args map[string]interface{}
 	return s.successResult(template), nil
 }
 
-// ==================== 生成操作 ====================
-
 func (s *Server) generateConfig(ctx context.Context, args map[string]interface{}) (*ToolResult, error) {
 	if s.generator == nil || !s.generator.IsEnabled() {
 		return s.errorResult(fmt.Errorf("generator not enabled")), nil
@@ -902,8 +1202,6 @@ func (s *Server) generateConfig(ctx context.Context, args map[string]interface{}
 
 	return s.successResult(resp), nil
 }
-
-// ==================== 数据操作 ====================
 
 func (s *Server) exportData(ctx context.Context) (*ToolResult, error) {
 	data := make(map[string]interface{})
@@ -939,19 +1237,17 @@ func (s *Server) getGameStats(ctx context.Context) (*ToolResult, error) {
 	flows, _ := s.repo.GetFlows(ctx)
 
 	stats := map[string]interface{}{
-		"scenes":  len(scenes),
-		"npcs":    len(npcs),
-		"agents":  len(agents),
-		"shops":   len(shops),
-		"items":   len(items),
-		"tasks":   len(tasks),
-		"flows":   len(flows),
+		"scenes": len(scenes),
+		"npcs":   len(npcs),
+		"agents": len(agents),
+		"shops":  len(shops),
+		"items":  len(items),
+		"tasks":  len(tasks),
+		"flows":  len(flows),
 	}
 
 	return s.successResult(stats), nil
 }
-
-// ==================== 辅助函数 ====================
 
 func getString(args map[string]interface{}, key string) string {
 	if v, ok := args[key].(string); ok {
@@ -967,7 +1263,6 @@ func getInt(args map[string]interface{}, key string, defaultVal int) int {
 	return defaultVal
 }
 
-// HandleHTTP 处理HTTP请求
 func (s *Server) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -995,7 +1290,6 @@ func (s *Server) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-// Log 工具调用日志
 func (s *Server) Log(format string, args ...interface{}) {
 	log.Printf("[MCP] "+format, args...)
 }

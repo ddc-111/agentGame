@@ -388,6 +388,113 @@ func TestMCPRestCall(t *testing.T) {
 	t.Log("MCP REST调用测试通过")
 }
 
+// TestMCPRestResources 测试MCP REST资源列表接口
+func TestMCPRestResources(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/mcp/resources")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	resources, ok := result["resources"].([]interface{})
+	if !ok {
+		t.Fatal("resources 字段格式错误")
+	}
+
+	if len(resources) == 0 {
+		t.Error("资源列表为空")
+	}
+	t.Logf("MCP REST资源列表测试通过, 资源数量: %d", len(resources))
+}
+
+// TestMCPRestResourceRead 测试MCP REST资源读取接口
+func TestMCPRestResourceRead(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/mcp/resources/read?uri=game_state://scenes")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	t.Log("MCP REST资源读取测试通过")
+}
+
+// TestMCPRestPrompts 测试MCP REST提示词列表接口
+func TestMCPRestPrompts(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/mcp/prompts")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	prompts, ok := result["prompts"].([]interface{})
+	if !ok {
+		t.Fatal("prompts 字段格式错误")
+	}
+
+	if len(prompts) == 0 {
+		t.Error("提示词列表为空")
+	}
+	t.Logf("MCP REST提示词列表测试通过, 提示词数量: %d", len(prompts))
+}
+
+// TestMCPRestPromptGet 测试MCP REST提示词获取接口
+func TestMCPRestPromptGet(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := map[string]interface{}{
+		"name": "npc_personality",
+		"arguments": map[string]interface{}{
+			"name": "测试NPC",
+		},
+	}
+
+	resp, err := makeRequest("POST", ts.URL+"/api/mcp/prompts/get", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	t.Log("MCP REST提示词获取测试通过")
+}
+
 // TestMCPInvalidMethod 测试MCP无效方法
 func TestMCPInvalidMethod(t *testing.T) {
 	ts := setupTestServer()
@@ -448,4 +555,369 @@ func TestMCPInvalidTool(t *testing.T) {
 		t.Error("不存在的工具应返回错误")
 	}
 	t.Log("MCP不存在工具测试通过")
+}
+
+// TestMCPResourcesList 测试MCP资源列表
+func TestMCPResourcesList(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("resources/list", nil)
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	resources, ok := res["resources"].([]interface{})
+	if !ok {
+		t.Fatal("resources 字段格式错误")
+	}
+
+	if len(resources) == 0 {
+		t.Error("资源列表为空")
+	}
+
+	for _, res := range resources {
+		resMap, ok := res.(map[string]interface{})
+		if !ok {
+			t.Error("资源格式错误")
+			continue
+		}
+		if _, ok := resMap["uri"]; !ok {
+			t.Error("资源缺少 uri 字段")
+		}
+		if _, ok := resMap["name"]; !ok {
+			t.Error("资源缺少 name 字段")
+		}
+	}
+	t.Logf("MCP资源列表测试通过, 资源数量: %d", len(resources))
+}
+
+// TestMCPResourcesReadScenes 测试MCP读取场景资源
+func TestMCPResourcesReadScenes(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("resources/read", map[string]interface{}{
+		"uri": "game_state://scenes",
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	contents, ok := res["contents"].([]interface{})
+	if !ok {
+		t.Fatal("contents 字段格式错误")
+	}
+
+	if len(contents) == 0 {
+		t.Error("contents 为空")
+	}
+
+	contentItem := contents[0].(map[string]interface{})
+	if contentItem["uri"] != "game_state://scenes" {
+		t.Errorf("期望 uri=game_state://scenes, 得到 %v", contentItem["uri"])
+	}
+	if contentItem["mimeType"] != "application/json" {
+		t.Errorf("期望 mimeType=application/json, 得到 %v", contentItem["mimeType"])
+	}
+	t.Log("MCP读取场景资源测试通过")
+}
+
+// TestMCPResourcesReadOverview 测试MCP读取概览资源
+func TestMCPResourcesReadOverview(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("resources/read", map[string]interface{}{
+		"uri": "game_state://overview",
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	contents, ok := res["contents"].([]interface{})
+	if !ok {
+		t.Fatal("contents 字段格式错误")
+	}
+
+	if len(contents) == 0 {
+		t.Error("contents 为空")
+	}
+	t.Log("MCP读取概览资源测试通过")
+}
+
+// TestMCPResourcesReadInvalid 测试MCP读取无效资源
+func TestMCPResourcesReadInvalid(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("resources/read", map[string]interface{}{
+		"uri": "game_state://nonexistent",
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if result["error"] == nil {
+		t.Error("无效资源应返回错误")
+	}
+	t.Log("MCP读取无效资源测试通过")
+}
+
+// TestMCPPromptsList 测试MCP提示词列表
+func TestMCPPromptsList(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("prompts/list", nil)
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	prompts, ok := res["prompts"].([]interface{})
+	if !ok {
+		t.Fatal("prompts 字段格式错误")
+	}
+
+	if len(prompts) == 0 {
+		t.Error("提示词列表为空")
+	}
+
+	for _, p := range prompts {
+		pMap, ok := p.(map[string]interface{})
+		if !ok {
+			t.Error("提示词格式错误")
+			continue
+		}
+		if _, ok := pMap["name"]; !ok {
+			t.Error("提示词缺少 name 字段")
+		}
+	}
+	t.Logf("MCP提示词列表测试通过, 提示词数量: %d", len(prompts))
+}
+
+// TestMCPPromptsGetPersonality 测试MCP获取NPC人格提示词
+func TestMCPPromptsGetPersonality(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("prompts/get", map[string]interface{}{
+		"name": "npc_personality",
+		"arguments": map[string]interface{}{
+			"name":     "铁匠张三",
+			"title":    "大师铁匠",
+			"background": "固执但心地善良",
+		},
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	messages, ok := res["messages"].([]interface{})
+	if !ok {
+		t.Fatal("messages 字段格式错误")
+	}
+
+	if len(messages) == 0 {
+		t.Error("messages 为空")
+	}
+	t.Log("MCP获取NPC人格提示词测试通过")
+}
+
+// TestMCPPromptsGetScene 测试MCP获取场景描述提示词
+func TestMCPPromptsGetScene(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("prompts/get", map[string]interface{}{
+		"name": "scene_description",
+		"arguments": map[string]interface{}{
+			"name": "王城广场",
+			"type": "城镇中心",
+		},
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	messages, ok := res["messages"].([]interface{})
+	if !ok {
+		t.Fatal("messages 字段格式错误")
+	}
+
+	if len(messages) == 0 {
+		t.Error("messages 为空")
+	}
+	t.Log("MCP获取场景描述提示词测试通过")
+}
+
+// TestMCPPromptsGetInvalid 测试MCP获取无效提示词
+func TestMCPPromptsGetInvalid(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("prompts/get", map[string]interface{}{
+		"name":      "nonexistent_prompt",
+		"arguments": map[string]interface{}{},
+	})
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if result["error"] == nil {
+		t.Error("无效提示词应返回错误")
+	}
+	t.Log("MCP获取无效提示词测试通过")
+}
+
+// TestMCPInitializeCapabilities 测试MCP初始化返回的capabilities包含resources和prompts
+func TestMCPInitializeCapabilities(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	reqBody := createMCPRequestBody("initialize", nil)
+
+	resp, err := makeRequest("POST", ts.URL+"/mcp", reqBody)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	res, ok := result["result"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 result 字段格式错误")
+	}
+
+	caps, ok := res["capabilities"].(map[string]interface{})
+	if !ok {
+		t.Fatal("capabilities 字段格式错误")
+	}
+
+	if _, ok := caps["tools"]; !ok {
+		t.Error("capabilities 缺少 tools 字段")
+	}
+	if _, ok := caps["resources"]; !ok {
+		t.Error("capabilities 缺少 resources 字段")
+	}
+	if _, ok := caps["prompts"]; !ok {
+		t.Error("capabilities 缺少 prompts 字段")
+	}
+	t.Log("MCP初始化capabilities测试通过")
 }
