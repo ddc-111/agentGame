@@ -11,7 +11,7 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/agent"
 	"github.com/ddc-111/agentGame/server/internal/config"
 	"github.com/ddc-111/agentGame/server/internal/database"
-	"github.com/ddc-111/agentGame/server/internal/database/models"
+	"github.com/ddc-111/agentGame/server/internal/database/migrations"
 	"github.com/ddc-111/agentGame/server/internal/database/repository"
 	"github.com/ddc-111/agentGame/server/internal/game"
 	"github.com/ddc-111/agentGame/server/internal/generator"
@@ -52,30 +52,9 @@ func NewServer(cfg *config.Config) *Server {
 		log.Fatalf("Failed to connect database: %v", err)
 	}
 
-	// 自动迁移
-	err = db.AutoMigrate(
-		&models.Scene{},
-		&models.SceneNPC{},
-		&models.Portal{},
-		&models.NPC{},
-		&models.Agent{},
-		&models.LLMProvider{},
-		&models.PromptTemplate{},
-		&models.Shop{},
-		&models.ShopItem{},
-		&models.Item{},
-		&models.Task{},
-		&models.Flow{},
-		&models.GameConfig{},
-		&models.Player{},
-		&models.Conversation{},
-		&models.SaveGame{},
-		&models.Skill{},
-		&models.Achievement{},
-		&models.PlayerAchievement{},
-		&models.GMUser{},
-	)
-	if err != nil {
+	migrator := database.NewMigrator(db.DB)
+	migrator.Register(migrations.All()...)
+	if err := migrator.Up(); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 

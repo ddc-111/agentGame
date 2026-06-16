@@ -11,8 +11,8 @@ import (
 )
 
 type Config struct {
-	Driver   string `yaml:"driver"`   // sqlite 或 mysql
-	DSN      string `yaml:"dsn"`      // 数据库连接字符串
+	Driver   string `yaml:"driver"`
+	DSN      string `yaml:"dsn"`
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
 	User     string `yaml:"user"`
@@ -33,7 +33,6 @@ func New(cfg Config) (*Database, error) {
 		if dsn == "" {
 			dsn = "game.db"
 		}
-		// 使用纯Go实现的SQLite驱动，无需CGO
 		dialector = sqlite.Open(dsn)
 
 	case "mysql":
