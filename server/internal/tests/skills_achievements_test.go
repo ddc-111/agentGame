@@ -495,3 +495,59 @@ func TestNPCBehaviorSerialization(t *testing.T) {
 		t.Errorf("Expected 1 schedule entry, got %d", len(deserialized.Schedule))
 	}
 }
+
+func TestCombatSystem_SharedRNG_Attack(t *testing.T) {
+	cs := game.NewCombatSystem()
+
+	state := cs.StartCombat(1, "wolf", 100, 50)
+
+	for i := 0; i < 10 && state.IsActive; i++ {
+		cs.Attack(state, 20)
+	}
+
+	if len(state.Log) == 0 {
+		t.Error("Expected combat log entries")
+	}
+
+	for _, entry := range state.Log {
+		if entry == "" {
+			t.Error("Expected non-empty log entry")
+		}
+	}
+}
+
+func TestCombatSystem_SharedRNG_DamageVariation(t *testing.T) {
+	cs := game.NewCombatSystem()
+
+	damages := make(map[int]bool)
+	for i := 0; i < 50; i++ {
+		state := cs.StartCombat(1, "wolf", 1000, 50)
+		prevHP := state.EnemyHP
+		cs.Attack(state, 20)
+		damage := prevHP - state.EnemyHP
+		if damage > 0 {
+			damages[damage] = true
+		}
+	}
+
+	if len(damages) < 2 {
+		t.Errorf("Expected damage variation, got only %d distinct values", len(damages))
+	}
+}
+
+func TestCombatSystem_SharedRNG_Flee(t *testing.T) {
+	cs := game.NewCombatSystem()
+
+	successCount := 0
+	for i := 0; i < 100; i++ {
+		state := cs.StartCombat(1, "wolf", 100, 50)
+		fled, _ := cs.Flee(state, 10)
+		if fled {
+			successCount++
+		}
+	}
+
+	if successCount == 0 || successCount == 100 {
+		t.Errorf("Expected mixed flee results, got %d/100 successes", successCount)
+	}
+}

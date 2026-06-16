@@ -8,7 +8,9 @@ import (
 )
 
 // CombatSystem 处理回合制战斗
-type CombatSystem struct{}
+type CombatSystem struct {
+	rng *rand.Rand
+}
 
 // CombatState 战斗状态
 type CombatState struct {
@@ -100,7 +102,9 @@ var enemyTemplates = map[string]EnemyConfig{
 
 // NewCombatSystem 创建战斗系统
 func NewCombatSystem() *CombatSystem {
-	return &CombatSystem{}
+	return &CombatSystem{
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 }
 
 // StartCombat 发起战斗
@@ -223,8 +227,7 @@ func (cs *CombatSystem) Flee(state *CombatState, playerLevel int) (bool, *Combat
 		baseChance = 90
 	}
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	if rng.Intn(100) < baseChance {
+	if cs.rng.Intn(100) < baseChance {
 		state.IsActive = false
 		state.Log = append(state.Log, "逃跑成功！")
 		return true, state
@@ -343,8 +346,7 @@ func (cs *CombatSystem) calculateDamage(atk, def int) int {
 	min := float64(baseDamage) - variation
 	max := float64(baseDamage) + variation
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	damage := int(min + rng.Float64()*(max-min))
+	damage := int(min + cs.rng.Float64()*(max-min))
 
 	if damage < 1 {
 		damage = 1
