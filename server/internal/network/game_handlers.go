@@ -237,6 +237,9 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 		return
 	}
 
+	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "talk")
+
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
@@ -250,15 +253,17 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	// 构建对话上下文（用于fallback）
 	messages := buildChatMessages(npc, player, history, req.Message)
 
+	dialogMood := s.behaviorMgr.GetDialogMood(behavior)
+	behaviorContext := s.behaviorMgr.GetDialogContext(behavior)
+
 	// 调用AI生成回复
 	var reply string
 	if s.chatMgr != nil && s.chatMgr.IsEnabled() && npc.Agent != nil && npc.Agent.SystemPrompt != "" {
-		// 使用真实AI对话
 		persona := &agent.NPCPersona{
 			Name:         npc.Name,
 			Title:        npc.Title,
 			Description:  npc.Description,
-			SystemPrompt: npc.Agent.SystemPrompt,
+			SystemPrompt: npc.Agent.SystemPrompt + "\n" + behaviorContext,
 		}
 		playerContext := buildPlayerContext(player)
 		chatHistory := convertToChatMessages(history)
@@ -315,11 +320,14 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	agent.DefaultMemoryStore.UpdatePlayerInfo(req.PlayerID, req.NPCID, player.Name, player.Level)
 
 	c.JSON(http.StatusOK, gin.H{
-		"reply":      reply,
-		"npc_name":   npc.Name,
-		"npc_title":  npc.Title,
-		"npc_avatar": npc.Avatar,
-		"ai_powered": s.chatMgr != nil && s.chatMgr.IsEnabled(),
+		"reply":        reply,
+		"npc_name":     npc.Name,
+		"npc_title":    npc.Title,
+		"npc_avatar":   npc.Avatar,
+		"ai_powered":   s.chatMgr != nil && s.chatMgr.IsEnabled(),
+		"npc_state":    behavior.State,
+		"npc_mood":     behavior.Mood,
+		"dialog_mood":  dialogMood,
 	})
 }
 
@@ -613,4 +621,90 @@ func buildUserMessage(player *models.Player, userMsg string) string {
 	}
 	contextMsg += "\n【玩家消息】" + userMsg
 	return contextMsg
+}
+
+func (s *Server) handleGetNPCBehavior(c *gin.Context) {
+	code := c.Param("code")
+	npc, err := s.repo.GetNPCByCode(code)
+	if err != nil {
+		respondError(c, http.StatusNotFound, NotFound("NPC"))
+		return
+	}
+
+	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": behavior,
+	})
+}
+
+func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
+	code := c.Param("code")
+	npc, err := s.repo.GetNPCByCode(code)
+	if err != nil {
+		respondError(c, http.StatusNotFound, NotFound("NPC"))
+		return
+	}
+
+	var req struct {
+		PlayerID uint   `json:"player_id"`
+		Action   string `json:"action"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateRequired(map[string]interface{}{"action": req.Action}),
+		validateStringIn("action", req.Action, []string{"talk", "gift", "attack"}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
+	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, req.Action)
+
+	scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+	if len(scenes) > 0 {
+		s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": behavior,
+	})
+}
+
+func (s *Server) handleGameTick(c *gin.Context) {
+	var req struct {
+		Hour int `json:"hour"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	if req.Hour < 0 || req.Hour > 23 {
+		respondError(c, http.StatusBadRequest, BadRequest("hour must be 0-23"))
+		return
+	}
+
+	s.behaviorMgr.UpdateAllBehaviors(s.behaviorStore, req.Hour)
+
+	npcs, _ := s.repo.GetNPCs()
+	for _, npc := range npcs {
+		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+		scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+		if len(scenes) > 0 {
+			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "tick processed",
+		"hour":    req.Hour,
+	})
 }

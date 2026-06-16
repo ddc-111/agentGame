@@ -636,3 +636,11 @@ func (r *Repository) GetConversationsByPair(playerID, npcID uint, limit int) ([]
 func (r *Repository) DeleteConversationsByPair(playerID, npcID uint) error {
 	return r.db.Where("player_id = ? AND npc_id = ?", playerID, npcID).Delete(&models.Conversation{}).Error
 }
+
+func (r *Repository) GetScenesByNPCID(npcID uint) ([]models.Scene, error) {
+	var scenes []models.Scene
+	err := r.db.Joins("JOIN scene_npcs ON scene_npcs.scene_id = scenes.id").
+		Where("scene_npcs.npc_id = ?", npcID).
+		Find(&scenes).Error
+	return scenes, err
+}

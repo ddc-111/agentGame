@@ -25,7 +25,18 @@ func (s *Server) handleCreateItem(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code}),
+		validateStringMaxLen("name", item.Name, 100),
+		validateStringMaxLen("code", item.Code, 50),
+		validateStringMaxLen("description", item.Description, 500),
+		validateStringMaxLen("icon", item.Icon, 255),
+		validateStringMaxLen("effect", item.Effect, 500),
+		validateJSON("effect", item.Effect, false),
+	)
+	if item.Category != "" {
+		errs = append(errs, validateStringIn("category", item.Category, []string{"medicine", "food", "tool", "weapon", "armor", "material"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return
@@ -44,7 +55,18 @@ func (s *Server) handleUpdateItem(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code}),
+		validateStringMaxLen("name", item.Name, 100),
+		validateStringMaxLen("code", item.Code, 50),
+		validateStringMaxLen("description", item.Description, 500),
+		validateStringMaxLen("icon", item.Icon, 255),
+		validateStringMaxLen("effect", item.Effect, 500),
+		validateJSON("effect", item.Effect, false),
+	)
+	if item.Category != "" {
+		errs = append(errs, validateStringIn("category", item.Category, []string{"medicine", "food", "tool", "weapon", "armor", "material"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return

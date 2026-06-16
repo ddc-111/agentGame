@@ -35,7 +35,18 @@ func (s *Server) handleCreateNPC(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code}),
+		validateStringMaxLen("name", npc.Name, 100),
+		validateStringMaxLen("code", npc.Code, 50),
+		validateStringMaxLen("description", npc.Description, 500),
+		validateStringMaxLen("avatar", npc.Avatar, 255),
+		validateStringMaxLen("sprite", npc.Sprite, 255),
+		validateStringMaxLen("behaviors", npc.Behaviors, 500),
+		validateStringMaxLen("schedule", npc.Schedule, 2000),
+		validateJSON("behaviors", npc.Behaviors, true),
+		validateJSON("schedule", npc.Schedule, true),
+	)
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return
@@ -54,7 +65,18 @@ func (s *Server) handleUpdateNPC(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code}),
+		validateStringMaxLen("name", npc.Name, 100),
+		validateStringMaxLen("code", npc.Code, 50),
+		validateStringMaxLen("description", npc.Description, 500),
+		validateStringMaxLen("avatar", npc.Avatar, 255),
+		validateStringMaxLen("sprite", npc.Sprite, 255),
+		validateStringMaxLen("behaviors", npc.Behaviors, 500),
+		validateStringMaxLen("schedule", npc.Schedule, 2000),
+		validateJSON("behaviors", npc.Behaviors, true),
+		validateJSON("schedule", npc.Schedule, true),
+	)
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return

@@ -35,7 +35,21 @@ func (s *Server) handleCreateShop(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code}),
+		validateStringMaxLen("name", shop.Name, 100),
+		validateStringMaxLen("code", shop.Code, 50),
+		validateStringMaxLen("description", shop.Description, 500),
+		validateStringMaxLen("owner_npc", shop.OwnerNPC, 50),
+		validateStringMaxLen("scene_code", shop.SceneCode, 50),
+		validateStringMaxLen("discount", shop.Discount, 200),
+		validateJSON("discount", shop.Discount, false),
+		validateTimeFormat("open_time", shop.OpenTime),
+		validateTimeFormat("close_time", shop.CloseTime),
+	)
+	if shop.Type != "" {
+		errs = append(errs, validateStringIn("type", shop.Type, []string{"general", "blacksmith", "armory", "potion", "food", "specialty"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return
@@ -54,7 +68,21 @@ func (s *Server) handleUpdateShop(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code}),
+		validateStringMaxLen("name", shop.Name, 100),
+		validateStringMaxLen("code", shop.Code, 50),
+		validateStringMaxLen("description", shop.Description, 500),
+		validateStringMaxLen("owner_npc", shop.OwnerNPC, 50),
+		validateStringMaxLen("scene_code", shop.SceneCode, 50),
+		validateStringMaxLen("discount", shop.Discount, 200),
+		validateJSON("discount", shop.Discount, false),
+		validateTimeFormat("open_time", shop.OpenTime),
+		validateTimeFormat("close_time", shop.CloseTime),
+	)
+	if shop.Type != "" {
+		errs = append(errs, validateStringIn("type", shop.Type, []string{"general", "blacksmith", "armory", "potion", "food", "specialty"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return

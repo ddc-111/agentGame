@@ -12,20 +12,23 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 	"github.com/ddc-111/agentGame/server/internal/database/repository"
+	"github.com/ddc-111/agentGame/server/internal/game"
 	"github.com/ddc-111/agentGame/server/internal/generator"
 	"github.com/ddc-111/agentGame/server/internal/mcp"
 )
 
 type Server struct {
-	cfg        *config.Config
-	router     *gin.Engine
-	http       *http.Server
-	db         *database.Database
-	repo       *repository.Repository
-	generator  *generator.Generator
-	mcp        *mcp.Server
-	chatMgr    *agent.ChatManager
-	hub        *Hub
+	cfg          *config.Config
+	router       *gin.Engine
+	http         *http.Server
+	db           *database.Database
+	repo         *repository.Repository
+	generator    *generator.Generator
+	mcp          *mcp.Server
+	chatMgr      *agent.ChatManager
+	hub          *Hub
+	behaviorMgr  *game.NPCBehaviorManager
+	behaviorStore *game.NPCBehaviorStore
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -104,14 +107,16 @@ func NewServer(cfg *config.Config) *Server {
 	router := gin.Default()
 
 	s := &Server{
-		cfg:       cfg,
-		router:    router,
-		db:        db,
-		repo:      repo,
-		generator: gen,
-		mcp:       mcpServer,
-		chatMgr:   chatMgr,
-		hub:       hub,
+		cfg:           cfg,
+		router:        router,
+		db:            db,
+		repo:          repo,
+		generator:     gen,
+		mcp:           mcpServer,
+		chatMgr:       chatMgr,
+		hub:           hub,
+		behaviorMgr:   game.NewNPCBehaviorManager(),
+		behaviorStore: game.NewNPCBehaviorStore(),
 	}
 
 	s.setupRoutes()
@@ -243,6 +248,11 @@ func (s *Server) setupRoutes() {
 		api.GET("/game/scene/:code", s.handleGetSceneByCode)
 		api.GET("/game/npc/:code", s.handleGetNPCByCode)
 		api.GET("/game/shop/:code/items", s.handleGetShopItems)
+		api.POST("/game/tick", s.handleGameTick)
+
+		// NPC行为API
+		api.GET("/npc/:code/behavior", s.handleGetNPCBehavior)
+		api.POST("/npc/:code/behavior/event", s.handleNPCBehaviorEvent)
 
 		// 玩家API
 		api.POST("/player/create", s.handleCreatePlayer)

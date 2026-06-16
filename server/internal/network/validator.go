@@ -1,8 +1,10 @@
 package network
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -75,6 +77,38 @@ func validateStringMaxLen(field, val string, maxLen int) ValidationErrors {
 	var errs ValidationErrors
 	if len(val) > maxLen {
 		errs = append(errs, ValidationError{Field: field, Message: fmt.Sprintf("must be at most %d characters", maxLen)})
+	}
+	return errs
+}
+
+func validateJSON(field, val string, expectArray bool) ValidationErrors {
+	var errs ValidationErrors
+	if val == "" {
+		return errs
+	}
+	if expectArray {
+		var arr []interface{}
+		if err := json.Unmarshal([]byte(val), &arr); err != nil {
+			errs = append(errs, ValidationError{Field: field, Message: "must be a valid JSON array"})
+		}
+	} else {
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(val), &obj); err != nil {
+			errs = append(errs, ValidationError{Field: field, Message: "must be a valid JSON object"})
+		}
+	}
+	return errs
+}
+
+var timePattern = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
+
+func validateTimeFormat(field, val string) ValidationErrors {
+	var errs ValidationErrors
+	if val == "" {
+		return errs
+	}
+	if !timePattern.MatchString(val) {
+		errs = append(errs, ValidationError{Field: field, Message: "must be in HH:MM format (00:00-23:59)"})
 	}
 	return errs
 }

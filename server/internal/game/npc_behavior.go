@@ -40,6 +40,43 @@ func NewNPCBehaviorManager() *NPCBehaviorManager {
 	return &NPCBehaviorManager{}
 }
 
+// NPCBehaviorStore holds runtime NPC behavior state in memory
+type NPCBehaviorStore struct {
+	behaviors map[string]*NPCBehavior
+}
+
+// NewNPCBehaviorStore creates a new behavior store
+func NewNPCBehaviorStore() *NPCBehaviorStore {
+	return &NPCBehaviorStore{
+		behaviors: make(map[string]*NPCBehavior),
+	}
+}
+
+// GetOrCreate returns existing behavior or initializes from NPC schedule
+func (s *NPCBehaviorStore) GetOrCreate(npcCode string, scheduleJSON string) *NPCBehavior {
+	if b, ok := s.behaviors[npcCode]; ok {
+		return b
+	}
+	b := CreateDefaultBehavior(npcCode, scheduleJSON)
+	s.behaviors[npcCode] = b
+	return b
+}
+
+// Get returns existing behavior or nil
+func (s *NPCBehaviorStore) Get(npcCode string) *NPCBehavior {
+	return s.behaviors[npcCode]
+}
+
+// Set stores a behavior
+func (s *NPCBehaviorStore) Set(npcCode string, behavior *NPCBehavior) {
+	s.behaviors[npcCode] = behavior
+}
+
+// All returns all stored behaviors
+func (s *NPCBehaviorStore) All() map[string]*NPCBehavior {
+	return s.behaviors
+}
+
 // UpdateBehavior runs each game tick, moves NPCs based on schedule
 func (bm *NPCBehaviorManager) UpdateBehavior(behavior *NPCBehavior, currentHour int) *NPCBehavior {
 	if len(behavior.Schedule) == 0 {
@@ -120,6 +157,26 @@ func (bm *NPCBehaviorManager) GetDialogMood(behavior *NPCBehavior) string {
 		default:
 			return "npc_neutral"
 		}
+	}
+}
+
+// GetDialogContext builds a context string for AI prompts based on NPC behavior
+func (bm *NPCBehaviorManager) GetDialogContext(behavior *NPCBehavior) string {
+	ctx := "【NPC状态】当前状态：" + behavior.State + "，心情：" + behavior.Mood
+	if behavior.Target != "" {
+		ctx += "，目标场景：" + behavior.Target
+	}
+	if len(behavior.Memory) > 0 {
+		last := behavior.Memory[len(behavior.Memory)-1]
+		ctx += "，最近事件：" + last.Type + "(" + last.Detail + ")"
+	}
+	return ctx
+}
+
+// UpdateAllBehaviors updates all behaviors in the store based on current hour
+func (bm *NPCBehaviorManager) UpdateAllBehaviors(store *NPCBehaviorStore, currentHour int) {
+	for _, behavior := range store.All() {
+		bm.UpdateBehavior(behavior, currentHour)
 	}
 }
 

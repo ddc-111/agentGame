@@ -591,6 +591,568 @@ func TestParseID_SpecialCharacters(t *testing.T) {
 	t.Log("parseID 特殊字符返回 400 验证通过")
 }
 
+func TestValidation_CreateNPC_InvalidBehaviorsJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":       "test_npc",
+		"code":       "npc_test_behaviors",
+		"behaviors":  "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/npcs", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "behaviors" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 behaviors 字段验证错误")
+	}
+	t.Log("NPC invalid behaviors JSON 验证通过")
+}
+
+func TestValidation_CreateNPC_InvalidScheduleJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":     "test_npc",
+		"code":     "npc_test_schedule",
+		"schedule": "[invalid",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/npcs", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "schedule" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 schedule 字段验证错误")
+	}
+	t.Log("NPC invalid schedule JSON 验证通过")
+}
+
+func TestValidation_CreateNPC_ValidBehaviorsAndSchedule(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":       "test_npc",
+		"code":       "npc_test_valid_json",
+		"behaviors":  `["idle","greet"]`,
+		"schedule":   `[{"time":"08:00","action":"work"}]`,
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/npcs", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusCreated)
+	t.Log("NPC valid behaviors/schedule 创建成功")
+}
+
+func TestValidation_CreateItem_InvalidCategory(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":     "test_item",
+		"code":     "item_test_cat",
+		"category": "invalid_category",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/items", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "category" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 category 字段验证错误")
+	}
+	t.Log("Item invalid category 验证通过")
+}
+
+func TestValidation_CreateItem_ValidCategory(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":     "test_item",
+		"code":     "item_test_valid_cat",
+		"category": "weapon",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/items", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusCreated)
+	t.Log("Item valid category 创建成功")
+}
+
+func TestValidation_CreateItem_InvalidEffectJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":   "test_item",
+		"code":   "item_test_effect",
+		"effect": "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/items", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "effect" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 effect 字段验证错误")
+	}
+	t.Log("Item invalid effect JSON 验证通过")
+}
+
+func TestValidation_CreateItem_ValidEffectJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":   "test_item",
+		"code":   "item_test_valid_effect",
+		"effect": `{"hp":20}`,
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/items", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusCreated)
+	t.Log("Item valid effect JSON 创建成功")
+}
+
+func TestValidation_CreateShop_InvalidType(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name": "test_shop",
+		"code": "shop_test_type",
+		"type": "invalid_type",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/shops", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "type" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 type 字段验证错误")
+	}
+	t.Log("Shop invalid type 验证通过")
+}
+
+func TestValidation_CreateShop_InvalidDiscountJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":     "test_shop",
+		"code":     "shop_test_discount",
+		"discount": "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/shops", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "discount" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 discount 字段验证错误")
+	}
+	t.Log("Shop invalid discount JSON 验证通过")
+}
+
+func TestValidation_CreateShop_InvalidTimeFormat(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":      "test_shop",
+		"code":      "shop_test_time",
+		"open_time": "99:99",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/shops", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "open_time" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 open_time 字段验证错误")
+	}
+	t.Log("Shop invalid time format 验证通过")
+}
+
+func TestValidation_CreateShop_InvalidTimeFormatLetters(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":       "test_shop",
+		"code":       "shop_test_time2",
+		"close_time": "abc",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/shops", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "close_time" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 close_time 字段验证错误")
+	}
+	t.Log("Shop invalid time format letters 验证通过")
+}
+
+func TestValidation_CreateTask_InvalidType(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name": "test_task",
+		"code": "task_test_type",
+		"type": "invalid_type",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "type" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 type 字段验证错误")
+	}
+	t.Log("Task invalid type 验证通过")
+}
+
+func TestValidation_CreateTask_InvalidStatus(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":   "test_task",
+		"code":   "task_test_status",
+		"status": "invalid_status",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "status" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 status 字段验证错误")
+	}
+	t.Log("Task invalid status 验证通过")
+}
+
+func TestValidation_CreateTask_InvalidTriggerJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":    "test_task",
+		"code":    "task_test_trigger",
+		"trigger": "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "trigger" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 trigger 字段验证错误")
+	}
+	t.Log("Task invalid trigger JSON 验证通过")
+}
+
+func TestValidation_CreateTask_InvalidObjectivesJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":       "test_task",
+		"code":       "task_test_obj",
+		"objectives": "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "objectives" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 objectives 字段验证错误")
+	}
+	t.Log("Task invalid objectives JSON 验证通过")
+}
+
+func TestValidation_CreateTask_InvalidRewardsJSON(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":    "test_task",
+		"code":    "task_test_rewards",
+		"rewards": "not-json",
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	errs, ok := result["validation_errors"].([]interface{})
+	if !ok {
+		t.Fatal("validation_errors 字段格式错误")
+	}
+	found := false
+	for _, e := range errs {
+		errMap := e.(map[string]interface{})
+		if errMap["field"] == "rewards" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("期望 rewards 字段验证错误")
+	}
+	t.Log("Task invalid rewards JSON 验证通过")
+}
+
+func TestValidation_CreateTask_ValidJSONFields(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	body := map[string]interface{}{
+		"name":       "test_task",
+		"code":       "task_test_valid_json",
+		"type":       "main",
+		"status":     "active",
+		"trigger":    `{"type":"auto","conditions":[]}`,
+		"objectives": `[{"id":"obj_1","type":"dialogue","target":"npc_1"}]`,
+		"rewards":    `{"exp":50,"gold":100}`,
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/tasks", body)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusCreated)
+	t.Log("Task valid JSON fields 创建成功")
+}
+
 func jsonNumber(n uint) string {
 	b, _ := json.Marshal(n)
 	return string(b)

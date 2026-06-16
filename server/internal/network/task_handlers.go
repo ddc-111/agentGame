@@ -35,7 +35,23 @@ func (s *Server) handleCreateTask(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code}),
+		validateStringMaxLen("name", task.Name, 100),
+		validateStringMaxLen("code", task.Code, 50),
+		validateStringMaxLen("description", task.Description, 500),
+		validateStringMaxLen("next_task", task.NextTask, 50),
+		validateStringMaxLen("dialogue", task.Dialogue, 50),
+		validateJSON("trigger", task.Trigger, false),
+		validateJSON("objectives", task.Objectives, true),
+		validateJSON("rewards", task.Rewards, false),
+	)
+	if task.Type != "" {
+		errs = append(errs, validateStringIn("type", task.Type, []string{"main", "side", "daily", "event"})...)
+	}
+	if task.Status != "" {
+		errs = append(errs, validateStringIn("status", task.Status, []string{"active", "locked", "completed", "failed"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return
@@ -54,7 +70,23 @@ func (s *Server) handleUpdateTask(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
-	errs := validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code})
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code}),
+		validateStringMaxLen("name", task.Name, 100),
+		validateStringMaxLen("code", task.Code, 50),
+		validateStringMaxLen("description", task.Description, 500),
+		validateStringMaxLen("next_task", task.NextTask, 50),
+		validateStringMaxLen("dialogue", task.Dialogue, 50),
+		validateJSON("trigger", task.Trigger, false),
+		validateJSON("objectives", task.Objectives, true),
+		validateJSON("rewards", task.Rewards, false),
+	)
+	if task.Type != "" {
+		errs = append(errs, validateStringIn("type", task.Type, []string{"main", "side", "daily", "event"})...)
+	}
+	if task.Status != "" {
+		errs = append(errs, validateStringIn("status", task.Status, []string{"active", "locked", "completed", "failed"})...)
+	}
 	if len(errs) > 0 {
 		respondValidation(c, errs)
 		return
