@@ -254,32 +254,11 @@ func (s *Server) setupRoutes() {
 		// 商店购买
 		api.POST("/shop/buy", s.handleBuyItem)
 
-		// 战斗系统API
-		combat := api.Group("/combat")
-		combat.Use(RateLimitMiddleware(30, 50))
-		{
-			combat.POST("/start", s.handleStartCombat)
-			combat.POST("/action", s.handleCombatAction)
-		}
-
-		// 背包系统API
-		api.GET("/inventory/:player_id", s.handleGetInventory)
-		api.POST("/inventory/equip", s.handleEquipItem)
-		api.POST("/inventory/unequip", s.handleUnequipItem)
-		api.POST("/inventory/use", s.handleUseItem)
-
-		// 存档系统API
-		api.POST("/save", s.handleSaveGame)
-		api.GET("/saves/:player_id", s.handleGetSaves)
-		api.POST("/load/:save_id", s.handleLoadGame)
-
-		// 技能系统API
-		api.GET("/skills", s.handleGetSkills)
-		api.POST("/skills/use", s.handleUseSkill)
-
-		// 成就系统API
-		api.GET("/achievements/:player_id", s.handleGetPlayerAchievements)
-		api.POST("/achievements/check", s.handleCheckAchievements)
+		s.registerCombatRoutes(api)
+		s.registerInventoryRoutes(api)
+		s.registerSavegameRoutes(api)
+		s.registerSkillRoutes(api)
+		s.registerAchievementRoutes(api)
 	}
 }
 

@@ -698,3 +698,238 @@ func TestExportData(t *testing.T) {
 	}
 	t.Log("导出数据测试通过")
 }
+
+func TestStartCombat(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	combatData := map[string]interface{}{
+		"player_id":  playerID,
+		"enemy_type": "wolf",
+	}
+
+	resp, err := makeRequest("POST", ts.URL+"/api/combat/start", combatData)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["data"]; !ok {
+		t.Error("响应缺少 data 字段")
+	}
+	if result["message"] != "战斗开始" {
+		t.Errorf("期望 message=战斗开始, 得到 %v", result["message"])
+	}
+	t.Log("开始战斗测试通过")
+}
+
+func TestGetInventory(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	resp, err := http.Get(fmt.Sprintf("%s/api/inventory/%d", ts.URL, playerID))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["items"]; !ok {
+		t.Error("响应缺少 items 字段")
+	}
+	if _, ok := result["equipment"]; !ok {
+		t.Error("响应缺少 equipment 字段")
+	}
+	if _, ok := result["gold"]; !ok {
+		t.Error("响应缺少 gold 字段")
+	}
+	t.Log("获取背包测试通过")
+}
+
+func TestSaveAndLoadGame(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	saveData := map[string]interface{}{
+		"player_id": playerID,
+		"slot":      0,
+		"name":      "测试存档",
+	}
+	saveResp, err := makeRequest("POST", ts.URL+"/api/save", saveData)
+	if err != nil {
+		t.Fatalf("保存游戏失败: %v", err)
+	}
+	defer saveResp.Body.Close()
+
+	assertStatusCode(t, saveResp.StatusCode, http.StatusOK)
+
+	var saveResult map[string]interface{}
+	json.NewDecoder(saveResp.Body).Decode(&saveResult)
+	if saveResult["message"] != "存档保存成功" {
+		t.Errorf("期望 message=存档保存成功, 得到 %v", saveResult["message"])
+	}
+
+	savesResp, err := http.Get(fmt.Sprintf("%s/api/saves/%d", ts.URL, playerID))
+	if err != nil {
+		t.Fatalf("获取存档列表失败: %v", err)
+	}
+	defer savesResp.Body.Close()
+
+	assertStatusCode(t, savesResp.StatusCode, http.StatusOK)
+
+	var savesResult map[string]interface{}
+	json.NewDecoder(savesResp.Body).Decode(&savesResult)
+	if _, ok := savesResult["saves"]; !ok {
+		t.Error("响应缺少 saves 字段")
+	}
+	t.Log("存档系统测试通过")
+}
+
+func TestGetSkills(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/skills")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["data"]; !ok {
+		t.Error("响应缺少 data 字段")
+	}
+	t.Log("获取技能列表测试通过")
+}
+
+func TestGetPlayerAchievements(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	resp, err := http.Get(fmt.Sprintf("%s/api/achievements/%d", ts.URL, playerID))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["achievements"]; !ok {
+		t.Error("响应缺少 achievements 字段")
+	}
+	if _, ok := result["total"]; !ok {
+		t.Error("响应缺少 total 字段")
+	}
+	if _, ok := result["unlocked"]; !ok {
+		t.Error("响应缺少 unlocked 字段")
+	}
+	t.Log("获取玩家成就测试通过")
+}
+
+func TestCheckAchievements(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	checkData := map[string]interface{}{
+		"player_id": playerID,
+	}
+	resp, err := makeRequest("POST", ts.URL+"/api/achievements/check", checkData)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["new_achievements"]; !ok {
+		t.Error("响应缺少 new_achievements 字段")
+	}
+	if _, ok := result["count"]; !ok {
+		t.Error("响应缺少 count 字段")
+	}
+	t.Log("检查成就测试通过")
+}
