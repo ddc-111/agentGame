@@ -11,28 +11,60 @@ import (
 func (s *Server) handleExport(c *gin.Context) {
 	data := make(map[string]interface{})
 
-	scenes, _ := s.repo.GetScenes()
+	scenes, err := s.repo.GetScenes()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["scenes"] = scenes
 
-	npcs, _ := s.repo.GetNPCs()
+	npcs, err := s.repo.GetNPCs()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["npcs"] = npcs
 
-	agents, _ := s.repo.GetAgents()
+	agents, err := s.repo.GetAgents()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["agents"] = agents
 
-	shops, _ := s.repo.GetShops()
+	shops, err := s.repo.GetShops()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["shops"] = shops
 
-	items, _ := s.repo.GetItems()
+	items, err := s.repo.GetItems()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["items"] = items
 
-	tasks, _ := s.repo.GetTasks()
+	tasks, err := s.repo.GetTasks()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["tasks"] = tasks
 
-	flows, _ := s.repo.GetFlows()
+	flows, err := s.repo.GetFlows()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["flows"] = flows
 
-	templates, _ := s.repo.GetTemplates()
+	templates, err := s.repo.GetTemplates()
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
 	data["prompts"] = templates
 
 	c.JSON(http.StatusOK, gin.H{"data": data})
