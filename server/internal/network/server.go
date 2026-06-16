@@ -25,6 +25,7 @@ type Server struct {
 	generator  *generator.Generator
 	mcp        *mcp.Server
 	chatMgr    *agent.ChatManager
+	hub        *Hub
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -93,7 +94,9 @@ func NewServer(cfg *config.Config) *Server {
 		log.Println("AI chat manager disabled, using simple replies")
 	}
 
-	// 初始化MCP服务器
+	hub := NewHub()
+	go hub.Run()
+
 	mcpServer := mcp.New(repo, gen)
 
 	// 演示场景在seed.go中已包含
@@ -108,6 +111,7 @@ func NewServer(cfg *config.Config) *Server {
 		generator: gen,
 		mcp:       mcpServer,
 		chatMgr:   chatMgr,
+		hub:       hub,
 	}
 
 	s.setupRoutes()
