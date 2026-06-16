@@ -996,11 +996,50 @@ export class GameScene extends Phaser.Scene {
                     this.inventoryManager.syncWithServer(this.playerData.id);
                 }
                 if (!result.victory && !result.fled) {
-                    this.scene.restart();
+                    this.respawnPlayer();
                 }
             };
         }
         this.combatUI.open(enemyType);
+    }
+
+    async respawnPlayer() {
+        const stats = this.inventoryManager.getStats();
+        this.playerData.hp = Math.floor(stats.max_hp * 0.5);
+        this.playerData.mp = Math.floor(stats.max_mp * 0.5);
+
+        // Update server
+        fetch(`${API_BASE}/player/${this.playerData.id}/pos`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                scene_id: 'scene_village_entrance',
+                pos_x: 200,
+                pos_y: 450
+            })
+        });
+
+        // Sync HP to server
+        fetch(`${API_BASE}/player/${this.playerData.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                hp: this.playerData.hp,
+                mp: this.playerData.mp
+            })
+        });
+
+        this.playerData.scene_id = 'scene_village_entrance';
+        this.playerData.pos_x = 200;
+        this.playerData.pos_y = 450;
+
+        this.cameras.main.fadeOut(500, 0, 0, 0);
+        await new Promise(resolve => this.cameras.main.once('camerafadeoutcomplete', resolve));
+
+        await this.loadScene('scene_village_entrance');
+        this.cameras.main.fadeIn(500, 0, 0, 0);
+
+        this.showNotification('你被击败了，在村庄入口复活...');
     }
 
     checkRandomEncounter() {

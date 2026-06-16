@@ -29,7 +29,10 @@ export class CombatManager {
                 drops: [
                     { item_id: 1001, chance: 0.3, count: 1 }
                 ],
-                emoji: '🐺'
+                emoji: '🐺',
+                abilities: [
+                    { name: '狼嚎', type: 'buff', effect: 'attack_up', value: 4, chance: 0.2, message: '野狼仰天长嚎，攻击力提升！' }
+                ]
             },
             'bandit': {
                 name: '山贼',
@@ -44,7 +47,10 @@ export class CombatManager {
                     { item_id: 1002, chance: 0.4, count: 1 },
                     { item_id: 1001, chance: 0.6, count: 1 }
                 ],
-                emoji: '🗡️'
+                emoji: '🗡️',
+                abilities: [
+                    { name: '偷窃', type: 'steal', value: 15, chance: 0.2, message: '山贼趁机偷走了你的金币！' }
+                ]
             },
             'bear': {
                 name: '黑熊',
@@ -58,7 +64,10 @@ export class CombatManager {
                 drops: [
                     { item_id: 1003, chance: 0.5, count: 1 }
                 ],
-                emoji: '🐻'
+                emoji: '🐻',
+                abilities: [
+                    { name: '暴怒', type: 'buff', effect: 'attack_up', value: 8, chance: 0.2, message: '黑熊暴怒了，攻击力大幅提升！' }
+                ]
             },
             'tiger': {
                 name: '猛虎',
@@ -73,7 +82,10 @@ export class CombatManager {
                     { item_id: 1003, chance: 0.6, count: 2 },
                     { item_id: 1002, chance: 0.3, count: 1 }
                 ],
-                emoji: '🐅'
+                emoji: '🐅',
+                abilities: [
+                    { name: '猛扑', type: 'attack', multiplier: 1.5, chance: 0.2, message: '猛虎猛扑过来，造成额外伤害！' }
+                ]
             },
             'ghost': {
                 name: '厉鬼',
@@ -87,7 +99,10 @@ export class CombatManager {
                 drops: [
                     { item_id: 1004, chance: 0.4, count: 1 }
                 ],
-                emoji: '👻'
+                emoji: '👻',
+                abilities: [
+                    { name: '阴风', type: 'debuff', effect: 'defense_down', value: 3, chance: 0.2, message: '一股阴风吹过，你的防御力下降了！' }
+                ]
             },
             'alpha_wolf': {
                 name: '头狼',
@@ -102,7 +117,10 @@ export class CombatManager {
                     { item_id: 1002, chance: 0.5, count: 1 },
                     { item_id: 1001, chance: 0.8, count: 2 }
                 ],
-                emoji: '🐺'
+                emoji: '🐺',
+                abilities: [
+                    { name: '嚎叫召唤', type: 'buff', effect: 'attack_up', value: 6, chance: 0.2, message: '头狼嚎叫着召唤同伴，攻击力提升！' }
+                ]
             }
         };
         return enemies[enemyType] || enemies['wolf'];
@@ -288,17 +306,67 @@ export class CombatManager {
         if (this.turn !== 'enemy' || !this.inCombat) return null;
 
         const stats = this.inventoryManager.getStats();
-        const damage = this.calculateDamage(this.enemy.attack, stats.defense);
-        this.playerData.hp = Math.max(0, this.playerData.hp - damage);
-        this.addLog(`${this.enemy.name} 攻击了你，造成 ${damage} 点伤害！`);
-
-        const result = {
+        let result = {
             action: 'enemyAttack',
-            damage,
-            target: 'player',
-            playerHp: this.playerData.hp,
-            playerMaxHp: stats.max_hp
+            target: 'player'
         };
+
+        // Check for enemy special ability (20% chance)
+        let abilityUsed = false;
+        if (this.enemy.abilities && this.enemy.abilities.length > 0) {
+            for (const ability of this.enemy.abilities) {
+                if (Math.random() < ability.chance) {
+                    abilityUsed = true;
+                    this.addLog(`【${ability.name}】${ability.message}`);
+
+                    switch (ability.type) {
+                        case 'buff':
+                            if (ability.effect === 'attack_up') {
+                                this.enemy.attack += ability.value;
+                                this.enemy.tempAtkBonus = (this.enemy.tempAtkBonus || 0) + ability.value;
+                            }
+                            break;
+                        case 'debuff':
+                            if (ability.effect === 'defense_down') {
+                                this.enemy.defenseDebuff = (this.enemy.defenseDebuff || 0) + ability.value;
+                            }
+                            break;
+                        case 'steal': {
+                            const stolen = Math.min(ability.value, this.playerData.gold || 0);
+                            if (stolen > 0) {
+                                this.playerData.gold = (this.playerData.gold || 0) - stolen;
+                                this.addLog(`你失去了 ${stolen} 金币！`);
+                                result.goldStolen = stolen;
+                            }
+                            break;
+                        }
+                        case 'attack': {
+                            const bonusDmg = this.calculateDamage(
+                                Math.floor(this.enemy.attack * ability.multiplier),
+                                Math.max(1, stats.defense - (this.enemy.defenseDebuff || 0))
+                            );
+                            this.playerData.hp = Math.max(0, this.playerData.hp - bonusDmg);
+                            this.addLog(`${this.enemy.name} 的特殊攻击造成了 ${bonusDmg} 点伤害！`);
+                            result.damage = bonusDmg;
+                            break;
+                        }
+                    }
+                    break; // Only one ability per turn
+                }
+            }
+        }
+
+        // Normal attack if no ability used
+        if (!abilityUsed || result.damage === undefined) {
+            const effectiveDef = Math.max(1, stats.defense - (this.enemy.defenseDebuff || 0));
+            const damage = this.calculateDamage(this.enemy.attack, effectiveDef);
+            this.playerData.hp = Math.max(0, this.playerData.hp - damage);
+            this.addLog(`${this.enemy.name} 攻击了你，造成 ${damage} 点伤害！`);
+            result.damage = (result.damage || 0) + damage;
+        }
+
+        result.playerHp = this.playerData.hp;
+        result.playerMaxHp = stats.max_hp;
 
         this.turn = 'player';
         this.updateCooldowns();

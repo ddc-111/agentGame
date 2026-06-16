@@ -31,10 +31,42 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		return
 	}
 
+	// 计算装备加成后的总属性
+	im := game.NewInventoryManager()
+	equipStats := game.EquipmentStats{}
+	if player.Equipment != "" && player.Equipment != "{}" {
+		var equip game.Equipment
+		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
+			if equip.WeaponID > 0 {
+				weapon, err := s.repo.GetItemByID(equip.WeaponID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(weapon.Effect), &effect)
+					equipStats.Attack += effect["attack"]
+					equipStats.Defense += effect["defense"]
+					equipStats.HP += effect["hp"]
+					equipStats.MP += effect["mp"]
+				}
+			}
+			if equip.ArmorID > 0 {
+				armor, err := s.repo.GetItemByID(equip.ArmorID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(armor.Effect), &effect)
+					equipStats.Attack += effect["attack"]
+					equipStats.Defense += effect["defense"]
+					equipStats.HP += effect["hp"]
+					equipStats.MP += effect["mp"]
+				}
+			}
+		}
+	}
+	playerStats := im.CalculateStats(player.Attack, player.Defense, player.HP, player.MP, equipStats)
+
 	// 创建战斗系统
 	combatSys := game.NewCombatSystem()
-	state := combatSys.StartCombat(req.PlayerID, req.EnemyType, player.HP, player.MP)
-	state.PlayerDef = player.Defense
+	state := combatSys.StartCombat(req.PlayerID, req.EnemyType, playerStats.TotalHP, player.MP)
+	state.PlayerDef = playerStats.TotalDefense
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":    state,
@@ -68,12 +100,37 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		return
 	}
 
+	// 计算装备加成后的攻击力
+	im := game.NewInventoryManager()
+	totalAttack := player.Attack
+	if player.Equipment != "" && player.Equipment != "{}" {
+		var equip game.Equipment
+		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
+			if equip.WeaponID > 0 {
+				weapon, err := s.repo.GetItemByID(equip.WeaponID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(weapon.Effect), &effect)
+					totalAttack += effect["attack"]
+				}
+			}
+			if equip.ArmorID > 0 {
+				armor, err := s.repo.GetItemByID(equip.ArmorID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(armor.Effect), &effect)
+					totalAttack += effect["attack"]
+				}
+			}
+		}
+	}
+
 	combatSys := game.NewCombatSystem()
 	var newState *game.CombatState
 
 	switch req.Action {
 	case "attack":
-		newState = combatSys.Attack(req.State, player.Attack)
+		newState = combatSys.Attack(req.State, totalAttack)
 
 	case "skill":
 		if req.SkillID == 0 {
@@ -98,7 +155,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			Effect:   skillModel.Effect,
 		}
 		sm := game.NewSkillManager()
-		newState, _, err = sm.UseSkill(skill, req.State, player.Attack)
+		newState, _, err = sm.UseSkill(skill, req.State, totalAttack)
 		if err != nil {
 			respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 			return
@@ -122,7 +179,6 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		newState = combatSys.UseItem(req.State, effect)
 
 		// 消耗道具
-		im := game.NewInventoryManager()
 		newItemsJSON, _, err := im.UseItem(player.Items, req.ItemID, effect)
 		if err == nil {
 			player.Items = newItemsJSON
@@ -462,7 +518,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		player.PosX,
 		player.PosY,
 		player.Items,
-		"{}", // 暂时使用空装备JSON
+		player.Equipment,
 	)
 
 	snapshotJSON, err := sgm.SerializeSnapshot(snapshot)
@@ -615,6 +671,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	player.PosX = snapshot.PosX
 	player.PosY = snapshot.PosY
 	player.Items = snapshot.Items
+	player.Equipment = snapshot.Equipment
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
 		respondInternalError(c, err)
@@ -691,8 +748,32 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		Effect:      skillModel.Effect,
 	}
 
+	// Calculate total attack with equipment bonuses
+	totalAttack := player.Attack
+	if player.Equipment != "" && player.Equipment != "{}" {
+		var equip game.Equipment
+		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
+			if equip.WeaponID > 0 {
+				weapon, err := s.repo.GetItemByID(equip.WeaponID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(weapon.Effect), &effect)
+					totalAttack += effect["attack"]
+				}
+			}
+			if equip.ArmorID > 0 {
+				armor, err := s.repo.GetItemByID(equip.ArmorID)
+				if err == nil {
+					var effect map[string]int
+					json.Unmarshal([]byte(armor.Effect), &effect)
+					totalAttack += effect["attack"]
+				}
+			}
+		}
+	}
+
 	sm := game.NewSkillManager()
-	newState, logMsg, err := sm.UseSkill(skill, req.State, player.Attack)
+	newState, logMsg, err := sm.UseSkill(skill, req.State, totalAttack)
 	if err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
