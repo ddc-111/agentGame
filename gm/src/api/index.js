@@ -68,4 +68,10 @@ export const configApi = {
   import: (data) => api.post('/config/import', data)
 };
 
+export const generatorApi = {
+  generate: (data) => api.post('/generator/generate', data),
+  getStatus: () => api.get('/generator/status'),
+  test: () => api.post('/generator/test')
+};
+
 export default api;

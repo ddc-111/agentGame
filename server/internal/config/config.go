@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	AI       AIConfig       `yaml:"ai"`
-	Game     GameConfig     `yaml:"game"`
+	Server    ServerConfig    `yaml:"server"`
+	Database  DatabaseConfig  `yaml:"database"`
+	AI        AIConfig        `yaml:"ai"`
+	Generator GeneratorConfig `yaml:"generator"`
+	Game      GameConfig      `yaml:"game"`
 }
 
 type ServerConfig struct {
@@ -30,8 +31,21 @@ type DatabaseConfig struct {
 
 type AIConfig struct {
 	Provider string `yaml:"provider"`
+	BaseURL  string `yaml:"base_url"`
 	APIKey   string `yaml:"api_key"`
 	Model    string `yaml:"model"`
+}
+
+// GeneratorConfig 生成智能体配置（独立大模型地址）
+type GeneratorConfig struct {
+	Enabled     bool    `yaml:"enabled"`
+	Provider    string  `yaml:"provider"`    // openai, anthropic, custom
+	BaseURL     string  `yaml:"base_url"`    // 大模型API地址
+	APIKey      string  `yaml:"api_key"`     // API密钥
+	Model       string  `yaml:"model"`       // 模型名称
+	Temperature float64 `yaml:"temperature"` // 温度
+	MaxTokens   int     `yaml:"max_tokens"`  // 最大token
+	Timeout     int     `yaml:"timeout"`     // 超时时间(秒)
 }
 
 type GameConfig struct {
@@ -51,7 +65,17 @@ func Default() *Config {
 		},
 		AI: AIConfig{
 			Provider: "openai",
+			BaseURL:  "https://api.openai.com/v1",
 			Model:    "gpt-4",
+		},
+		Generator: GeneratorConfig{
+			Enabled:     true,
+			Provider:    "openai",
+			BaseURL:     "https://api.openai.com/v1",
+			Model:       "gpt-4-turbo",
+			Temperature: 0.7,
+			MaxTokens:   4000,
+			Timeout:     60,
 		},
 		Game: GameConfig{
 			MaxPlayers: 100,

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
+	"github.com/ddc-111/agentGame/server/internal/generator"
 )
 
 // ==================== 场景API ====================
@@ -597,4 +598,76 @@ func (s *Server) handleImport(c *gin.Context) {
 	}
 	// TODO: 实现数据导入逻辑
 	c.JSON(http.StatusOK, gin.H{"message": "Import successful"})
+}
+
+// ==================== 生成智能体API ====================
+
+func (s *Server) handleGenerate(c *gin.Context) {
+	var req generator.GenerateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if s.generator == nil || !s.generator.IsEnabled() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "生成智能体未启用，请检查配置",
+		})
+		return
+	}
+
+	resp, err := s.generator.Generate(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (s *Server) handleGeneratorStatus(c *gin.Context) {
+	enabled := s.generator != nil && s.generator.IsEnabled()
+	cfg := s.generator.GetConfig()
+
+	c.JSON(http.StatusOK, gin.H{
+		"enabled":  enabled,
+		"provider": cfg.Provider,
+		"model":    cfg.Model,
+		"base_url": cfg.BaseURL,
+	})
+}
+
+func (s *Server) handleGeneratorTest(c *gin.Context) {
+	if s.generator == nil || !s.generator.IsEnabled() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "生成智能体未启用",
+		})
+		return
+	}
+
+	// 测试生成一个简单的NPC
+	req := generator.GenerateRequest{
+		Type:   "npc",
+		Action: "create",
+		Params: map[string]interface{}{
+			"description": "一个卖包子的老大爷",
+			"theme":       "古风小镇",
+		},
+	}
+
+	resp, err := s.generator.Generate(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }

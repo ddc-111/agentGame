@@ -11,14 +11,16 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 	"github.com/ddc-111/agentGame/server/internal/database/repository"
+	"github.com/ddc-111/agentGame/server/internal/generator"
 )
 
 type Server struct {
-	cfg    *config.Config
-	router *gin.Engine
-	http   *http.Server
-	db     *database.Database
-	repo   *repository.Repository
+	cfg       *config.Config
+	router    *gin.Engine
+	http      *http.Server
+	db        *database.Database
+	repo      *repository.Repository
+	generator *generator.Generator
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -69,13 +71,20 @@ func NewServer(cfg *config.Config) *Server {
 
 	repo := repository.New(db.DB)
 
+	// 初始化生成智能体
+	gen, err := generator.New(cfg.Generator)
+	if err != nil {
+		log.Printf("Warning: Failed to create generator: %v", err)
+	}
+
 	router := gin.Default()
 
 	s := &Server{
-		cfg:    cfg,
-		router: router,
-		db:     db,
-		repo:   repo,
+		cfg:       cfg,
+		router:    router,
+		db:        db,
+		repo:      repo,
+		generator: gen,
 	}
 
 	s.setupRoutes()
@@ -87,6 +96,18 @@ func (s *Server) setupRoutes() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// CORS中间件
+	s.router.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	api := s.router.Group("/api")
 	{
 		// WebSocket
@@ -94,6 +115,11 @@ func (s *Server) setupRoutes() {
 
 		// GM登录
 		api.POST("/gm/login", s.handleGMLogin)
+
+		// 生成智能体API
+		api.POST("/generator/generate", s.handleGenerate)
+		api.GET("/generator/status", s.handleGeneratorStatus)
+		api.POST("/generator/test", s.handleGeneratorTest)
 
 		// 场景API
 		api.GET("/scenes", s.handleGetScenes)
@@ -177,6 +203,7 @@ func (s *Server) Start() error {
 	}
 
 	log.Printf("Starting server on %s", addr)
+	log.Printf("Generator enabled: %v", s.generator.IsEnabled())
 	return s.http.ListenAndServe()
 }
 

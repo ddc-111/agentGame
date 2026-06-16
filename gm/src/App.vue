@@ -107,6 +107,10 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
+          <el-button type="warning" @click="toggleGenerator">
+            <el-icon><MagicStick /></el-icon>
+            AI助手
+          </el-button>
           <el-button type="primary" @click="handleSave">
             <el-icon><Check /></el-icon>
             保存
@@ -119,17 +123,23 @@
       </el-header>
 
       <el-main class="app-main">
-        <router-view />
+        <router-view @apply-generator="handleApplyGenerator" />
       </el-main>
     </el-container>
+
+    <!-- 生成智能体面板 -->
+    <GeneratorPanel ref="generatorPanel" @apply="handleApplyGenerator" />
   </el-container>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import GeneratorPanel from '@/components/generator/GeneratorPanel.vue';
 
 const route = useRoute();
+const generatorPanel = ref(null);
 const currentRoute = computed(() => route.path);
 
 const pageTitles = {
@@ -161,6 +171,17 @@ const pageTitles = {
 };
 
 const currentPageTitle = computed(() => pageTitles[route.path] || '');
+
+const toggleGenerator = () => {
+  if (generatorPanel.value) {
+    generatorPanel.value.togglePanel();
+  }
+};
+
+const handleApplyGenerator = (data) => {
+  console.log('Apply generator data:', data);
+  ElMessage.success('已应用生成内容');
+};
 
 const handleSave = () => {
   ElMessage.success('保存成功');
@@ -222,6 +243,7 @@ html, body, #app {
   background-color: #f5f7fa;
   padding: 20px;
   overflow-y: auto;
+  padding-bottom: 60px;
 }
 
 .header-right {
