@@ -3,8 +3,9 @@ package network
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,8 @@ func NewServer(cfg *config.Config) *Server {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// 初始化数据库
+	SetupLogger("info")
+
 	db, err := database.New(database.Config{
 		Driver:   cfg.Database.Driver,
 		DSN:      cfg.Database.DSN,
@@ -49,43 +51,40 @@ func NewServer(cfg *config.Config) *Server {
 		DBName:   cfg.Database.DBName,
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect database: %v", err)
+		slog.Error("Failed to connect database", "error", err)
+		os.Exit(1)
 	}
 
 	migrator := database.NewMigrator(db.DB)
 	migrator.Register(migrations.All()...)
 	if err := migrator.Up(); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+		slog.Error("Failed to migrate database", "error", err)
+		os.Exit(1)
 	}
 
-	// 初始化种子数据
 	err = database.SeedData(db.DB)
 	if err != nil {
-		log.Printf("Warning: Failed to seed data: %v", err)
+		slog.Warn("Failed to seed data", "error", err)
 	}
 
 	repo := repository.New(db.DB)
 
-	// 初始化生成智能体
 	gen, err := generator.New(cfg.Generator)
 	if err != nil {
-		log.Printf("Warning: Failed to create generator: %v", err)
+		slog.Warn("Failed to create generator", "error", err)
 	}
 
-	// 初始化AI对话管理器
 	chatMgr := agent.NewChatManager(cfg.AI)
 	if chatMgr.IsEnabled() {
-		log.Println("AI chat manager enabled")
+		slog.Info("AI chat manager enabled")
 	} else {
-		log.Println("AI chat manager disabled, using simple replies")
+		slog.Info("AI chat manager disabled, using simple replies")
 	}
 
 	hub := NewHub()
 	go hub.Run()
 
 	mcpServer := mcp.New(repo, gen)
-
-	// 演示场景在seed.go中已包含
 
 	router := gin.Default()
 
@@ -114,6 +113,7 @@ func (s *Server) setupRoutes() {
 	})
 
 	s.router.Use(CORSMiddleware(s.cfg.CORS.AllowedOrigins))
+	s.router.Use(RequestIDMiddleware())
 
 	// MCP端点
 	s.router.POST("/mcp", func(c *gin.Context) {
@@ -275,9 +275,9 @@ func (s *Server) Start() error {
 		Handler: s.router,
 	}
 
-	log.Printf("Starting server on %s", addr)
-	log.Printf("Generator enabled: %v", s.generator.IsEnabled())
-	log.Printf("MCP endpoint: http://localhost:%d/mcp", s.cfg.Server.Port)
+	slog.Info("Starting server", "addr", addr)
+	slog.Info("Generator enabled", "enabled", s.generator.IsEnabled())
+	slog.Info("MCP endpoint", "url", fmt.Sprintf("http://localhost:%d/mcp", s.cfg.Server.Port))
 	return s.http.ListenAndServe()
 }
 
@@ -296,13 +296,13 @@ func (s *Server) initNPCBehaviors() {
 	defer cancel()
 	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
-		log.Printf("Failed to load NPCs for behavior init: %v", err)
+		slog.Error("Failed to load NPCs for behavior init", "error", err)
 		return
 	}
 	for _, npc := range npcs {
 		s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
 	}
-	log.Printf("Initialized behaviors for %d NPCs", len(npcs))
+	slog.Info("Initialized NPC behaviors", "count", len(npcs))
 }
 
 func (s *Server) startGameLoop() {

@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -21,7 +20,7 @@ var upgrader = websocket.Upgrader{
 func (s *Server) handleWebSocket(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade failed: %v", err)
+		LoggerFromContext(c.Request.Context()).Error("WebSocket upgrade failed", "error", err)
 		return
 	}
 
@@ -62,7 +61,7 @@ func (s *Server) handleWebSocket(c *gin.Context) {
 func (s *Server) sendInitialState(ctx context.Context, client *Client, playerID uint, sceneID string) {
 	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
-		log.Printf("Failed to get player for initial state: %v", err)
+		LoggerFromContext(ctx).Error("Failed to get player for initial state", "error", err, "player_id", playerID)
 		return
 	}
 

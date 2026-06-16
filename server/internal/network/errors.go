@@ -2,7 +2,6 @@ package network
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +29,7 @@ func respondError(c *gin.Context, status int, err APIError) {
 }
 
 func respondInternalError(c *gin.Context, actualErr error) {
-	log.Printf("Internal error: %v", actualErr)
+	LoggerFromContext(c.Request.Context()).Error("Internal error", "error", actualErr)
 	c.JSON(http.StatusInternalServerError, gin.H{"error": InternalError()})
 }
 

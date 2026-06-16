@@ -2,6 +2,8 @@ package network
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"strings"
 	"sync"
@@ -179,4 +181,23 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
+}
+
+func RequestIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reqID := c.GetHeader("X-Request-ID")
+		if reqID == "" {
+			reqID = generateRequestID()
+		}
+		ctx := context.WithValue(c.Request.Context(), requestIDKey, reqID)
+		c.Request = c.Request.WithContext(ctx)
+		c.Header("X-Request-ID", reqID)
+		c.Next()
+	}
+}
+
+func generateRequestID() string {
+	var buf [8]byte
+	_, _ = rand.Read(buf[:])
+	return hex.EncodeToString(buf[:])
 }

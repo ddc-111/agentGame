@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -295,7 +294,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 			npc.Agent.MaxMessages,
 		)
 		if err != nil {
-			log.Printf("AI chat failed, falling back to simple reply: %v", err)
+			LoggerFromContext(ctx).Warn("AI chat failed, falling back to simple reply", "error", err, "npc_id", req.NPCID)
 			reply = generateSimpleReply(npc.Agent, messages)
 		} else {
 			reply = aiReply

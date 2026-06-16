@@ -2,7 +2,7 @@ package network
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -118,7 +118,7 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			h.clients[client] = true
 			h.mu.Unlock()
-			log.Printf("WebSocket client connected (player=%d, scene=%s)", client.playerID, client.sceneID)
+			slog.Info("WebSocket client connected", "player_id", client.playerID, "scene_id", client.sceneID)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -128,7 +128,7 @@ func (h *Hub) Run() {
 				close(client.send)
 			}
 			h.mu.Unlock()
-			log.Printf("WebSocket client disconnected (player=%d)", client.playerID)
+			slog.Info("WebSocket client disconnected", "player_id", client.playerID)
 
 		case message := <-h.broadcast:
 			h.mu.RLock()
@@ -169,7 +169,7 @@ func (h *Hub) BroadcastToAll(msg []byte) {
 	select {
 	case h.broadcast <- msg:
 	default:
-		log.Println("Broadcast channel full, dropping message")
+		slog.Warn("Broadcast channel full, dropping message")
 	}
 }
 
@@ -279,14 +279,14 @@ func (c *Client) readPump(hub *Hub) {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
-				log.Printf("WebSocket read error: %v", err)
+				slog.Error("WebSocket read error", "error", err, "player_id", c.playerID)
 			}
 			break
 		}
 
 		var wsMsg WSMessage
 		if err := json.Unmarshal(message, &wsMsg); err != nil {
-			log.Printf("Invalid WebSocket message: %v", err)
+			slog.Warn("Invalid WebSocket message", "error", err, "player_id", c.playerID)
 			continue
 		}
 
@@ -343,14 +343,14 @@ func (h *Hub) handleMessage(client *Client, msg *WSMessage) {
 		}
 		_ = writeMessage(client, pong)
 	default:
-		log.Printf("Unknown message type: %s", msg.Type)
+		slog.Warn("Unknown message type", "type", msg.Type)
 	}
 }
 
 func (h *Hub) handlePlayerPosition(client *Client, msg *WSMessage) {
 	var posData PlayerPositionData
 	if err := json.Unmarshal(msg.Data, &posData); err != nil {
-		log.Printf("Invalid player position data: %v", err)
+		slog.Warn("Invalid player position data", "error", err, "player_id", client.playerID)
 		return
 	}
 
@@ -371,7 +371,7 @@ func (h *Hub) handlePlayerPosition(client *Client, msg *WSMessage) {
 func (h *Hub) handleChatMessage(client *Client, msg *WSMessage) {
 	var chatData ChatMessageData
 	if err := json.Unmarshal(msg.Data, &chatData); err != nil {
-		log.Printf("Invalid chat message data: %v", err)
+		slog.Warn("Invalid chat message data", "error", err, "player_id", client.playerID)
 		return
 	}
 
