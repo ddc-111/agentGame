@@ -601,28 +601,6 @@ func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
 
-// convertToAgentMessages 转换对话历史为Agent消息格式
-func convertToAgentMessages(history []models.Conversation, player *models.Player) []agent.Message {
-	var messages []agent.Message
-	for i := len(history) - 1; i >= 0; i-- {
-		messages = append(messages, agent.Message{
-			Role:    history[i].Role,
-			Content: history[i].Content,
-		})
-	}
-	return messages
-}
-
-// buildUserMessage 构建用户消息（带玩家上下文）
-func buildUserMessage(player *models.Player, userMsg string) string {
-	contextMsg := "【玩家信息】姓名：" + player.Name + "，等级：" + strconv.Itoa(player.Level)
-	if player.Gold > 0 {
-		contextMsg += "，金币：" + strconv.Itoa(player.Gold)
-	}
-	contextMsg += "\n【玩家消息】" + userMsg
-	return contextMsg
-}
-
 func (s *Server) handleGetNPCBehavior(c *gin.Context) {
 	code := c.Param("code")
 	npc, err := s.repo.GetNPCByCode(code)
