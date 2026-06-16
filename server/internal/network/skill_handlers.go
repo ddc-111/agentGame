@@ -1,7 +1,6 @@
 package network
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -79,28 +78,9 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		Effect:      skillModel.Effect,
 	}
 
-	totalAttack := player.Attack
-	if player.Equipment != "" && player.Equipment != "{}" {
-		var equip game.Equipment
-		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
-			if equip.WeaponID > 0 {
-				weapon, err := s.repo.GetItemByID(equip.WeaponID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(weapon.Effect), &effect)
-					totalAttack += effect["attack"]
-				}
-			}
-			if equip.ArmorID > 0 {
-				armor, err := s.repo.GetItemByID(equip.ArmorID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(armor.Effect), &effect)
-					totalAttack += effect["attack"]
-				}
-			}
-		}
-	}
+	im := game.NewInventoryManager()
+	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
+	totalAttack := player.Attack + equipStats.Attack
 
 	sm := game.NewSkillManager()
 	newState, logMsg, err := sm.UseSkill(skill, req.State, totalAttack)

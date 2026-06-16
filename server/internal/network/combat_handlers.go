@@ -44,34 +44,7 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 	}
 
 	im := game.NewInventoryManager()
-	equipStats := game.EquipmentStats{}
-	if player.Equipment != "" && player.Equipment != "{}" {
-		var equip game.Equipment
-		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
-			if equip.WeaponID > 0 {
-				weapon, err := s.repo.GetItemByID(equip.WeaponID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(weapon.Effect), &effect)
-					equipStats.Attack += effect["attack"]
-					equipStats.Defense += effect["defense"]
-					equipStats.HP += effect["hp"]
-					equipStats.MP += effect["mp"]
-				}
-			}
-			if equip.ArmorID > 0 {
-				armor, err := s.repo.GetItemByID(equip.ArmorID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(armor.Effect), &effect)
-					equipStats.Attack += effect["attack"]
-					equipStats.Defense += effect["defense"]
-					equipStats.HP += effect["hp"]
-					equipStats.MP += effect["mp"]
-				}
-			}
-		}
-	}
+	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
 	playerStats := im.CalculateStats(player.Attack, player.Defense, player.HP, player.MP, equipStats)
 
 	combatSys := game.NewCombatSystem()
@@ -119,28 +92,8 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 	}
 
 	im := game.NewInventoryManager()
-	totalAttack := player.Attack
-	if player.Equipment != "" && player.Equipment != "{}" {
-		var equip game.Equipment
-		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
-			if equip.WeaponID > 0 {
-				weapon, err := s.repo.GetItemByID(equip.WeaponID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(weapon.Effect), &effect)
-					totalAttack += effect["attack"]
-				}
-			}
-			if equip.ArmorID > 0 {
-				armor, err := s.repo.GetItemByID(equip.ArmorID)
-				if err == nil {
-					var effect map[string]int
-					json.Unmarshal([]byte(armor.Effect), &effect)
-					totalAttack += effect["attack"]
-				}
-			}
-		}
-	}
+	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
+	totalAttack := player.Attack + equipStats.Attack
 
 	combatSys := game.NewCombatSystem()
 	var newState *game.CombatState
@@ -255,4 +208,18 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		"data":    newState,
 		"message": "战斗更新",
 	})
+}
+
+func (s *Server) itemEffectLookup() game.ItemLookupFunc {
+	return func(itemID uint) (map[string]int, error) {
+		item, err := s.repo.GetItemByID(itemID)
+		if err != nil {
+			return nil, err
+		}
+		var effect map[string]int
+		if err := json.Unmarshal([]byte(item.Effect), &effect); err != nil {
+			return nil, err
+		}
+		return effect, nil
+	}
 }

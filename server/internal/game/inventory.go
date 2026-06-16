@@ -231,6 +231,39 @@ func (im *InventoryManager) GetEquipment(equipJSON string) (*Equipment, error) {
 	return im.parseEquipment(equipJSON)
 }
 
+// ItemLookupFunc 根据道具ID获取道具效果的回调函数
+type ItemLookupFunc func(itemID uint) (map[string]int, error)
+
+// EquipmentStatsFromEquip 根据装备JSON计算装备属性加成
+func (im *InventoryManager) EquipmentStatsFromEquip(equipJSON string, lookup ItemLookupFunc) (EquipmentStats, error) {
+	var stats EquipmentStats
+	if equipJSON == "" || equipJSON == "{}" {
+		return stats, nil
+	}
+
+	equip, err := im.parseEquipment(equipJSON)
+	if err != nil {
+		return stats, err
+	}
+
+	slotIDs := []uint{equip.WeaponID, equip.ArmorID}
+	for _, itemID := range slotIDs {
+		if itemID == 0 {
+			continue
+		}
+		effect, err := lookup(itemID)
+		if err != nil {
+			continue
+		}
+		stats.Attack += effect["attack"]
+		stats.Defense += effect["defense"]
+		stats.HP += effect["hp"]
+		stats.MP += effect["mp"]
+	}
+
+	return stats, nil
+}
+
 // CalculateStats 计算玩家属性（基础 + 装备加成）
 func (im *InventoryManager) CalculateStats(baseAttack, baseDefense, baseHP, baseMP int, equipStats EquipmentStats) *PlayerStats {
 	return &PlayerStats{

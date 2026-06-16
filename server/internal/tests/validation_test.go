@@ -496,6 +496,101 @@ func TestValidation_Generate_InvalidType(t *testing.T) {
 	t.Log("Generate 无效 type 验证通过")
 }
 
+func TestParseID_InvalidString(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/abc", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	errObj, ok := result["error"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应缺少 error 字段")
+	}
+	if errObj["code"] != "BAD_REQUEST" {
+		t.Errorf("期望 BAD_REQUEST, 得到 %v", errObj["code"])
+	}
+	t.Log("parseID 非数字字符串返回 400 验证通过")
+}
+
+func TestParseID_NegativeNumber(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/-1", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+	t.Log("parseID 负数返回 400 验证通过")
+}
+
+func TestParseID_Zero(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/0", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusNotFound)
+	t.Log("parseID 零值通过解析但未找到资源验证通过")
+}
+
+func TestParseID_ValidID(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/1", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+	t.Log("parseID 合法 ID 通过解析验证通过")
+}
+
+func TestParseID_FloatString(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/1.5", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+	t.Log("parseID 浮点字符串返回 400 验证通过")
+}
+
+func TestParseID_SpecialCharacters(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := makeRequest("GET", ts.URL+"/api/scenes/%3Cscript%3E", nil)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusBadRequest)
+	t.Log("parseID 特殊字符返回 400 验证通过")
+}
+
 func jsonNumber(n uint) string {
 	b, _ := json.Marshal(n)
 	return string(b)

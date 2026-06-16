@@ -933,3 +933,89 @@ func TestCheckAchievements(t *testing.T) {
 	}
 	t.Log("检查成就测试通过")
 }
+
+func TestCombatWithEquipment(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	initResp, err := http.Get(ts.URL + "/api/game/init")
+	if err != nil {
+		t.Fatalf("获取初始化数据失败: %v", err)
+	}
+	defer initResp.Body.Close()
+
+	var initResult map[string]interface{}
+	json.NewDecoder(initResp.Body).Decode(&initResult)
+
+	var weaponID uint
+	if items, ok := initResult["items"].([]interface{}); ok {
+		for _, item := range items {
+			itemMap := item.(map[string]interface{})
+			if itemMap["code"] == "item_iron_sword" {
+				weaponID = uint(itemMap["id"].(float64))
+				break
+			}
+		}
+	}
+	if weaponID == 0 {
+		t.Fatal("未找到铁剑道具")
+	}
+
+	buyData := map[string]interface{}{
+		"player_id": playerID,
+		"shop_code": "shop_blacksmith",
+		"item_id":   weaponID,
+		"count":     1,
+	}
+	buyResp, err := makeRequest("POST", ts.URL+"/api/shop/buy", buyData)
+	if err != nil {
+		t.Fatalf("购买道具失败: %v", err)
+	}
+	defer buyResp.Body.Close()
+	assertStatusCode(t, buyResp.StatusCode, http.StatusOK)
+
+	equipData := map[string]interface{}{
+		"player_id": playerID,
+		"item_id":   weaponID,
+	}
+	equipResp, err := makeRequest("POST", ts.URL+"/api/inventory/equip", equipData)
+	if err != nil {
+		t.Fatalf("装备失败: %v", err)
+	}
+	defer equipResp.Body.Close()
+	assertStatusCode(t, equipResp.StatusCode, http.StatusOK)
+
+	combatData := map[string]interface{}{
+		"player_id":  playerID,
+		"enemy_type": "wolf",
+	}
+	combatResp, err := makeRequest("POST", ts.URL+"/api/combat/start", combatData)
+	if err != nil {
+		t.Fatalf("开始战斗失败: %v", err)
+	}
+	defer combatResp.Body.Close()
+	assertStatusCode(t, combatResp.StatusCode, http.StatusOK)
+
+	var combatResult map[string]interface{}
+	if err := json.NewDecoder(combatResp.Body).Decode(&combatResult); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+	if _, ok := combatResult["data"]; !ok {
+		t.Error("响应缺少 data 字段")
+	}
+	if combatResult["message"] != "战斗开始" {
+		t.Errorf("期望 message=战斗开始, 得到 %v", combatResult["message"])
+	}
+	t.Log("装备后战斗测试通过")
+}

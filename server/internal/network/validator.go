@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -97,4 +98,14 @@ func respondValidation(c *gin.Context, errs ValidationErrors) {
 		},
 		"validation_errors": errs,
 	})
+}
+
+func parseID(c *gin.Context, param string) (uint, bool) {
+	raw := c.Param(param)
+	id, err := strconv.ParseUint(raw, 10, 32)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, BadRequest("invalid "+param))
+		return 0, false
+	}
+	return uint(id), true
 }

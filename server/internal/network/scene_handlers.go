@@ -2,7 +2,6 @@ package network
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
@@ -18,8 +17,11 @@ func (s *Server) handleGetScenes(c *gin.Context) {
 }
 
 func (s *Server) handleGetScene(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	scene, err := s.repo.GetSceneByID(uint(id))
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	scene, err := s.repo.GetSceneByID(id)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Scene"))
 		return
@@ -50,7 +52,10 @@ func (s *Server) handleCreateScene(c *gin.Context) {
 }
 
 func (s *Server) handleUpdateScene(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
 	var scene models.Scene
 	if err := c.ShouldBindJSON(&scene); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
@@ -65,7 +70,7 @@ func (s *Server) handleUpdateScene(c *gin.Context) {
 		respondValidation(c, errs)
 		return
 	}
-	scene.ID = uint(id)
+	scene.ID = id
 	if err := s.repo.UpdateScene(&scene); err != nil {
 		respondInternalError(c, err)
 		return
@@ -74,8 +79,11 @@ func (s *Server) handleUpdateScene(c *gin.Context) {
 }
 
 func (s *Server) handleDeleteScene(c *gin.Context) {
-	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err := s.repo.DeleteScene(uint(id)); err != nil {
+	id, ok := parseID(c, "id")
+	if !ok {
+		return
+	}
+	if err := s.repo.DeleteScene(id); err != nil {
 		respondInternalError(c, err)
 		return
 	}

@@ -13,6 +13,12 @@ func New(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) Transaction(fn func(repo *Repository) error) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return fn(&Repository{db: tx})
+	})
+}
+
 // Scene 场景相关操作
 func (r *Repository) GetScenes() ([]models.Scene, error) {
 	var scenes []models.Scene
