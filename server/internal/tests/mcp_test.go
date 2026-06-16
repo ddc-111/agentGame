@@ -631,7 +631,7 @@ func TestMCPResourcesReadScenes(t *testing.T) {
 
 	res, ok := result["result"].(map[string]interface{})
 	if !ok {
-		t.Fatal("响应 result 字段格式错误")
+		t.Fatalf("响应 result 字段格式错误, 实际: %+v", result)
 	}
 
 	contents, ok := res["contents"].([]interface{})
