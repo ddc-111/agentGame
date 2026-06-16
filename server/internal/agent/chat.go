@@ -17,6 +17,12 @@ type ChatManager struct {
 	cfg    config.AIConfig
 }
 
+// Message 对话消息（通用格式，供memory和handlers使用）
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 // ChatMessage 对话消息
 type ChatMessage struct {
 	Role    string `json:"role"`

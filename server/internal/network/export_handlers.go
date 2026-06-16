@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
+	"github.com/ddc-111/agentGame/server/internal/database/repository"
 )
 
 func (s *Server) handleExport(c *gin.Context) {
@@ -50,140 +51,181 @@ func (s *Server) handleImport(c *gin.Context) {
 
 	imported := make(map[string]int)
 
-	if scenesRaw, ok := data["scenes"].([]interface{}); ok {
-		for _, sr := range scenesRaw {
-			sceneData, _ := jsonMarshal(sr)
-			var scene models.Scene
-			if jsonUnmarshal(sceneData, &scene) == nil {
-				if existing, _ := s.repo.GetSceneByCode(scene.Code); existing != nil && existing.ID > 0 {
-					scene.ID = existing.ID
-					s.repo.UpdateScene(&scene)
-				} else {
-					scene.ID = 0
-					s.repo.CreateScene(&scene)
+	err := s.repo.Transaction(func(repo *repository.Repository) error {
+		if scenesRaw, ok := data["scenes"].([]interface{}); ok {
+			for _, sr := range scenesRaw {
+				sceneData, _ := jsonMarshal(sr)
+				var scene models.Scene
+				if jsonUnmarshal(sceneData, &scene) == nil {
+					if existing, _ := repo.GetSceneByCode(scene.Code); existing != nil && existing.ID > 0 {
+						scene.ID = existing.ID
+						if err := repo.UpdateScene(&scene); err != nil {
+							return err
+						}
+					} else {
+						scene.ID = 0
+						if err := repo.CreateScene(&scene); err != nil {
+							return err
+						}
+					}
+					imported["scenes"]++
 				}
-				imported["scenes"]++
 			}
 		}
-	}
 
-	if npcsRaw, ok := data["npcs"].([]interface{}); ok {
-		for _, nr := range npcsRaw {
-			npcData, _ := jsonMarshal(nr)
-			var npc models.NPC
-			if jsonUnmarshal(npcData, &npc) == nil {
-				if existing, _ := s.repo.GetNPCByCode(npc.Code); existing != nil && existing.ID > 0 {
-					npc.ID = existing.ID
-					s.repo.UpdateNPC(&npc)
-				} else {
-					npc.ID = 0
-					s.repo.CreateNPC(&npc)
+		if npcsRaw, ok := data["npcs"].([]interface{}); ok {
+			for _, nr := range npcsRaw {
+				npcData, _ := jsonMarshal(nr)
+				var npc models.NPC
+				if jsonUnmarshal(npcData, &npc) == nil {
+					if existing, _ := repo.GetNPCByCode(npc.Code); existing != nil && existing.ID > 0 {
+						npc.ID = existing.ID
+						if err := repo.UpdateNPC(&npc); err != nil {
+							return err
+						}
+					} else {
+						npc.ID = 0
+						if err := repo.CreateNPC(&npc); err != nil {
+							return err
+						}
+					}
+					imported["npcs"]++
 				}
-				imported["npcs"]++
 			}
 		}
-	}
 
-	if agentsRaw, ok := data["agents"].([]interface{}); ok {
-		for _, ar := range agentsRaw {
-			agentData, _ := jsonMarshal(ar)
-			var agent models.Agent
-			if jsonUnmarshal(agentData, &agent) == nil {
-				if existing, _ := s.repo.GetAgentByCode(agent.Code); existing != nil && existing.ID > 0 {
-					agent.ID = existing.ID
-					s.repo.UpdateAgent(&agent)
-				} else {
-					agent.ID = 0
-					s.repo.CreateAgent(&agent)
+		if agentsRaw, ok := data["agents"].([]interface{}); ok {
+			for _, ar := range agentsRaw {
+				agentData, _ := jsonMarshal(ar)
+				var agent models.Agent
+				if jsonUnmarshal(agentData, &agent) == nil {
+					if existing, _ := repo.GetAgentByCode(agent.Code); existing != nil && existing.ID > 0 {
+						agent.ID = existing.ID
+						if err := repo.UpdateAgent(&agent); err != nil {
+							return err
+						}
+					} else {
+						agent.ID = 0
+						if err := repo.CreateAgent(&agent); err != nil {
+							return err
+						}
+					}
+					imported["agents"]++
 				}
-				imported["agents"]++
 			}
 		}
-	}
 
-	if shopsRaw, ok := data["shops"].([]interface{}); ok {
-		for _, sr := range shopsRaw {
-			shopData, _ := jsonMarshal(sr)
-			var shop models.Shop
-			if jsonUnmarshal(shopData, &shop) == nil {
-				if existing, _ := s.repo.GetShopByCode(shop.Code); existing != nil && existing.ID > 0 {
-					shop.ID = existing.ID
-					s.repo.UpdateShop(&shop)
-				} else {
-					shop.ID = 0
-					s.repo.CreateShop(&shop)
+		if shopsRaw, ok := data["shops"].([]interface{}); ok {
+			for _, sr := range shopsRaw {
+				shopData, _ := jsonMarshal(sr)
+				var shop models.Shop
+				if jsonUnmarshal(shopData, &shop) == nil {
+					if existing, _ := repo.GetShopByCode(shop.Code); existing != nil && existing.ID > 0 {
+						shop.ID = existing.ID
+						if err := repo.UpdateShop(&shop); err != nil {
+							return err
+						}
+					} else {
+						shop.ID = 0
+						if err := repo.CreateShop(&shop); err != nil {
+							return err
+						}
+					}
+					imported["shops"]++
 				}
-				imported["shops"]++
 			}
 		}
-	}
 
-	if itemsRaw, ok := data["items"].([]interface{}); ok {
-		for _, ir := range itemsRaw {
-			itemData, _ := jsonMarshal(ir)
-			var item models.Item
-			if jsonUnmarshal(itemData, &item) == nil {
-				if existing, _ := s.repo.GetItemByCode(item.Code); existing != nil && existing.ID > 0 {
-					item.ID = existing.ID
-					s.repo.UpdateItem(&item)
-				} else {
-					item.ID = 0
-					s.repo.CreateItem(&item)
+		if itemsRaw, ok := data["items"].([]interface{}); ok {
+			for _, ir := range itemsRaw {
+				itemData, _ := jsonMarshal(ir)
+				var item models.Item
+				if jsonUnmarshal(itemData, &item) == nil {
+					if existing, _ := repo.GetItemByCode(item.Code); existing != nil && existing.ID > 0 {
+						item.ID = existing.ID
+						if err := repo.UpdateItem(&item); err != nil {
+							return err
+						}
+					} else {
+						item.ID = 0
+						if err := repo.CreateItem(&item); err != nil {
+							return err
+						}
+					}
+					imported["items"]++
 				}
-				imported["items"]++
 			}
 		}
-	}
 
-	if tasksRaw, ok := data["tasks"].([]interface{}); ok {
-		for _, tr := range tasksRaw {
-			taskData, _ := jsonMarshal(tr)
-			var task models.Task
-			if jsonUnmarshal(taskData, &task) == nil {
-				if existing, _ := s.repo.GetTaskByCode(task.Code); existing != nil && existing.ID > 0 {
-					task.ID = existing.ID
-					s.repo.UpdateTask(&task)
-				} else {
-					task.ID = 0
-					s.repo.CreateTask(&task)
+		if tasksRaw, ok := data["tasks"].([]interface{}); ok {
+			for _, tr := range tasksRaw {
+				taskData, _ := jsonMarshal(tr)
+				var task models.Task
+				if jsonUnmarshal(taskData, &task) == nil {
+					if existing, _ := repo.GetTaskByCode(task.Code); existing != nil && existing.ID > 0 {
+						task.ID = existing.ID
+						if err := repo.UpdateTask(&task); err != nil {
+							return err
+						}
+					} else {
+						task.ID = 0
+						if err := repo.CreateTask(&task); err != nil {
+							return err
+						}
+					}
+					imported["tasks"]++
 				}
-				imported["tasks"]++
 			}
 		}
-	}
 
-	if flowsRaw, ok := data["flows"].([]interface{}); ok {
-		for _, fr := range flowsRaw {
-			flowData, _ := jsonMarshal(fr)
-			var flow models.Flow
-			if jsonUnmarshal(flowData, &flow) == nil {
-				if existing, _ := s.repo.GetFlowByCode(flow.Code); existing != nil && existing.ID > 0 {
-					flow.ID = existing.ID
-					s.repo.UpdateFlow(&flow)
-				} else {
-					flow.ID = 0
-					s.repo.CreateFlow(&flow)
+		if flowsRaw, ok := data["flows"].([]interface{}); ok {
+			for _, fr := range flowsRaw {
+				flowData, _ := jsonMarshal(fr)
+				var flow models.Flow
+				if jsonUnmarshal(flowData, &flow) == nil {
+					if existing, _ := repo.GetFlowByCode(flow.Code); existing != nil && existing.ID > 0 {
+						flow.ID = existing.ID
+						if err := repo.UpdateFlow(&flow); err != nil {
+							return err
+						}
+					} else {
+						flow.ID = 0
+						if err := repo.CreateFlow(&flow); err != nil {
+							return err
+						}
+					}
+					imported["flows"]++
 				}
-				imported["flows"]++
 			}
 		}
-	}
 
-	if templatesRaw, ok := data["prompts"].([]interface{}); ok {
-		for _, tr := range templatesRaw {
-			tmplData, _ := jsonMarshal(tr)
-			var tmpl models.PromptTemplate
-			if jsonUnmarshal(tmplData, &tmpl) == nil {
-				if existing, _ := s.repo.GetTemplateByCode(tmpl.Code); existing != nil && existing.ID > 0 {
-					tmpl.ID = existing.ID
-					s.repo.UpdateTemplate(&tmpl)
-				} else {
-					tmpl.ID = 0
-					s.repo.CreateTemplate(&tmpl)
+		if templatesRaw, ok := data["prompts"].([]interface{}); ok {
+			for _, tr := range templatesRaw {
+				tmplData, _ := jsonMarshal(tr)
+				var tmpl models.PromptTemplate
+				if jsonUnmarshal(tmplData, &tmpl) == nil {
+					if existing, _ := repo.GetTemplateByCode(tmpl.Code); existing != nil && existing.ID > 0 {
+						tmpl.ID = existing.ID
+						if err := repo.UpdateTemplate(&tmpl); err != nil {
+							return err
+						}
+					} else {
+						tmpl.ID = 0
+						if err := repo.CreateTemplate(&tmpl); err != nil {
+							return err
+						}
+					}
+					imported["prompts"]++
 				}
-				imported["prompts"]++
 			}
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		respondInternalError(c, err)
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Import successful", "imported": imported})

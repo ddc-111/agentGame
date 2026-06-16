@@ -699,6 +699,95 @@ func TestExportData(t *testing.T) {
 	t.Log("导出数据测试通过")
 }
 
+// TestImportDataInTransaction 测试导入数据在事务中执行
+func TestImportDataInTransaction(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	exportResp, err := http.Get(ts.URL + "/api/export")
+	if err != nil {
+		t.Fatalf("导出请求失败: %v", err)
+	}
+	defer exportResp.Body.Close()
+
+	var exportResult map[string]interface{}
+	if err := json.NewDecoder(exportResp.Body).Decode(&exportResult); err != nil {
+		t.Fatalf("解析导出响应失败: %v", err)
+	}
+
+	importData := exportResult["data"].(map[string]interface{})
+
+	resp, err := makeRequest("POST", ts.URL+"/api/import", importData)
+	if err != nil {
+		t.Fatalf("导入请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析导入响应失败: %v", err)
+	}
+
+	if result["message"] != "Import successful" {
+		t.Errorf("期望 message=Import successful, 得到 %v", result["message"])
+	}
+
+	imported, ok := result["imported"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 imported 字段格式错误")
+	}
+
+	if _, ok := imported["scenes"]; !ok {
+		t.Error("导入结果缺少 scenes 字段")
+	}
+	t.Log("事务导入数据测试通过")
+}
+
+// TestImportDataWrapped 测试导入数据带data包装
+func TestImportDataWrapped(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	wrappedData := map[string]interface{}{
+		"data": map[string]interface{}{
+			"scenes": []interface{}{
+				map[string]interface{}{
+					"code":        "scene_import_test",
+					"name":        "导入测试场景",
+					"description": "事务导入测试",
+					"width":       1920,
+					"height":      1080,
+				},
+			},
+		},
+	}
+
+	resp, err := makeRequest("POST", ts.URL+"/api/import", wrappedData)
+	if err != nil {
+		t.Fatalf("导入请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if result["message"] != "Import successful" {
+		t.Errorf("期望 message=Import successful, 得到 %v", result["message"])
+	}
+
+	imported := result["imported"].(map[string]interface{})
+	if imported["scenes"].(float64) != 1 {
+		t.Errorf("期望导入1个场景, 得到 %v", imported["scenes"])
+	}
+	t.Log("带data包装的导入测试通过")
+}
+
 func TestStartCombat(t *testing.T) {
 	ts := setupTestServer()
 	defer ts.Close()
