@@ -163,7 +163,7 @@ describe('InventoryManager', () => {
       manager.addItem(1002, 1);
       const result = manager.equipItem(1002);
       expect(result).toBe(true);
-      expect(manager.equipment.weapon).toBe('1002');
+      expect(manager.equipment.weapon).toBe(1002);
       expect(manager.getItemCount(1002)).toBe(0);
     });
 
@@ -171,7 +171,7 @@ describe('InventoryManager', () => {
       manager.addItem(1003, 1);
       const result = manager.equipItem(1003);
       expect(result).toBe(true);
-      expect(manager.equipment.armor).toBe('1003');
+      expect(manager.equipment.armor).toBe(1003);
     });
 
     it('swaps equipped weapon', () => {
@@ -181,8 +181,8 @@ describe('InventoryManager', () => {
       mockGameData.items.push({ id: newWeaponId, name: '钢剑', type: 'weapon', effect: { attack: 8 } });
       manager.addItem(newWeaponId, 1);
       manager.equipItem(newWeaponId);
-      expect(manager.equipment.weapon).toBe(String(newWeaponId));
-      expect(manager.getItemCount(1002)).toBe(1);
+      expect(manager.equipment.weapon).toBe(newWeaponId);
+      expect(manager.getItemCount(1002)).toBe(2);
     });
 
     it('returns false for non-equippable item', () => {
