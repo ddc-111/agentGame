@@ -12,6 +12,14 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
+// handleGetGameInit godoc
+// @Summary      Get game initialization data
+// @Description  Get all initial game data including configs, scenes, NPCs, tasks, items, and skills
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /game/init [get]
 func (s *Server) handleGetGameInit(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -56,6 +64,17 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 	})
 }
 
+// handleCreatePlayer godoc
+// @Summary      Create a player
+// @Description  Create a new player or return existing player by account
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Player creation request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /player/create [post]
 func (s *Server) handleCreatePlayer(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -110,6 +129,16 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
+// handleGetPlayer godoc
+// @Summary      Get a player
+// @Description  Get a player by ID
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Player ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /player/{id} [get]
 func (s *Server) handleGetPlayer(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -124,6 +153,18 @@ func (s *Server) handleGetPlayer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
+// handleUpdatePlayerPos godoc
+// @Summary      Update player position
+// @Description  Update player position and scene
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Player ID"
+// @Param        request  body  object  true  "Position update request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /player/{id}/pos [put]
 func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -187,6 +228,16 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
+// handleGetSceneByCode godoc
+// @Summary      Get scene by code
+// @Description  Get a scene by its code
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        code  path  string  true  "Scene code"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /game/scene/{code} [get]
 func (s *Server) handleGetSceneByCode(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Param("code")
@@ -198,6 +249,16 @@ func (s *Server) handleGetSceneByCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": scene})
 }
 
+// handleGetNPCByCode godoc
+// @Summary      Get NPC by code
+// @Description  Get an NPC by its code with behavior state
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        code  path  string  true  "NPC code"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /game/npc/{code} [get]
 func (s *Server) handleGetNPCByCode(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Param("code")
@@ -215,6 +276,15 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 	})
 }
 
+// handleGetPlayerTasks godoc
+// @Summary      Get player tasks
+// @Description  Get all tasks for a player
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /player/{id}/tasks [get]
 func (s *Server) handleGetPlayerTasks(c *gin.Context) {
 	ctx := c.Request.Context()
 	tasks, err := s.repo.GetTasks(ctx)
@@ -225,6 +295,17 @@ func (s *Server) handleGetPlayerTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": tasks})
 }
 
+// handleNPCChat godoc
+// @Summary      Chat with NPC
+// @Description  Send a message to an NPC and get a response
+// @Tags         chat
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Chat request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /npc/chat [post]
 func (s *Server) handleNPCChat(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -345,6 +426,16 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	})
 }
 
+// handleGetShopItems godoc
+// @Summary      Get shop items
+// @Description  Get items available in a shop by shop code
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        code  path  string  true  "Shop code"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /game/shop/{code}/items [get]
 func (s *Server) handleGetShopItems(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Param("code")
@@ -383,6 +474,17 @@ func (s *Server) handleGetShopItems(c *gin.Context) {
 	})
 }
 
+// handleBuyItem godoc
+// @Summary      Buy an item
+// @Description  Buy an item from a shop
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Buy request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /shop/buy [post]
 func (s *Server) handleBuyItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -607,6 +709,16 @@ func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
 
+// handleGetNPCBehavior godoc
+// @Summary      Get NPC behavior
+// @Description  Get behavior state for an NPC by code
+// @Tags         npc
+// @Accept       json
+// @Produce      json
+// @Param        code  path  string  true  "NPC code"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /npc/{code}/behavior [get]
 func (s *Server) handleGetNPCBehavior(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Param("code")
@@ -623,6 +735,18 @@ func (s *Server) handleGetNPCBehavior(c *gin.Context) {
 	})
 }
 
+// handleNPCBehaviorEvent godoc
+// @Summary      Trigger NPC behavior event
+// @Description  Trigger a behavior event for an NPC
+// @Tags         npc
+// @Accept       json
+// @Produce      json
+// @Param        code  path  string  true  "NPC code"
+// @Param        request  body  object  true  "Behavior event request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /npc/{code}/behavior/event [post]
 func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Param("code")
@@ -664,6 +788,16 @@ func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
 	})
 }
 
+// handleGameTick godoc
+// @Summary      Process game tick
+// @Description  Process a game tick for the specified hour
+// @Tags         game
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Game tick request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /game/tick [post]
 func (s *Server) handleGameTick(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -696,6 +830,17 @@ func (s *Server) handleGameTick(c *gin.Context) {
 	})
 }
 
+// handleGetPlayers godoc
+// @Summary      List players
+// @Description  Get paginated list of players
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Param        page    query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /players [get]
 func (s *Server) handleGetPlayers(c *gin.Context) {
 	ctx := c.Request.Context()
 	p := parsePagination(c)
@@ -708,6 +853,19 @@ func (s *Server) handleGetPlayers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": players, "total": total})
 }
 
+// handleUpdatePlayer godoc
+// @Summary      Update a player
+// @Description  Update a player by ID
+// @Tags         players
+// @Accept       json
+// @Produce      json
+// @Param        id      path  int           true  "Player ID"
+// @Param        player  body  models.Player  true  "Player data"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /players/{id} [put]
 func (s *Server) handleUpdatePlayer(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -732,6 +890,20 @@ func (s *Server) handleUpdatePlayer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": player})
 }
 
+// handleGetConversations godoc
+// @Summary      List conversations
+// @Description  Get paginated conversations between a player and NPC
+// @Tags         conversations
+// @Accept       json
+// @Produce      json
+// @Param        player_id  query  int  true  "Player ID"
+// @Param        npc_id     query  int  true  "NPC ID"
+// @Param        page       query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /conversations [get]
 func (s *Server) handleGetConversations(c *gin.Context) {
 	ctx := c.Request.Context()
 	playerID, ok1 := parseQueryID(c, "player_id")
@@ -753,6 +925,17 @@ func (s *Server) handleGetConversations(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": conversations, "total": total})
 }
 
+// handleCreateConversation godoc
+// @Summary      Create a conversation
+// @Description  Create a new conversation record
+// @Tags         conversations
+// @Accept       json
+// @Produce      json
+// @Param        conversation  body  models.Conversation  true  "Conversation data"
+// @Success      201  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /conversations [post]
 func (s *Server) handleCreateConversation(c *gin.Context) {
 	ctx := c.Request.Context()
 	var conv models.Conversation

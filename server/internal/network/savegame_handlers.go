@@ -14,6 +14,17 @@ func (s *Server) registerSavegameRoutes(api *gin.RouterGroup) {
 	api.POST("/load/:save_id", s.handleLoadGame)
 }
 
+// handleSaveGame godoc
+// @Summary      Save game
+// @Description  Save player game state to a slot
+// @Tags         savegame
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Save game request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /save [post]
 func (s *Server) handleSaveGame(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -109,6 +120,16 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 	}
 }
 
+// handleGetSaves godoc
+// @Summary      Get save games
+// @Description  Get all save game slots for a player
+// @Tags         savegame
+// @Accept       json
+// @Produce      json
+// @Param        player_id  path  int  true  "Player ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /saves/{player_id} [get]
 func (s *Server) handleGetSaves(c *gin.Context) {
 	ctx := c.Request.Context()
 	playerID, ok := parseID(c, "player_id")
@@ -155,6 +176,18 @@ func (s *Server) handleGetSaves(c *gin.Context) {
 	})
 }
 
+// handleLoadGame godoc
+// @Summary      Load game
+// @Description  Load a saved game state
+// @Tags         savegame
+// @Accept       json
+// @Produce      json
+// @Param        save_id  path  int  true  "Save ID"
+// @Param        request  body  object  true  "Load game request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /load/{save_id} [post]
 func (s *Server) handleLoadGame(c *gin.Context) {
 	ctx := c.Request.Context()
 	saveID, ok := parseID(c, "save_id")

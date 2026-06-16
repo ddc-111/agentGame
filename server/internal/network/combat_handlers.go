@@ -20,6 +20,17 @@ func (s *Server) registerCombatRoutes(api *gin.RouterGroup) {
 	}
 }
 
+// handleStartCombat godoc
+// @Summary      Start combat
+// @Description  Start a new combat encounter
+// @Tags         combat
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Combat start request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /combat/start [post]
 func (s *Server) handleStartCombat(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -58,6 +69,17 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 	})
 }
 
+// handleCombatAction godoc
+// @Summary      Perform combat action
+// @Description  Perform a combat action (attack, skill, item, flee)
+// @Tags         combat
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Combat action request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /combat/action [post]
 func (s *Server) handleCombatAction(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {

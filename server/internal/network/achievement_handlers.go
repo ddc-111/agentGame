@@ -15,6 +15,19 @@ func (s *Server) registerAchievementRoutes(api *gin.RouterGroup) {
 	api.POST("/achievements/check", s.handleCheckAchievements)
 }
 
+// handleGetPlayerAchievements godoc
+// @Summary      Get player achievements
+// @Description  Get achievements for a player with unlock status
+// @Tags         achievements
+// @Accept       json
+// @Produce      json
+// @Param        player_id  path  int  true  "Player ID"
+// @Param        page       query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /achievements/{player_id} [get]
 func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 	ctx := c.Request.Context()
 	playerID, ok := parseID(c, "player_id")
@@ -62,6 +75,18 @@ func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 	})
 }
 
+// handleCheckAchievements godoc
+// @Summary      Check achievements
+// @Description  Check and unlock new achievements for a player
+// @Tags         achievements
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Check achievements request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /achievements/check [post]
 func (s *Server) handleCheckAchievements(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {

@@ -14,6 +14,17 @@ func (s *Server) registerSkillRoutes(api *gin.RouterGroup) {
 	api.POST("/skills/use", s.handleUseSkill)
 }
 
+// handleGetSkills godoc
+// @Summary      List skills
+// @Description  Get paginated list of skills
+// @Tags         skills
+// @Accept       json
+// @Produce      json
+// @Param        page    query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /skills [get]
 func (s *Server) handleGetSkills(c *gin.Context) {
 	ctx := c.Request.Context()
 	p := parsePagination(c)
@@ -26,6 +37,17 @@ func (s *Server) handleGetSkills(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": skills, "total": total})
 }
 
+// handleUseSkill godoc
+// @Summary      Use a skill
+// @Description  Use a skill in combat
+// @Tags         skills
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Use skill request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /skills/use [post]
 func (s *Server) handleUseSkill(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {

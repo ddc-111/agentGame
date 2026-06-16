@@ -1,0 +1,3146 @@
+basePath: /api
+definitions:
+  github_com_ddc-111_agentGame_server_internal_database_models.Agent:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      id:
+        type: integer
+      knowledge_base:
+        description: JSON数组
+        type: string
+      llm_model:
+        type: string
+      llm_provider:
+        type: string
+      max_messages:
+        type: integer
+      max_tokens:
+        type: integer
+      memory_type:
+        type: string
+      name:
+        type: string
+      summary_enabled:
+        type: boolean
+      system_prompt:
+        type: string
+      temperature:
+        type: number
+      tools:
+        description: JSON数组
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Conversation:
+    properties:
+      agent_id:
+        type: integer
+      content:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      npc_id:
+        type: integer
+      player_id:
+        type: integer
+      role:
+        type: string
+      summary:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Flow:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      edges:
+        description: JSON数组
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nodes:
+        description: JSON数组
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Item:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      effect:
+        description: JSON对象
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.LLMProvider:
+    properties:
+      api_key:
+        type: string
+      base_url:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      models:
+        description: JSON数组
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.NPC:
+    properties:
+      agent:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Agent'
+      agent_id:
+        type: integer
+      avatar:
+        type: string
+      behaviors:
+        description: JSON数组
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      schedule:
+        description: JSON数组
+        type: string
+      shop:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Shop'
+      shop_id:
+        type: integer
+      sprite:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Player:
+    properties:
+      account:
+        type: string
+      attack:
+        type: integer
+      combat_wins:
+        type: integer
+      created_at:
+        type: string
+      defense:
+        type: integer
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      equipment:
+        description: JSON对象 {weapon_id, armor_id}
+        type: string
+      exp:
+        type: integer
+      gold:
+        type: integer
+      hp:
+        type: integer
+      id:
+        type: integer
+      items:
+        description: 'JSON对象 {item_id: count}'
+        type: string
+      level:
+        type: integer
+      mp:
+        type: integer
+      name:
+        type: string
+      pos_x:
+        type: integer
+      pos_y:
+        type: integer
+      scene_id:
+        type: string
+      skills_used:
+        type: integer
+      updated_at:
+        type: string
+      visited_scenes:
+        description: JSON数组 ["scene_code", ...]
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Portal:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      scene_id:
+        type: integer
+      target_scene:
+        type: string
+      target_x:
+        type: integer
+      target_y:
+        type: integer
+      updated_at:
+        type: string
+      x:
+        type: integer
+      "y":
+        type: integer
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.PromptTemplate:
+    properties:
+      category:
+        type: string
+      code:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      variables:
+        description: JSON数组
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Scene:
+    properties:
+      background:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      height:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      portals:
+        items:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Portal'
+        type: array
+      scene_npcs:
+        items:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.SceneNPC'
+        type: array
+      updated_at:
+        type: string
+      width:
+        type: integer
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.SceneNPC:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      npc:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.NPC'
+      npc_id:
+        type: integer
+      scene:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Scene'
+      scene_id:
+        type: integer
+      updated_at:
+        type: string
+      x:
+        type: integer
+      "y":
+        type: integer
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Shop:
+    properties:
+      close_time:
+        type: string
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      discount:
+        description: JSON对象
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.ShopItem'
+        type: array
+      name:
+        type: string
+      open_time:
+        type: string
+      owner_npc:
+        type: string
+      scene_code:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.ShopItem:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      item:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Item'
+      item_id:
+        type: integer
+      price:
+        type: integer
+      shop:
+        $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Shop'
+      shop_id:
+        type: integer
+      stock:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_database_models.Task:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      description:
+        type: string
+      dialogue:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      next_task:
+        type: string
+      objectives:
+        description: JSON数组
+        type: string
+      rewards:
+        description: JSON对象
+        type: string
+      status:
+        type: string
+      trigger:
+        description: JSON对象
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_ddc-111_agentGame_server_internal_generator.GenerateRequest:
+    properties:
+      action:
+        description: create, complete, expand, translate
+        type: string
+      context:
+        additionalProperties: true
+        description: 上下文信息
+        type: object
+      params:
+        additionalProperties: true
+        description: 参数
+        type: object
+      type:
+        description: npc, scene, task, shop, item, agent, dialogue, flow
+        type: string
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: AgentGame server API for game management, NPCs, players, combat, and
+    more.
+  title: AgentGame API
+  version: "1.0"
+paths:
+  /achievements/{player_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get achievements for a player with unlock status
+      parameters:
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get player achievements
+      tags:
+      - achievements
+  /achievements/check:
+    post:
+      consumes:
+      - application/json
+      description: Check and unlock new achievements for a player
+      parameters:
+      - description: Check achievements request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Check achievements
+      tags:
+      - achievements
+  /agents:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of agents
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List agents
+      tags:
+      - agents
+    post:
+      consumes:
+      - application/json
+      description: Create a new agent
+      parameters:
+      - description: Agent data
+        in: body
+        name: agent
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Agent'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create an agent
+      tags:
+      - agents
+  /agents/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an agent by ID
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an agent
+      tags:
+      - agents
+    get:
+      consumes:
+      - application/json
+      description: Get an agent by ID
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get an agent
+      tags:
+      - agents
+    put:
+      consumes:
+      - application/json
+      description: Update an agent by ID
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Agent data
+        in: body
+        name: agent
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Agent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an agent
+      tags:
+      - agents
+  /combat/action:
+    post:
+      consumes:
+      - application/json
+      description: Perform a combat action (attack, skill, item, flee)
+      parameters:
+      - description: Combat action request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Perform combat action
+      tags:
+      - combat
+  /combat/start:
+    post:
+      consumes:
+      - application/json
+      description: Start a new combat encounter
+      parameters:
+      - description: Combat start request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Start combat
+      tags:
+      - combat
+  /conversations:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated conversations between a player and NPC
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        required: true
+        type: integer
+      - description: NPC ID
+        in: query
+        name: npc_id
+        required: true
+        type: integer
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List conversations
+      tags:
+      - conversations
+    post:
+      consumes:
+      - application/json
+      description: Create a new conversation record
+      parameters:
+      - description: Conversation data
+        in: body
+        name: conversation
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Conversation'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a conversation
+      tags:
+      - conversations
+  /export:
+    get:
+      consumes:
+      - application/json
+      description: Export all game data as JSON
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Export all data
+      tags:
+      - data
+  /flows:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of flows
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List flows
+      tags:
+      - flows
+    post:
+      consumes:
+      - application/json
+      description: Create a new flow
+      parameters:
+      - description: Flow data
+        in: body
+        name: flow
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Flow'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a flow
+      tags:
+      - flows
+  /flows/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a flow by ID
+      parameters:
+      - description: Flow ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a flow
+      tags:
+      - flows
+    get:
+      consumes:
+      - application/json
+      description: Get a flow by ID
+      parameters:
+      - description: Flow ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a flow
+      tags:
+      - flows
+    put:
+      consumes:
+      - application/json
+      description: Update a flow by ID
+      parameters:
+      - description: Flow ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Flow data
+        in: body
+        name: flow
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Flow'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a flow
+      tags:
+      - flows
+  /game/init:
+    get:
+      consumes:
+      - application/json
+      description: Get all initial game data including configs, scenes, NPCs, tasks,
+        items, and skills
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get game initialization data
+      tags:
+      - game
+  /game/npc/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Get an NPC by its code with behavior state
+      parameters:
+      - description: NPC code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get NPC by code
+      tags:
+      - game
+  /game/scene/{code}:
+    get:
+      consumes:
+      - application/json
+      description: Get a scene by its code
+      parameters:
+      - description: Scene code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get scene by code
+      tags:
+      - game
+  /game/shop/{code}/items:
+    get:
+      consumes:
+      - application/json
+      description: Get items available in a shop by shop code
+      parameters:
+      - description: Shop code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get shop items
+      tags:
+      - game
+  /game/tick:
+    post:
+      consumes:
+      - application/json
+      description: Process a game tick for the specified hour
+      parameters:
+      - description: Game tick request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Process game tick
+      tags:
+      - game
+  /generator/generate:
+    post:
+      consumes:
+      - application/json
+      description: Generate game content using AI
+      parameters:
+      - description: Generate request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_generator.GenerateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate content
+      tags:
+      - generator
+  /generator/status:
+    get:
+      consumes:
+      - application/json
+      description: Get the current status and configuration of the generator
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get generator status
+      tags:
+      - generator
+  /generator/test:
+    post:
+      consumes:
+      - application/json
+      description: Test the generator with a sample NPC generation
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Test generator
+      tags:
+      - generator
+  /gm/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate as a GM user and get a JWT token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: GM login
+      tags:
+      - auth
+  /gm/me:
+    get:
+      consumes:
+      - application/json
+      description: Get the current authenticated GM user info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current GM user
+      tags:
+      - auth
+  /import:
+    post:
+      consumes:
+      - application/json
+      description: Import game data from JSON
+      parameters:
+      - description: Import data
+        in: body
+        name: data
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Import data
+      tags:
+      - data
+  /inventory/{player_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get inventory items and equipment for a player
+      parameters:
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get player inventory
+      tags:
+      - inventory
+  /inventory/equip:
+    post:
+      consumes:
+      - application/json
+      description: Equip an item to a player
+      parameters:
+      - description: Equip request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Equip an item
+      tags:
+      - inventory
+  /inventory/unequip:
+    post:
+      consumes:
+      - application/json
+      description: Unequip an item from a player
+      parameters:
+      - description: Unequip request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Unequip an item
+      tags:
+      - inventory
+  /inventory/use:
+    post:
+      consumes:
+      - application/json
+      description: Use a consumable item from inventory
+      parameters:
+      - description: Use item request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Use an item
+      tags:
+      - inventory
+  /items:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of items
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List items
+      tags:
+      - items
+    post:
+      consumes:
+      - application/json
+      description: Create a new item
+      parameters:
+      - description: Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Item'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create an item
+      tags:
+      - items
+  /items/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an item by ID
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an item
+      tags:
+      - items
+    put:
+      consumes:
+      - application/json
+      description: Update an item by ID
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Item data
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Item'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an item
+      tags:
+      - items
+  /llm/providers:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of LLM providers
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List LLM providers
+      tags:
+      - providers
+    post:
+      consumes:
+      - application/json
+      description: Create a new LLM provider
+      parameters:
+      - description: Provider data
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.LLMProvider'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create an LLM provider
+      tags:
+      - providers
+  /llm/providers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an LLM provider by ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an LLM provider
+      tags:
+      - providers
+    put:
+      consumes:
+      - application/json
+      description: Update an LLM provider by ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Provider data
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.LLMProvider'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an LLM provider
+      tags:
+      - providers
+  /load/{save_id}:
+    post:
+      consumes:
+      - application/json
+      description: Load a saved game state
+      parameters:
+      - description: Save ID
+        in: path
+        name: save_id
+        required: true
+        type: integer
+      - description: Load game request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Load game
+      tags:
+      - savegame
+  /mcp/call:
+    post:
+      consumes:
+      - application/json
+      description: Call an MCP tool by name with arguments
+      parameters:
+      - description: MCP tool call request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Call an MCP tool
+      tags:
+      - mcp
+  /mcp/prompts:
+    get:
+      consumes:
+      - application/json
+      description: Get available MCP prompts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List MCP prompts
+      tags:
+      - mcp
+  /mcp/prompts/get:
+    post:
+      consumes:
+      - application/json
+      description: Get an MCP prompt by name with arguments
+      parameters:
+      - description: MCP prompt get request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get an MCP prompt
+      tags:
+      - mcp
+  /mcp/resources:
+    get:
+      consumes:
+      - application/json
+      description: Get available MCP resources
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List MCP resources
+      tags:
+      - mcp
+  /mcp/resources/read:
+    get:
+      consumes:
+      - application/json
+      description: Read an MCP resource by URI
+      parameters:
+      - description: Resource URI
+        in: query
+        name: uri
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Read an MCP resource
+      tags:
+      - mcp
+  /mcp/tools:
+    get:
+      consumes:
+      - application/json
+      description: Get available MCP tools
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List MCP tools
+      tags:
+      - mcp
+  /npc/{code}/behavior:
+    get:
+      consumes:
+      - application/json
+      description: Get behavior state for an NPC by code
+      parameters:
+      - description: NPC code
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get NPC behavior
+      tags:
+      - npc
+  /npc/{code}/behavior/event:
+    post:
+      consumes:
+      - application/json
+      description: Trigger a behavior event for an NPC
+      parameters:
+      - description: NPC code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Behavior event request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Trigger NPC behavior event
+      tags:
+      - npc
+  /npc/chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to an NPC and get a response
+      parameters:
+      - description: Chat request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Chat with NPC
+      tags:
+      - chat
+  /npcs:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of NPCs
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List NPCs
+      tags:
+      - npcs
+    post:
+      consumes:
+      - application/json
+      description: Create a new NPC
+      parameters:
+      - description: NPC data
+        in: body
+        name: npc
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.NPC'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create an NPC
+      tags:
+      - npcs
+  /npcs/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an NPC by ID
+      parameters:
+      - description: NPC ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an NPC
+      tags:
+      - npcs
+    get:
+      consumes:
+      - application/json
+      description: Get an NPC by ID
+      parameters:
+      - description: NPC ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get an NPC
+      tags:
+      - npcs
+    put:
+      consumes:
+      - application/json
+      description: Update an NPC by ID
+      parameters:
+      - description: NPC ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: NPC data
+        in: body
+        name: npc
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.NPC'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update an NPC
+      tags:
+      - npcs
+  /player/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a player by ID
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a player
+      tags:
+      - players
+  /player/{id}/pos:
+    put:
+      consumes:
+      - application/json
+      description: Update player position and scene
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Position update request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update player position
+      tags:
+      - players
+  /player/{id}/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get all tasks for a player
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get player tasks
+      tags:
+      - players
+  /player/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new player or return existing player by account
+      parameters:
+      - description: Player creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a player
+      tags:
+      - players
+  /players:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of players
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List players
+      tags:
+      - players
+  /players/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update a player by ID
+      parameters:
+      - description: Player ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Player data
+        in: body
+        name: player
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Player'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a player
+      tags:
+      - players
+  /prompts:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of prompt templates
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List prompt templates
+      tags:
+      - templates
+    post:
+      consumes:
+      - application/json
+      description: Create a new prompt template
+      parameters:
+      - description: Template data
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.PromptTemplate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a prompt template
+      tags:
+      - templates
+  /prompts/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a prompt template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a prompt template
+      tags:
+      - templates
+    put:
+      consumes:
+      - application/json
+      description: Update a prompt template by ID
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Template data
+        in: body
+        name: template
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.PromptTemplate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a prompt template
+      tags:
+      - templates
+  /save:
+    post:
+      consumes:
+      - application/json
+      description: Save player game state to a slot
+      parameters:
+      - description: Save game request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Save game
+      tags:
+      - savegame
+  /saves/{player_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get all save game slots for a player
+      parameters:
+      - description: Player ID
+        in: path
+        name: player_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get save games
+      tags:
+      - savegame
+  /scenes:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of scenes
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List scenes
+      tags:
+      - scenes
+    post:
+      consumes:
+      - application/json
+      description: Create a new scene
+      parameters:
+      - description: Scene data
+        in: body
+        name: scene
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Scene'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a scene
+      tags:
+      - scenes
+  /scenes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a scene by ID
+      parameters:
+      - description: Scene ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a scene
+      tags:
+      - scenes
+    get:
+      consumes:
+      - application/json
+      description: Get a scene by ID
+      parameters:
+      - description: Scene ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a scene
+      tags:
+      - scenes
+    put:
+      consumes:
+      - application/json
+      description: Update a scene by ID
+      parameters:
+      - description: Scene ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Scene data
+        in: body
+        name: scene
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Scene'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a scene
+      tags:
+      - scenes
+  /shop/buy:
+    post:
+      consumes:
+      - application/json
+      description: Buy an item from a shop
+      parameters:
+      - description: Buy request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Buy an item
+      tags:
+      - game
+  /shops:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of shops
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List shops
+      tags:
+      - shops
+    post:
+      consumes:
+      - application/json
+      description: Create a new shop
+      parameters:
+      - description: Shop data
+        in: body
+        name: shop
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Shop'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a shop
+      tags:
+      - shops
+  /shops/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a shop by ID
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a shop
+      tags:
+      - shops
+    get:
+      consumes:
+      - application/json
+      description: Get a shop by ID
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a shop
+      tags:
+      - shops
+    put:
+      consumes:
+      - application/json
+      description: Update a shop by ID
+      parameters:
+      - description: Shop ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Shop data
+        in: body
+        name: shop
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Shop'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a shop
+      tags:
+      - shops
+  /skills:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of skills
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List skills
+      tags:
+      - skills
+  /skills/use:
+    post:
+      consumes:
+      - application/json
+      description: Use a skill in combat
+      parameters:
+      - description: Use skill request
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Use a skill
+      tags:
+      - skills
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of tasks
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task
+      parameters:
+      - description: Task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Task'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a task
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a task
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Get a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get a task
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update a task by ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ddc-111_agentGame_server_internal_database_models.Task'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update a task
+      tags:
+      - tasks
+  /ws:
+    get:
+      consumes:
+      - application/json
+      description: Establish a WebSocket connection for real-time game events
+      parameters:
+      - description: Player ID
+        in: query
+        name: player_id
+        type: string
+      - description: Scene ID
+        in: query
+        name: scene_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            additionalProperties: true
+            type: object
+      summary: WebSocket connection
+      tags:
+      - websocket
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"

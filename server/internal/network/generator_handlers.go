@@ -7,6 +7,17 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/generator"
 )
 
+// handleGenerate godoc
+// @Summary      Generate content
+// @Description  Generate game content using AI
+// @Tags         generator
+// @Accept       json
+// @Produce      json
+// @Param        request  body  generator.GenerateRequest  true  "Generate request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      503  {object}  map[string]interface{}
+// @Router       /generator/generate [post]
 func (s *Server) handleGenerate(c *gin.Context) {
 	var req generator.GenerateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -38,6 +49,14 @@ func (s *Server) handleGenerate(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// handleGeneratorStatus godoc
+// @Summary      Get generator status
+// @Description  Get the current status and configuration of the generator
+// @Tags         generator
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /generator/status [get]
 func (s *Server) handleGeneratorStatus(c *gin.Context) {
 	enabled := s.generator != nil && s.generator.IsEnabled()
 	cfg := s.generator.GetConfig()
@@ -50,6 +69,15 @@ func (s *Server) handleGeneratorStatus(c *gin.Context) {
 	})
 }
 
+// handleGeneratorTest godoc
+// @Summary      Test generator
+// @Description  Test the generator with a sample NPC generation
+// @Tags         generator
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      503  {object}  map[string]interface{}
+// @Router       /generator/test [post]
 func (s *Server) handleGeneratorTest(c *gin.Context) {
 	if s.generator == nil || !s.generator.IsEnabled() {
 		respondError(c, http.StatusServiceUnavailable, BadRequest("生成智能体未启用"))

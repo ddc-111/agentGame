@@ -10,6 +10,15 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/network"
 )
 
+// @title           AgentGame API
+// @version         1.0
+// @description     AgentGame server API for game management, NPCs, players, combat, and more.
+// @host            localhost:8080
+// @BasePath        /api
+// @schemes         http
+// @produce         json
+// @consumes        json
+
 func main() {
 	cfg, err := config.Load("config.yaml")
 	if err != nil {

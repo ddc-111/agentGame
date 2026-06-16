@@ -8,6 +8,17 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
+// handleGetItems godoc
+// @Summary      List items
+// @Description  Get paginated list of items
+// @Tags         items
+// @Accept       json
+// @Produce      json
+// @Param        page    query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /items [get]
 func (s *Server) handleGetItems(c *gin.Context) {
 	ctx := c.Request.Context()
 	p := parsePagination(c)
@@ -20,6 +31,17 @@ func (s *Server) handleGetItems(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": items, "total": total})
 }
 
+// handleCreateItem godoc
+// @Summary      Create an item
+// @Description  Create a new item
+// @Tags         items
+// @Accept       json
+// @Produce      json
+// @Param        item  body  models.Item  true  "Item data"
+// @Success      201  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /items [post]
 func (s *Server) handleCreateItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	var item models.Item
@@ -50,6 +72,19 @@ func (s *Server) handleCreateItem(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": item})
 }
 
+// handleUpdateItem godoc
+// @Summary      Update an item
+// @Description  Update an item by ID
+// @Tags         items
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int         true  "Item ID"
+// @Param        item  body  models.Item  true  "Item data"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /items/{id} [put]
 func (s *Server) handleUpdateItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -85,6 +120,17 @@ func (s *Server) handleUpdateItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": item})
 }
 
+// handleDeleteItem godoc
+// @Summary      Delete an item
+// @Description  Delete an item by ID
+// @Tags         items
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Item ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /items/{id} [delete]
 func (s *Server) handleDeleteItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")

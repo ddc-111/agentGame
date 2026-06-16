@@ -7,11 +7,29 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/mcp"
 )
 
+// handleMCPTools godoc
+// @Summary      List MCP tools
+// @Description  Get available MCP tools
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /mcp/tools [get]
 func (s *Server) handleMCPTools(c *gin.Context) {
 	tools := s.mcp.GetTools()
 	c.JSON(http.StatusOK, gin.H{"tools": tools})
 }
 
+// handleMCPCall godoc
+// @Summary      Call an MCP tool
+// @Description  Call an MCP tool by name with arguments
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "MCP tool call request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /mcp/call [post]
 func (s *Server) handleMCPCall(c *gin.Context) {
 	var req struct {
 		Name      string                 `json:"name"`
@@ -40,11 +58,29 @@ func (s *Server) handleMCPCall(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// handleMCPResources godoc
+// @Summary      List MCP resources
+// @Description  Get available MCP resources
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /mcp/resources [get]
 func (s *Server) handleMCPResources(c *gin.Context) {
 	resources := s.mcp.GetResources()
 	c.JSON(http.StatusOK, gin.H{"resources": resources})
 }
 
+// handleMCPResourceRead godoc
+// @Summary      Read an MCP resource
+// @Description  Read an MCP resource by URI
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Param        uri  query  string  true  "Resource URI"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /mcp/resources/read [get]
 func (s *Server) handleMCPResourceRead(c *gin.Context) {
 	uri := c.Query("uri")
 	if uri == "" {
@@ -64,11 +100,29 @@ func (s *Server) handleMCPResourceRead(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// handleMCPPrompts godoc
+// @Summary      List MCP prompts
+// @Description  Get available MCP prompts
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /mcp/prompts [get]
 func (s *Server) handleMCPPrompts(c *gin.Context) {
 	prompts := s.mcp.GetPrompts()
 	c.JSON(http.StatusOK, gin.H{"prompts": prompts})
 }
 
+// handleMCPPromptGet godoc
+// @Summary      Get an MCP prompt
+// @Description  Get an MCP prompt by name with arguments
+// @Tags         mcp
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "MCP prompt get request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /mcp/prompts/get [post]
 func (s *Server) handleMCPPromptGet(c *gin.Context) {
 	var req struct {
 		Name      string                 `json:"name"`

@@ -17,6 +17,16 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// handleWebSocket godoc
+// @Summary      WebSocket connection
+// @Description  Establish a WebSocket connection for real-time game events
+// @Tags         websocket
+// @Accept       json
+// @Produce      json
+// @Param        player_id  query  string  false  "Player ID"
+// @Param        scene_id   query  string  false  "Scene ID"
+// @Success      101  {object}  map[string]interface{}
+// @Router       /ws [get]
 func (s *Server) handleWebSocket(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -274,6 +284,17 @@ func (s *Server) BroadcastSystemMessage(message, level string, targetPlayerID ui
 	}
 }
 
+// handleGMLogin godoc
+// @Summary      GM login
+// @Description  Authenticate as a GM user and get a JWT token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Login request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Router       /gm/login [post]
 func (s *Server) handleGMLogin(c *gin.Context) {
 	var req struct {
 		Username string `json:"username" binding:"required"`
@@ -310,6 +331,16 @@ func (s *Server) handleGMLogin(c *gin.Context) {
 	})
 }
 
+// handleGMMe godoc
+// @Summary      Get current GM user
+// @Description  Get the current authenticated GM user info
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Router       /gm/me [get]
 func (s *Server) handleGMMe(c *gin.Context) {
 	username, _ := c.Get("gm_username")
 	role, _ := c.Get("gm_role")

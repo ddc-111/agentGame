@@ -8,6 +8,17 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
+// handleGetShops godoc
+// @Summary      List shops
+// @Description  Get paginated list of shops
+// @Tags         shops
+// @Accept       json
+// @Produce      json
+// @Param        page    query  int  false  "Page number"  default(1)
+// @Param        page_size  query  int  false  "Page size"  default(20)
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /shops [get]
 func (s *Server) handleGetShops(c *gin.Context) {
 	ctx := c.Request.Context()
 	p := parsePagination(c)
@@ -20,6 +31,16 @@ func (s *Server) handleGetShops(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": shops, "total": total})
 }
 
+// handleGetShop godoc
+// @Summary      Get a shop
+// @Description  Get a shop by ID
+// @Tags         shops
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Shop ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /shops/{id} [get]
 func (s *Server) handleGetShop(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -34,6 +55,17 @@ func (s *Server) handleGetShop(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": shop})
 }
 
+// handleCreateShop godoc
+// @Summary      Create a shop
+// @Description  Create a new shop
+// @Tags         shops
+// @Accept       json
+// @Produce      json
+// @Param        shop  body  models.Shop  true  "Shop data"
+// @Success      201  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /shops [post]
 func (s *Server) handleCreateShop(c *gin.Context) {
 	ctx := c.Request.Context()
 	var shop models.Shop
@@ -67,6 +99,19 @@ func (s *Server) handleCreateShop(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": shop})
 }
 
+// handleUpdateShop godoc
+// @Summary      Update a shop
+// @Description  Update a shop by ID
+// @Tags         shops
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int         true  "Shop ID"
+// @Param        shop  body  models.Shop  true  "Shop data"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /shops/{id} [put]
 func (s *Server) handleUpdateShop(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")
@@ -105,6 +150,17 @@ func (s *Server) handleUpdateShop(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": shop})
 }
 
+// handleDeleteShop godoc
+// @Summary      Delete a shop
+// @Description  Delete a shop by ID
+// @Tags         shops
+// @Accept       json
+// @Produce      json
+// @Param        id   path  int  true  "Shop ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /shops/{id} [delete]
 func (s *Server) handleDeleteShop(c *gin.Context) {
 	ctx := c.Request.Context()
 	id, ok := parseID(c, "id")

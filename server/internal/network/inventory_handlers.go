@@ -15,6 +15,16 @@ func (s *Server) registerInventoryRoutes(api *gin.RouterGroup) {
 	api.POST("/inventory/use", s.handleUseItem)
 }
 
+// handleGetInventory godoc
+// @Summary      Get player inventory
+// @Description  Get inventory items and equipment for a player
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        player_id  path  int  true  "Player ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /inventory/{player_id} [get]
 func (s *Server) handleGetInventory(c *gin.Context) {
 	ctx := c.Request.Context()
 	playerID, ok := parseID(c, "player_id")
@@ -86,6 +96,17 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 	})
 }
 
+// handleEquipItem godoc
+// @Summary      Equip an item
+// @Description  Equip an item to a player
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Equip request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /inventory/equip [post]
 func (s *Server) handleEquipItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -144,6 +165,17 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 	})
 }
 
+// handleUnequipItem godoc
+// @Summary      Unequip an item
+// @Description  Unequip an item from a player
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Unequip request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /inventory/unequip [post]
 func (s *Server) handleUnequipItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {
@@ -196,6 +228,17 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 	})
 }
 
+// handleUseItem godoc
+// @Summary      Use an item
+// @Description  Use a consumable item from inventory
+// @Tags         inventory
+// @Accept       json
+// @Produce      json
+// @Param        request  body  object  true  "Use item request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /inventory/use [post]
 func (s *Server) handleUseItem(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req struct {

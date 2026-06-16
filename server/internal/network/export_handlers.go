@@ -8,6 +8,15 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/repository"
 )
 
+// handleExport godoc
+// @Summary      Export all data
+// @Description  Export all game data as JSON
+// @Tags         data
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /export [get]
 func (s *Server) handleExport(c *gin.Context) {
 	ctx := c.Request.Context()
 	data := make(map[string]interface{})
@@ -71,6 +80,17 @@ func (s *Server) handleExport(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": data})
 }
 
+// handleImport godoc
+// @Summary      Import data
+// @Description  Import game data from JSON
+// @Tags         data
+// @Accept       json
+// @Produce      json
+// @Param        data  body  map[string]interface{}  true  "Import data"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /import [post]
 func (s *Server) handleImport(c *gin.Context) {
 	ctx := c.Request.Context()
 	var data map[string]interface{}
