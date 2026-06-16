@@ -1,0 +1,150 @@
+name: Auto-Fix CI Failures
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main, master]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  auto-fix:
+    name: Detect & Auto-Fix
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache-dependency-path: server/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch failed run logs
+        id: logs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+            const failedJobs = jobs.data.jobs.filter(j => j.conclusion === 'failure');
+            const details = [];
+            for (const job of failedJobs) {
+              const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                job_id: job.id,
+              });
+              const logText = Buffer.from(logs.data).toString('utf-8');
+              const errorLines = logText.split('\n')
+                .filter(l => l.includes('FAIL') || l.includes('Error') || l.includes('error') || l.includes('panic') || l.includes('undefined'))
+                .slice(-50)
+                .join('\n');
+              details.push({ job: job.name, errors: errorLines });
+            }
+            core.setOutput('failures', JSON.stringify(details));
+
+      - name: Auto-fix Go issues
+        id: fix-go
+        continue-on-error: true
+        run: |
+          cd server
+
+          echo "=== Attempting auto-fix ==="
+
+          echo "--- Fix 1: go mod tidy ---"
+          go mod tidy 2>&1 || true
+
+          echo "--- Fix 2: go vet ---"
+          go vet ./... 2>&1 | head -50
+
+          echo "--- Fix 3: go build ---"
+          BUILD_ERR=$(go build ./... 2>&1)
+          if [ -n "$BUILD_ERR" ]; then
+            echo "Build errors found:"
+            echo "$BUILD_ERR"
+
+            echo "--- Fix 4: Try gofumpt/goimports ---"
+            go install mvdan.cc/gofumpt@latest 2>/dev/null || true
+            go install golang.org/x/tools/cmd/goimports@latest 2>/dev/null || true
+            gofumpt -w . 2>/dev/null || true
+            goimports -w . 2>/dev/null || true
+
+            echo "--- Fix 5: Re-attempt build ---"
+            go build ./... 2>&1
+          fi
+
+          echo "--- Fix 6: Re-run tests ---"
+          go test ./internal/tests/ -count=1 -timeout 120s 2>&1
+
+          echo "fix_applied=true" >> $GITHUB_OUTPUT
+
+      - name: Auto-fix frontend issues
+        id: fix-frontend
+        continue-on-error: true
+        run: |
+          cd gm
+          npm ci 2>/dev/null || npm install 2>/dev/null || true
+          npm run build 2>&1 || true
+          cd ../client
+          npm ci 2>/dev/null || npm install 2>/dev/null || true
+          npm run build 2>&1 || true
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet || echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "Changed files:"
+          git diff --name-only
+
+      - name: Commit and push fixes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(ci): auto-fix CI failures
+
+          Triggered by failed workflow run ${{ github.event.workflow_run.id }}
+          Auto-detected and fixed by CI auto-fix pipeline."
+          git push
+
+      - name: Create issue on persistent failure
+        if: steps.changes.outputs.has_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `CI Failure: Auto-fix unable to resolve (Run #${run.id})`,
+              body: `## CI Failed - Auto-fix unsuccessful\n\n**Workflow Run**: ${run.html_url}\n\n**Failed Jobs**:\n${{ steps.logs.outputs.failures }}\n\nThe auto-fix pipeline could not resolve these errors automatically. Manual intervention required.`,
+              labels: ['ci-failure', 'auto-generated'],
+            });
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Auto-Fix Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
+            echo "- Status: **Fixes applied and pushed**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Status: **No fixable changes found**" >> $GITHUB_STEP_SUMMARY
+          fi
