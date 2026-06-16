@@ -6,7 +6,7 @@ import { CombatUI } from '../ui/CombatUI.js';
 import { MiniMap } from '../ui/MiniMap.js';
 import { SaveLoadUI } from '../ui/SaveLoadUI.js';
 
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = '/api';
 
 export class GameScene extends Phaser.Scene {
     constructor() {

@@ -666,6 +666,59 @@ func TestGetFlows(t *testing.T) {
 	t.Logf("获取流程列表测试通过, 数量: %d", len(data))
 }
 
+func TestGetFlowByID(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	listResp, err := http.Get(ts.URL + "/api/flows")
+	if err != nil {
+		t.Fatalf("获取流程列表失败: %v", err)
+	}
+	defer listResp.Body.Close()
+
+	var listResult map[string]interface{}
+	json.NewDecoder(listResp.Body).Decode(&listResult)
+	flows := listResult["data"].([]interface{})
+	if len(flows) == 0 {
+		t.Skip("没有流程数据，跳过测试")
+	}
+
+	flow := flows[0].(map[string]interface{})
+	flowID := uint(flow["id"].(float64))
+
+	resp, err := http.Get(fmt.Sprintf("%s/api/flows/%d", ts.URL, flowID))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	flowData, ok := result["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if flowData["name"] != flow["name"] {
+		t.Errorf("期望 name=%v, 得到 %v", flow["name"], flowData["name"])
+	}
+	t.Logf("获取流程详情测试通过, ID=%d", flowID)
+
+	resp404, err := http.Get(fmt.Sprintf("%s/api/flows/99999", ts.URL))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp404.Body.Close()
+
+	assertStatusCode(t, resp404.StatusCode, http.StatusNotFound)
+	t.Log("不存在流程测试通过")
+}
+
 // TestExportData 测试导出数据
 func TestExportData(t *testing.T) {
 	ts := setupTestServer()

@@ -8,6 +8,16 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
+func (s *Server) handleGetFlow(c *gin.Context) {
+	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	flow, err := s.repo.GetFlowByID(uint(id))
+	if err != nil {
+		respondError(c, http.StatusNotFound, NotFound("Flow"))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": flow})
+}
+
 func (s *Server) handleGetFlows(c *gin.Context) {
 	p := parsePagination(c)
 	flows, total, err := s.repo.GetFlowsPaginated(p.Offset, p.PageSize)

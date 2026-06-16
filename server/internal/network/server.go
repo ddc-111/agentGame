@@ -226,6 +226,7 @@ func (s *Server) setupRoutes() {
 
 		// 流程API
 		api.GET("/flows", s.handleGetFlows)
+		api.GET("/flows/:id", s.handleGetFlow)
 		api.POST("/flows", s.handleCreateFlow)
 		api.PUT("/flows/:id", s.handleUpdateFlow)
 		api.DELETE("/flows/:id", s.handleDeleteFlow)

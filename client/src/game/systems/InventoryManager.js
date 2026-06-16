@@ -210,7 +210,7 @@ export class InventoryManager {
     // 从服务器同步背包数据
     async syncWithServer(playerId) {
         try {
-            const resp = await fetch(`http://localhost:8080/api/inventory/${playerId}`);
+            const resp = await fetch(`/api/inventory/${playerId}`);
             const data = await resp.json();
             if (data.items) {
                 // 更新本地道具数据
