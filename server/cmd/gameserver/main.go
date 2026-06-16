@@ -18,6 +18,10 @@ import (
 // @schemes         http
 // @produce         json
 // @consumes        json
+// @securityDefinitions.apikey BearerAuth
+// @in                         header
+// @name                       Authorization
+// @description                JWT token. Format: "Bearer {token}"
 
 func main() {
 	cfg, err := config.Load("config.yaml")

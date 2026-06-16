@@ -112,9 +112,7 @@ func NewServer(cfg *config.Config) *Server {
 func (s *Server) setupRoutes() {
 	s.router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	s.router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	s.router.GET("/health", s.handleHealth)
 
 	s.router.Use(CORSMiddleware(s.cfg.CORS.AllowedOrigins))
 	s.router.Use(RequestIDMiddleware())
@@ -354,6 +352,17 @@ func (s *Server) broadcastAllNPCStates() {
 			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
 		}
 	}
+}
+
+// handleHealth godoc
+// @Summary      Health check
+// @Description  Check if the server is running
+// @Tags         system
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /health [get]
+func (s *Server) handleHealth(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 // GetRouter 获取路由器（用于测试）
