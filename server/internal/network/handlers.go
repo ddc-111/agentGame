@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 	"github.com/ddc-111/agentGame/server/internal/generator"
+	"github.com/ddc-111/agentGame/server/internal/mcp"
 )
 
 // ==================== 场景API ====================
@@ -670,4 +671,34 @@ func (s *Server) handleGeneratorTest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+// ==================== MCP REST API ====================
+
+func (s *Server) handleMCPTools(c *gin.Context) {
+	tools := s.mcp.GetTools()
+	c.JSON(http.StatusOK, gin.H{"tools": tools})
+}
+
+func (s *Server) handleMCPCall(c *gin.Context) {
+	var req struct {
+		Name      string                 `json:"name"`
+		Arguments map[string]interface{} `json:"arguments"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result := s.mcp.HandleRequest(c.Request.Context(), mcp.MCPRequest{
+		JSONRPC: "2.0",
+		ID:      1,
+		Method:  "tools/call",
+		Params: map[string]interface{}{
+			"name":      req.Name,
+			"arguments": req.Arguments,
+		},
+	})
+
+	c.JSON(http.StatusOK, result)
 }

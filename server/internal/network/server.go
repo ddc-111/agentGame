@@ -12,6 +12,7 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 	"github.com/ddc-111/agentGame/server/internal/database/repository"
 	"github.com/ddc-111/agentGame/server/internal/generator"
+	"github.com/ddc-111/agentGame/server/internal/mcp"
 )
 
 type Server struct {
@@ -21,6 +22,7 @@ type Server struct {
 	db        *database.Database
 	repo      *repository.Repository
 	generator *generator.Generator
+	mcp       *mcp.Server
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -77,6 +79,9 @@ func NewServer(cfg *config.Config) *Server {
 		log.Printf("Warning: Failed to create generator: %v", err)
 	}
 
+	// 初始化MCP服务器
+	mcpServer := mcp.New(repo, gen)
+
 	router := gin.Default()
 
 	s := &Server{
@@ -85,6 +90,7 @@ func NewServer(cfg *config.Config) *Server {
 		db:        db,
 		repo:      repo,
 		generator: gen,
+		mcp:       mcpServer,
 	}
 
 	s.setupRoutes()
@@ -108,6 +114,19 @@ func (s *Server) setupRoutes() {
 		c.Next()
 	})
 
+	// MCP端点
+	s.router.POST("/mcp", func(c *gin.Context) {
+		s.mcp.HandleHTTP(c.Writer, c.Request)
+	})
+
+	// MCP SSE端点（用于流式响应）
+	s.router.GET("/mcp/sse", func(c *gin.Context) {
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+		c.SSEvent("message", map[string]string{"status": "connected"})
+	})
+
 	api := s.router.Group("/api")
 	{
 		// WebSocket
@@ -120,6 +139,10 @@ func (s *Server) setupRoutes() {
 		api.POST("/generator/generate", s.handleGenerate)
 		api.GET("/generator/status", s.handleGeneratorStatus)
 		api.POST("/generator/test", s.handleGeneratorTest)
+
+		// MCP工具列表（兼容REST访问）
+		api.GET("/mcp/tools", s.handleMCPTools)
+		api.POST("/mcp/call", s.handleMCPCall)
 
 		// 场景API
 		api.GET("/scenes", s.handleGetScenes)
@@ -204,6 +227,7 @@ func (s *Server) Start() error {
 
 	log.Printf("Starting server on %s", addr)
 	log.Printf("Generator enabled: %v", s.generator.IsEnabled())
+	log.Printf("MCP endpoint: http://localhost:%d/mcp", s.cfg.Server.Port)
 	return s.http.ListenAndServe()
 }
 
