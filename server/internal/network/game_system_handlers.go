@@ -24,6 +24,15 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		return
 	}
 
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateRequired(map[string]interface{}{"enemy_type": req.EnemyType}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
@@ -85,6 +94,16 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateRequired(map[string]interface{}{"action": req.Action}),
+		validateStringIn("action", req.Action, []string{"attack", "skill", "item", "flee"}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
@@ -333,6 +352,15 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 		return
 	}
 
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validatePositiveInt("item_id", req.ItemID),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
@@ -382,6 +410,16 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 		return
 	}
 
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateRequired(map[string]interface{}{"slot": req.Slot}),
+		validateStringIn("slot", req.Slot, []string{"weapon", "armor"}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
 		respondError(c, http.StatusNotFound, NotFound("Player"))
@@ -421,6 +459,15 @@ func (s *Server) handleUseItem(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validatePositiveInt("item_id", req.ItemID),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
@@ -487,6 +534,16 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateIntMin("slot", req.Slot, 0),
+		validateIntRange("slot", req.Slot, 0, 10),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
@@ -623,6 +680,12 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 		return
 	}
 
+	errs := validatePositiveInt("player_id", req.PlayerID)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	// 获取存档
 	saves, err := s.repo.GetSaveGames(req.PlayerID)
 	if err != nil {
@@ -705,6 +768,15 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validatePositiveInt("skill_id", req.SkillID),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
@@ -878,6 +950,12 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := validatePositiveInt("player_id", req.PlayerID)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 

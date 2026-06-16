@@ -60,6 +60,12 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 		return
 	}
 
+	errs := validateRequired(map[string]interface{}{"name": req.Name, "account": req.Account})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	// 检查账号是否已存在
 	existing, _ := s.repo.GetPlayerByAccount(req.Account)
 	if existing != nil && existing.ID > 0 {
@@ -125,6 +131,15 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 		return
 	}
 
+	errs := mergeErrors(
+		validateIntRange("pos_x", req.PosX, -10000, 10000),
+		validateIntRange("pos_y", req.PosY, -10000, 10000),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	if req.SceneID != "" {
 		player.SceneID = req.SceneID
 	}
@@ -180,6 +195,16 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validatePositiveInt("npc_id", req.NPCID),
+		validateRequired(map[string]interface{}{"message": req.Message}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
@@ -325,6 +350,16 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+
+	errs := mergeErrors(
+		validatePositiveInt("player_id", req.PlayerID),
+		validateRequired(map[string]interface{}{"shop_code": req.ShopCode}),
+		validatePositiveInt("item_id", req.ItemID),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 

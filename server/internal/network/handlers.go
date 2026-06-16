@@ -37,6 +37,15 @@ func (s *Server) handleCreateScene(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": scene.Name, "code": scene.Code}),
+		validateIntRange("width", scene.Width, 100, 10000),
+		validateIntRange("height", scene.Height, 100, 10000),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateScene(&scene); err != nil {
 		respondInternalError(c, err)
 		return
@@ -49,6 +58,15 @@ func (s *Server) handleUpdateScene(c *gin.Context) {
 	var scene models.Scene
 	if err := c.ShouldBindJSON(&scene); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": scene.Name, "code": scene.Code}),
+		validateIntRange("width", scene.Width, 100, 10000),
+		validateIntRange("height", scene.Height, 100, 10000),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	scene.ID = uint(id)
@@ -95,6 +113,11 @@ func (s *Server) handleCreateNPC(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateNPC(&npc); err != nil {
 		respondInternalError(c, err)
 		return
@@ -107,6 +130,11 @@ func (s *Server) handleUpdateNPC(c *gin.Context) {
 	var npc models.NPC
 	if err := c.ShouldBindJSON(&npc); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": npc.Name, "code": npc.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	npc.ID = uint(id)
@@ -153,6 +181,15 @@ func (s *Server) handleCreateAgent(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": agent.Name, "code": agent.Code}),
+		validateIntRange("max_tokens", agent.MaxTokens, 1, 100000),
+		validateIntRange("max_messages", agent.MaxMessages, 1, 1000),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateAgent(&agent); err != nil {
 		respondInternalError(c, err)
 		return
@@ -165,6 +202,15 @@ func (s *Server) handleUpdateAgent(c *gin.Context) {
 	var agent models.Agent
 	if err := c.ShouldBindJSON(&agent); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"name": agent.Name, "code": agent.Code}),
+		validateIntRange("max_tokens", agent.MaxTokens, 1, 100000),
+		validateIntRange("max_messages", agent.MaxMessages, 1, 1000),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	agent.ID = uint(id)
@@ -201,6 +247,11 @@ func (s *Server) handleCreateProvider(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": provider.Name, "code": provider.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateProvider(&provider); err != nil {
 		respondInternalError(c, err)
 		return
@@ -213,6 +264,11 @@ func (s *Server) handleUpdateProvider(c *gin.Context) {
 	var provider models.LLMProvider
 	if err := c.ShouldBindJSON(&provider); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": provider.Name, "code": provider.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	provider.ID = uint(id)
@@ -249,6 +305,11 @@ func (s *Server) handleCreateTemplate(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": template.Name, "code": template.Code, "content": template.Content})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateTemplate(&template); err != nil {
 		respondInternalError(c, err)
 		return
@@ -261,6 +322,11 @@ func (s *Server) handleUpdateTemplate(c *gin.Context) {
 	var template models.PromptTemplate
 	if err := c.ShouldBindJSON(&template); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": template.Name, "code": template.Code, "content": template.Content})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	template.ID = uint(id)
@@ -307,6 +373,11 @@ func (s *Server) handleCreateShop(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateShop(&shop); err != nil {
 		respondInternalError(c, err)
 		return
@@ -319,6 +390,11 @@ func (s *Server) handleUpdateShop(c *gin.Context) {
 	var shop models.Shop
 	if err := c.ShouldBindJSON(&shop); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": shop.Name, "code": shop.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	shop.ID = uint(id)
@@ -355,6 +431,11 @@ func (s *Server) handleCreateItem(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateItem(&item); err != nil {
 		respondInternalError(c, err)
 		return
@@ -367,6 +448,11 @@ func (s *Server) handleUpdateItem(c *gin.Context) {
 	var item models.Item
 	if err := c.ShouldBindJSON(&item); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": item.Name, "code": item.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	item.ID = uint(id)
@@ -413,6 +499,11 @@ func (s *Server) handleCreateTask(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateTask(&task); err != nil {
 		respondInternalError(c, err)
 		return
@@ -425,6 +516,11 @@ func (s *Server) handleUpdateTask(c *gin.Context) {
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": task.Name, "code": task.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	task.ID = uint(id)
@@ -461,6 +557,11 @@ func (s *Server) handleCreateFlow(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": flow.Name, "code": flow.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	if err := s.repo.CreateFlow(&flow); err != nil {
 		respondInternalError(c, err)
 		return
@@ -473,6 +574,11 @@ func (s *Server) handleUpdateFlow(c *gin.Context) {
 	var flow models.Flow
 	if err := c.ShouldBindJSON(&flow); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": flow.Name, "code": flow.Code})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	flow.ID = uint(id)
@@ -510,6 +616,11 @@ func (s *Server) handleUpdatePlayer(c *gin.Context) {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
+	errs := validateRequired(map[string]interface{}{"name": player.Name})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
 	player.ID = uint(id)
 	if err := s.repo.UpdatePlayer(&player); err != nil {
 		respondInternalError(c, err)
@@ -537,6 +648,16 @@ func (s *Server) handleCreateConversation(c *gin.Context) {
 	var conv models.Conversation
 	if err := c.ShouldBindJSON(&conv); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := mergeErrors(
+		validatePositiveInt("player_id", conv.PlayerID),
+		validatePositiveInt("npc_id", conv.NPCID),
+		validateRequired(map[string]interface{}{"role": conv.Role, "content": conv.Content}),
+		validateStringIn("role", conv.Role, []string{"user", "assistant", "system"}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 	if err := s.repo.CreateConversation(&conv); err != nil {
@@ -740,6 +861,16 @@ func (s *Server) handleGenerate(c *gin.Context) {
 		return
 	}
 
+	errs := mergeErrors(
+		validateRequired(map[string]interface{}{"type": req.Type, "action": req.Action}),
+		validateStringIn("type", req.Type, []string{"npc", "scene", "task", "shop", "item", "agent", "dialogue", "flow"}),
+		validateStringIn("action", req.Action, []string{"create", "complete", "expand", "translate"}),
+	)
+	if len(errs) > 0 {
+		respondValidation(c, errs)
+		return
+	}
+
 	if s.generator == nil || !s.generator.IsEnabled() {
 		respondError(c, http.StatusServiceUnavailable, BadRequest("生成智能体未启用，请检查配置"))
 		return
@@ -805,6 +936,11 @@ func (s *Server) handleMCPCall(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
+		return
+	}
+	errs := validateRequired(map[string]interface{}{"name": req.Name})
+	if len(errs) > 0 {
+		respondValidation(c, errs)
 		return
 	}
 
