@@ -260,3 +260,11 @@ type PlayerConversationContext struct {
 	Summary     string `gorm:"type:text" json:"summary"`
 	Extra       string `gorm:"type:text" json:"extra"`
 }
+
+// GMUser GM管理员用户
+type GMUser struct {
+	BaseModel
+	Username string `gorm:"size:50;uniqueIndex;not null" json:"username"`
+	Password string `gorm:"size:255;not null" json:"-"`
+	Role     string `gorm:"size:20;default:gm" json:"role"`
+}

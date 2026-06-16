@@ -12,11 +12,24 @@ type Config struct {
 	AI        AIConfig        `yaml:"ai"`
 	Generator GeneratorConfig `yaml:"generator"`
 	Game      GameConfig      `yaml:"game"`
+	Auth      AuthConfig      `yaml:"auth"`
+	CORS      CORSConfig      `yaml:"cors"`
 }
 
 type ServerConfig struct {
 	Port int    `yaml:"port"`
 	Mode string `yaml:"mode"`
+}
+
+type AuthConfig struct {
+	JWTSecret     string `yaml:"jwt_secret"`
+	TokenExpiry   int    `yaml:"token_expiry"`
+	GMUsername    string `yaml:"gm_username"`
+	GMPassword    string `yaml:"gm_password"`
+}
+
+type CORSConfig struct {
+	AllowedOrigins []string `yaml:"allowed_origins"`
 }
 
 type DatabaseConfig struct {
@@ -84,6 +97,15 @@ func Default() *Config {
 		Game: GameConfig{
 			MaxPlayers: 100,
 			TickRate:   20,
+		},
+		Auth: AuthConfig{
+			JWTSecret:   "change-me-in-production",
+			TokenExpiry: 24,
+			GMUsername:  "admin",
+			GMPassword:  "admin123",
+		},
+		CORS: CORSConfig{
+			AllowedOrigins: []string{"http://localhost:5173", "http://localhost:5174"},
 		},
 	}
 }

@@ -275,11 +275,50 @@ func (s *Server) BroadcastSystemMessage(message, level string, targetPlayerID ui
 }
 
 func (s *Server) handleGMLogin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "username and password are required",
+		})
+		return
+	}
+
+	if req.Username != s.cfg.Auth.GMUsername || req.Password != s.cfg.Auth.GMPassword {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code": 401,
+			"msg":  "invalid username or password",
+		})
+		return
+	}
+
+	token, err := GenerateJWT(s.cfg.Auth.JWTSecret, req.Username, "gm", s.cfg.Auth.TokenExpiry)
+	if err != nil {
+		respondInternalError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "success",
 		"data": gin.H{
-			"token": "gm-token-placeholder",
+			"token": token,
+		},
+	})
+}
+
+func (s *Server) handleGMMe(c *gin.Context) {
+	username, _ := c.Get("gm_username")
+	role, _ := c.Get("gm_role")
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"msg":  "success",
+		"data": gin.H{
+			"username": username,
+			"role":     role,
 		},
 	})
 }

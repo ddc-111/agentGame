@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/agent"
@@ -18,17 +19,18 @@ import (
 )
 
 type Server struct {
-	cfg          *config.Config
-	router       *gin.Engine
-	http         *http.Server
-	db           *database.Database
-	repo         *repository.Repository
-	generator    *generator.Generator
-	mcp          *mcp.Server
-	chatMgr      *agent.ChatManager
-	hub          *Hub
-	behaviorMgr  *game.NPCBehaviorManager
+	cfg           *config.Config
+	router        *gin.Engine
+	http          *http.Server
+	db            *database.Database
+	repo          *repository.Repository
+	generator     *generator.Generator
+	mcp           *mcp.Server
+	chatMgr       *agent.ChatManager
+	hub           *Hub
+	behaviorMgr   *game.NPCBehaviorManager
 	behaviorStore *game.NPCBehaviorStore
+	cancel        context.CancelFunc
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -71,6 +73,7 @@ func NewServer(cfg *config.Config) *Server {
 		&models.Skill{},
 		&models.Achievement{},
 		&models.PlayerAchievement{},
+		&models.GMUser{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
@@ -120,6 +123,8 @@ func NewServer(cfg *config.Config) *Server {
 	}
 
 	s.setupRoutes()
+	s.initNPCBehaviors()
+	s.startGameLoop()
 	return s
 }
 
@@ -128,17 +133,7 @@ func (s *Server) setupRoutes() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// CORS中间件
-	s.router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	})
+	s.router.Use(CORSMiddleware(s.cfg.CORS.AllowedOrigins))
 
 	// MCP端点
 	s.router.POST("/mcp", func(c *gin.Context) {
@@ -161,6 +156,13 @@ func (s *Server) setupRoutes() {
 
 		// GM登录
 		api.POST("/gm/login", s.handleGMLogin)
+
+		// GM受保护路由
+		gm := api.Group("/gm")
+		gm.Use(AuthMiddleware(s.cfg.Auth.JWTSecret))
+		{
+			gm.GET("/me", s.handleGMMe)
+		}
 
 		// 生成智能体API
 		api.POST("/generator/generate", s.handleGenerate)
@@ -291,10 +293,69 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown() error {
+	if s.cancel != nil {
+		s.cancel()
+	}
 	if s.db != nil {
 		s.db.Close()
 	}
 	return s.http.Shutdown(context.Background())
+}
+
+func (s *Server) initNPCBehaviors() {
+	npcs, err := s.repo.GetNPCs()
+	if err != nil {
+		log.Printf("Failed to load NPCs for behavior init: %v", err)
+		return
+	}
+	for _, npc := range npcs {
+		s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	}
+	log.Printf("Initialized behaviors for %d NPCs", len(npcs))
+}
+
+func (s *Server) startGameLoop() {
+	ctx, cancel := context.WithCancel(context.Background())
+	s.cancel = cancel
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+
+		hour := time.Now().Hour()
+		s.behaviorMgr.UpdateAllBehaviors(s.behaviorStore, hour)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				newHour := t.Hour()
+				if newHour != hour {
+					hour = newHour
+					s.behaviorMgr.UpdateAllBehaviors(s.behaviorStore, hour)
+					s.broadcastAllNPCStates()
+				}
+			}
+		}
+	}()
+}
+
+func (s *Server) broadcastAllNPCStates() {
+	npcs, err := s.repo.GetNPCs()
+	if err != nil {
+		return
+	}
+	for _, npc := range npcs {
+		behavior := s.behaviorStore.Get(npc.Code)
+		if behavior == nil {
+			continue
+		}
+		scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+		if len(scenes) > 0 {
+			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
+		}
+	}
 }
 
 // GetRouter 获取路由器（用于测试）

@@ -38,3 +38,14 @@ generator:
 game:
   max_players: 100
   tick_rate: 20
+
+auth:
+  jwt_secret: change-me-in-production
+  token_expiry: 24
+  gm_username: admin
+  gm_password: admin123
+
+cors:
+  allowed_origins:
+    - http://localhost:5173
+    - http://localhost:5174

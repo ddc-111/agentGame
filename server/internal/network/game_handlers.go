@@ -27,9 +27,6 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 	// 获取场景列表（带NPC和传送点）
 	scenes, _ := s.repo.GetScenes()
 
-	// 获取所有NPC
-	npcs, _ := s.repo.GetNPCs()
-
 	// 获取所有任务
 	tasks, _ := s.repo.GetTasks()
 
@@ -39,10 +36,27 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 	// 获取所有技能
 	skills, _ := s.repo.GetSkills()
 
+	type npcWithBehavior struct {
+		models.NPC
+		BehaviorState string `json:"behavior_state"`
+		BehaviorMood  string `json:"behavior_mood"`
+	}
+
+	npcList, _ := s.repo.GetNPCs()
+	npcsWithBehavior := make([]npcWithBehavior, 0, len(npcList))
+	for _, npc := range npcList {
+		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+		npcsWithBehavior = append(npcsWithBehavior, npcWithBehavior{
+			NPC:           npc,
+			BehaviorState: behavior.State,
+			BehaviorMood:  behavior.Mood,
+		})
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"config": configs,
 		"scenes": scenes,
-		"npcs":   npcs,
+		"npcs":   npcsWithBehavior,
 		"tasks":  tasks,
 		"items":  items,
 		"skills": skills,
@@ -195,7 +209,13 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": npc})
+
+	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":     npc,
+		"behavior": behavior,
+	})
 }
 
 // GetTasksByPlayer 获取玩家的任务列表
@@ -460,6 +480,18 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	// 保存
 	s.repo.UpdatePlayer(player)
 	s.repo.SaveShopItem(shopItem)
+
+	if shop.OwnerNPC != "" {
+		npc, err := s.repo.GetNPCByCode(shop.OwnerNPC)
+		if err == nil {
+			behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+			s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "gift")
+			scenes, _ := s.repo.GetScenesByNPCID(npc.ID)
+			if len(scenes) > 0 {
+				s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
+			}
+		}
+	}
 
 	// 解析装备信息返回
 	equipment := map[string]interface{}{
