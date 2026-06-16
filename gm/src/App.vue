@@ -34,6 +34,7 @@
           <el-menu-item index="/npc/list">NPC列表</el-menu-item>
           <el-menu-item index="/npc/edit">NPC编辑器</el-menu-item>
           <el-menu-item index="/npc/dialogue">对话树</el-menu-item>
+          <el-menu-item index="/npc/behavior">行为编辑</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="agent">
@@ -86,12 +87,38 @@
           <el-menu-item index="/task/flow">流程编排</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="skill">
+          <template #title>
+            <el-icon><MagicStick /></el-icon>
+            <span>技能系统</span>
+          </template>
+          <el-menu-item index="/skill/list">技能管理</el-menu-item>
+          <el-menu-item index="/skill/tree">技能树</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="achievement">
+          <template #title>
+            <el-icon><Trophy /></el-icon>
+            <span>成就系统</span>
+          </template>
+          <el-menu-item index="/achievement/list">成就管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="demo">
+          <template #title>
+            <el-icon><VideoPlay /></el-icon>
+            <span>演示系统</span>
+          </template>
+          <el-menu-item index="/demo/player">演示播放器</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="config">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统配置</span>
           </template>
           <el-menu-item index="/config/game">游戏配置</el-menu-item>
+          <el-menu-item index="/config/combat">战斗配置</el-menu-item>
           <el-menu-item index="/config/export">数据导出</el-menu-item>
           <el-menu-item index="/config/import">数据导入</el-menu-item>
         </el-sub-menu>
@@ -150,6 +177,7 @@ const pageTitles = {
   '/npc/list': 'NPC列表',
   '/npc/edit': 'NPC编辑器',
   '/npc/dialogue': '对话树',
+  '/npc/behavior': '行为编辑',
   '/agent/list': '智能体列表',
   '/agent/edit': '智能体编辑',
   '/agent/memory': '记忆配置',
@@ -165,7 +193,12 @@ const pageTitles = {
   '/task/list': '任务列表',
   '/task/edit': '任务编辑',
   '/task/flow': '流程编排',
+  '/skill/list': '技能管理',
+  '/skill/tree': '技能树',
+  '/achievement/list': '成就管理',
+  '/demo/player': '演示播放器',
   '/config/game': '游戏配置',
+  '/config/combat': '战斗配置',
   '/config/export': '数据导出',
   '/config/import': '数据导入'
 };

@@ -503,19 +503,6 @@ func (s *Server) handleGetPlayers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": players})
 }
 
-func (s *Server) handleCreatePlayer(c *gin.Context) {
-	var player models.Player
-	if err := c.ShouldBindJSON(&player); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := s.repo.CreatePlayer(&player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"data": player})
-}
-
 func (s *Server) handleUpdatePlayer(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var player models.Player

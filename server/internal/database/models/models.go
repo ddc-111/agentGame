@@ -189,6 +189,7 @@ type Player struct {
 	PosX     int    `gorm:"default:0" json:"pos_x"`
 	PosY     int    `gorm:"default:0" json:"pos_y"`
 	Items    string `gorm:"type:text" json:"items"` // JSON对象 {item_id: count}
+	Equipment string `gorm:"type:text" json:"equipment"` // JSON对象 {weapon_id, armor_id}
 }
 
 // Conversation 对话记录
@@ -200,4 +201,47 @@ type Conversation struct {
 	Role     string `gorm:"size:20" json:"role"`
 	Content  string `gorm:"type:text" json:"content"`
 	Summary  string `gorm:"type:text" json:"summary"`
+}
+
+// SaveGame 存档
+type SaveGame struct {
+	BaseModel
+	PlayerID uint   `gorm:"index" json:"player_id"`
+	Slot     int    `gorm:"index" json:"slot"`
+	Name     string `gorm:"size:100" json:"name"`
+	Snapshot string `gorm:"type:text" json:"snapshot"` // JSON快照数据
+}
+
+// Skill 技能
+type Skill struct {
+	BaseModel
+	Name        string `gorm:"size:100;not null" json:"name"`
+	Code        string `gorm:"size:50;uniqueIndex" json:"code"`
+	Description string `gorm:"size:500" json:"description"`
+	Type        string `gorm:"size:20" json:"type"`        // attack/heal/buff/debuff
+	MPCost      int    `gorm:"default:0" json:"mp_cost"`
+	Damage      int    `gorm:"default:0" json:"damage"`
+	Heal        int    `gorm:"default:0" json:"heal"`
+	Cooldown    int    `gorm:"default:0" json:"cooldown"`
+	Level       int    `gorm:"default:1" json:"level"`
+	Effect      string `gorm:"size:500" json:"effect"` // JSON effect
+}
+
+// Achievement 成就
+type Achievement struct {
+	BaseModel
+	Name        string `gorm:"size:100;not null" json:"name"`
+	Code        string `gorm:"size:50;uniqueIndex" json:"code"`
+	Description string `gorm:"size:500" json:"description"`
+	Condition   string `gorm:"type:text" json:"condition"` // JSON condition
+	Reward      string `gorm:"type:text" json:"reward"`    // JSON reward
+	Icon        string `gorm:"size:20" json:"icon"`
+}
+
+// PlayerAchievement 玩家成就记录
+type PlayerAchievement struct {
+	BaseModel
+	PlayerID      uint   `gorm:"index" json:"player_id"`
+	AchievementID uint   `gorm:"index" json:"achievement_id"`
+	Achievement   *Achievement `gorm:"foreignKey:AchievementID" json:"achievement,omitempty"`
 }

@@ -159,19 +159,19 @@ func (r *Repository) DeleteTemplate(id uint) error {
 // Shop 商店相关操作
 func (r *Repository) GetShops() ([]models.Shop, error) {
 	var shops []models.Shop
-	err := r.db.Preload("Items").Find(&shops).Error
+	err := r.db.Preload("Items.Item").Find(&shops).Error
 	return shops, err
 }
 
 func (r *Repository) GetShopByID(id uint) (*models.Shop, error) {
 	var shop models.Shop
-	err := r.db.Preload("Items").First(&shop, id).Error
+	err := r.db.Preload("Items.Item").First(&shop, id).Error
 	return &shop, err
 }
 
 func (r *Repository) GetShopByCode(code string) (*models.Shop, error) {
 	var shop models.Shop
-	err := r.db.Preload("Items").Where("code = ?", code).First(&shop).Error
+	err := r.db.Preload("Items.Item").Where("code = ?", code).First(&shop).Error
 	return &shop, err
 }
 
@@ -342,4 +342,118 @@ func (r *Repository) GetConversationSummary(playerID, npcID uint) (string, error
 		return "", err
 	}
 	return conv.Summary, nil
+}
+
+// Player 玩家相关操作
+func (r *Repository) GetPlayerByAccount(account string) (*models.Player, error) {
+	var player models.Player
+	err := r.db.Where("account = ?", account).First(&player).Error
+	return &player, err
+}
+
+// SaveShopItem 保存商店商品
+func (r *Repository) SaveShopItem(item *models.ShopItem) error {
+	return r.db.Save(item).Error
+}
+
+// GetShopItemByID 获取商店商品
+func (r *Repository) GetShopItemByID(id uint) (*models.ShopItem, error) {
+	var item models.ShopItem
+	err := r.db.First(&item, id).Error
+	return &item, err
+}
+
+// Skill 技能相关操作
+func (r *Repository) GetSkills() ([]models.Skill, error) {
+	var skills []models.Skill
+	err := r.db.Find(&skills).Error
+	return skills, err
+}
+
+func (r *Repository) GetSkillByID(id uint) (*models.Skill, error) {
+	var skill models.Skill
+	err := r.db.First(&skill, id).Error
+	return &skill, err
+}
+
+func (r *Repository) GetSkillByCode(code string) (*models.Skill, error) {
+	var skill models.Skill
+	err := r.db.Where("code = ?", code).First(&skill).Error
+	return &skill, err
+}
+
+func (r *Repository) CreateSkill(skill *models.Skill) error {
+	return r.db.Create(skill).Error
+}
+
+func (r *Repository) UpdateSkill(skill *models.Skill) error {
+	return r.db.Save(skill).Error
+}
+
+func (r *Repository) DeleteSkill(id uint) error {
+	return r.db.Delete(&models.Skill{}, id).Error
+}
+
+// Achievement 成就相关操作
+func (r *Repository) GetAchievements() ([]models.Achievement, error) {
+	var achievements []models.Achievement
+	err := r.db.Find(&achievements).Error
+	return achievements, err
+}
+
+func (r *Repository) GetAchievementByID(id uint) (*models.Achievement, error) {
+	var achievement models.Achievement
+	err := r.db.First(&achievement, id).Error
+	return &achievement, err
+}
+
+func (r *Repository) GetAchievementByCode(code string) (*models.Achievement, error) {
+	var achievement models.Achievement
+	err := r.db.Where("code = ?", code).First(&achievement).Error
+	return &achievement, err
+}
+
+func (r *Repository) CreateAchievement(achievement *models.Achievement) error {
+	return r.db.Create(achievement).Error
+}
+
+func (r *Repository) GetPlayerAchievements(playerID uint) ([]models.PlayerAchievement, error) {
+	var achievements []models.PlayerAchievement
+	err := r.db.Preload("Achievement").Where("player_id = ?", playerID).Find(&achievements).Error
+	return achievements, err
+}
+
+func (r *Repository) CreatePlayerAchievement(pa *models.PlayerAchievement) error {
+	return r.db.Create(pa).Error
+}
+
+func (r *Repository) HasAchievement(playerID, achievementID uint) bool {
+	var count int64
+	r.db.Model(&models.PlayerAchievement{}).Where("player_id = ? AND achievement_id = ?", playerID, achievementID).Count(&count)
+	return count > 0
+}
+
+// SaveGame 存档相关操作
+func (r *Repository) GetSaveGames(playerID uint) ([]models.SaveGame, error) {
+	var saves []models.SaveGame
+	err := r.db.Where("player_id = ?", playerID).Order("slot").Find(&saves).Error
+	return saves, err
+}
+
+func (r *Repository) GetSaveGame(playerID uint, slot int) (*models.SaveGame, error) {
+	var save models.SaveGame
+	err := r.db.Where("player_id = ? AND slot = ?", playerID, slot).First(&save).Error
+	return &save, err
+}
+
+func (r *Repository) CreateSaveGame(save *models.SaveGame) error {
+	return r.db.Create(save).Error
+}
+
+func (r *Repository) UpdateSaveGame(save *models.SaveGame) error {
+	return r.db.Save(save).Error
+}
+
+func (r *Repository) DeleteSaveGame(playerID uint, slot int) error {
+	return r.db.Where("player_id = ? AND slot = ?", playerID, slot).Delete(&models.SaveGame{}).Error
 }

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentGame API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        .info-bar span {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .btn-run {
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border: none;
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-run:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,210,255,0.4);
+        }
+        .btn-run:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .stat-card .label {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        .stat-card.total .number { color: #00d2ff; }
+        .stat-card.pass .number { color: #4ade80; }
+        .stat-card.fail .number { color: #f87171; }
+        .stat-card.time .number { color: #fbbf24; }
+        .results {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.2s;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .result-item .status {
+            width: 80px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .result-item .status.pass { color: #4ade80; }
+        .result-item .status.fail { color: #f87171; }
+        .result-item .status.skip { color: #fbbf24; }
+        .result-item .status.running { color: #00d2ff; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .result-item .name {
+            flex: 1;
+            font-size: 16px;
+        }
+        .result-item .detail {
+            font-size: 13px;
+            opacity: 0.7;
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .result-item .time {
+            width: 100px;
+            text-align: right;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #00d2ff;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-bar .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .error-detail {
+            background: rgba(248,113,113,0.1);
+            border-left: 3px solid #f87171;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border-radius: 0 5px 5px 0;
+            font-size: 13px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AgentGame 自动化测试</h1>
+        
+        <div class="info-bar">
+            <span>API地址: <code id="api-url">http://localhost:8080</code></span>
+            <span>开始时间: <code id="start-time">-</code></span>
+            <button class="btn-run" id="btn-run" onclick="runTests()">运行测试</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card total">
+                <div class="number" id="stat-total">0</div>
+                <div class="label">总测试数</div>
+            </div>
+            <div class="stat-card pass">
+                <div class="number" id="stat-pass">0</div>
+                <div class="label">通过</div>
+            </div>
+            <div class="stat-card fail">
+                <div class="number" id="stat-fail">0</div>
+                <div class="label">失败</div>
+            </div>
+            <div class="stat-card time">
+                <div class="number" id="stat-time">0ms</div>
+                <div class="label">总耗时</div>
+            </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>点击"运行测试"开始...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8080';
+        let playerID = null;
+        let testResults = [];
+        let startTime = 0;
+
+        const tests = [
+            { name: '服务端健康检查', fn: testHealth },
+            { name: '获取游戏初始化数据', fn: testGameInit },
+            { name: '创建玩家', fn: testCreatePlayer },
+            { name: '获取玩家信息', fn: testGetPlayer },
+            { name: '更新玩家位置', fn: testUpdatePlayerPos },
+            { name: '获取场景列表', fn: testGetScenes },
+            { name: '通过代码获取场景', fn: testGetSceneByCode },
+            { name: '获取NPC列表', fn: testGetNPCs },
+            { name: '获取任务列表', fn: testGetTasks },
+            { name: '获取道具列表', fn: testGetItems },
+            { name: '获取商店列表', fn: testGetShops },
+            { name: '获取智能体列表', fn: testGetAgents },
+            { name: '获取流程列表', fn: testGetFlows },
+            { name: 'NPC对话测试', fn: testNPCChat },
+            { name: '商店商品查询', fn: testShopItems },
+            { name: '购买道具测试', fn: testBuyItem },
+            { name: 'MCP初始化', fn: testMCPInitialize },
+            { name: 'MCP工具列表', fn: testMCPTools },
+            { name: 'MCP调用测试', fn: testMCPCall },
+            { name: '导出数据测试', fn: testExportData },
+        ];
+
+        async function runTests() {
+            const btn = document.getElementById('btn-run');
+            btn.disabled = true;
+            btn.textContent = '测试中...';
+            
+            document.getElementById('start-time').textContent = new Date().toLocaleTimeString();
+            document.getElementById('results').innerHTML = '';
+            testResults = [];
+            startTime = Date.now();
+            
+            updateStats();
+
+            for (let i = 0; i < tests.length; i++) {
+                const test = tests[i];
+                const progress = ((i + 1) / tests.length) * 100;
+                document.getElementById('progress').style.width = progress + '%';
+                
+                addResult(test.name, 'running', '执行中...', 0);
+                
+                const testStart = Date.now();
+                try {
+                    const result = await test.fn();
+                    const duration = Date.now() - testStart;
+                    updateLastResult(test.name, 'pass', result, duration);
+                    testResults.push({ name: test.name, status: 'pass', detail: result, time: duration });
+                } catch (err) {
+                    const duration = Date.now() - testStart;
+                    updateLastResult(test.name, 'fail', err.message, duration);
+                    testResults.push({ name: test.name, status: 'fail', detail: err.message, time: duration });
+                }
+                
+                updateStats();
+                await sleep(100);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '重新运行';
+        }
+
+        function addResult(name, status, detail, time) {
+            const results = document.getElementById('results');
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.id = 'result-' + testResults.length;
+            item.innerHTML = `
+                <div class="status ${status}">${getStatusText(status)}</div>
+                <div class="name">${name}</div>
+                <div class="detail">${detail}</div>
+                <div class="time">${time}ms</div>
+            `;
+            results.appendChild(item);
+        }
+
+        function updateLastResult(name, status, detail, time) {
+            const items = document.querySelectorAll('.result-item');
+            const item = items[items.length - 1];
+            if (item) {
+                item.querySelector('.status').className = `status ${status}`;
+                item.querySelector('.status').textContent = getStatusText(status);
+                item.querySelector('.detail').textContent = detail;
+                item.querySelector('.time').textContent = time + 'ms';
+                
+                if (status === 'fail') {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-detail';
+                    errorDiv.textContent = detail;
+                    item.appendChild(errorDiv);
+                }
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'pass': return '✓ PASS';
+                case 'fail': return '✗ FAIL';
+                case 'skip': return '- SKIP';
+                case 'running': return '⟳ 运行中';
+                default: return status;
+            }
+        }
+
+        function updateStats() {
+            const total = testResults.length;
+            const pass = testResults.filter(r => r.status === 'pass').length;
+            const fail = testResults.filter(r => r.status === 'fail').length;
+            const duration = Date.now() - startTime;
+
+            document.getElementById('stat-total').textContent = tests.length;
+            document.getElementById('stat-pass').textContent = pass;
+            document.getElementById('stat-fail').textContent = fail;
+            document.getElementById('stat-time').textContent = duration + 'ms';
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // API测试函数
+        async function testHealth() {
+            const resp = await fetch(`${API}/health`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            if (data.status !== 'ok') throw new Error('状态异常');
+            return '服务正常运行';
+        }
+
+        async function testGameInit() {
+            const resp = await fetch(`${API}/api/game/init`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const scenes = data.scenes?.length || 0;
+            const npcs = data.npcs?.length || 0;
+            const tasks = data.tasks?.length || 0;
+            const items = data.items?.length || 0;
+            return `场景:${scenes} NPC:${npcs} 任务:${tasks} 道具:${items}`;
+        }
+
+        async function testCreatePlayer() {
+            const resp = await fetch(`${API}/api/player/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: '测试玩家_' + Date.now(),
+                    account: 'test_' + Date.now()
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            playerID = data.data?.id;
+            if (!playerID) throw new Error('未返回玩家ID');
+            return `创建成功 ID:${playerID}`;
+        }
+
+        async function testGetPlayer() {
+            if (!playerID) throw new Error('玩家未创建');
+            const resp = await fetch(`${API}/api/player/${playerID}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            return `获取成功 名称:${data.data?.name}`;
+        }
+
+        async function testUpdatePlayerPos() {
+            if (!playerID) throw new Error('玩家未创建');
+            const resp = await fetch(`${API}/api/player/${playerID}/pos`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scene_id: 'scene_village_square',
+                    pos_x: 500,
+                    pos_y: 300
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return '位置更新成功';
+        }
+
+        async function testGetScenes() {
+            const resp = await fetch(`${API}/api/scenes`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('场景列表为空');
+            return `获取到 ${count} 个场景`;
+        }
+
+        async function testGetSceneByCode() {
+            const listResp = await fetch(`${API}/api/scenes`);
+            const listData = await listResp.json();
+            if (!listData.data?.length) throw new Error('没有场景数据');
+            
+            const code = listData.data[0].code;
+            const resp = await fetch(`${API}/api/game/scene/${code}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            return `获取场景 ${data.data?.name} 成功`;
+        }
+
+        async function testGetNPCs() {
+            const resp = await fetch(`${API}/api/npcs`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('NPC列表为空');
+            return `获取到 ${count} 个NPC`;
+        }
+
+        async function testGetTasks() {
+            const resp = await fetch(`${API}/api/tasks`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('任务列表为空');
+            return `获取到 ${count} 个任务`;
+        }
+
+        async function testGetItems() {
+            const resp = await fetch(`${API}/api/items`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('道具列表为空');
+            return `获取到 ${count} 个道具`;
+        }
+
+        async function testGetShops() {
+            const resp = await fetch(`${API}/api/shops`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('商店列表为空');
+            return `获取到 ${count} 个商店`;
+        }
+
+        async function testGetAgents() {
+            const resp = await fetch(`${API}/api/agents`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            if (count === 0) throw new Error('智能体列表为空');
+            return `获取到 ${count} 个智能体`;
+        }
+
+        async function testGetFlows() {
+            const resp = await fetch(`${API}/api/flows`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.data?.length || 0;
+            return `获取到 ${count} 个流程`;
+        }
+
+        async function testNPCChat() {
+            if (!playerID) throw new Error('玩家未创建');
+            
+            const npcsResp = await fetch(`${API}/api/npcs`);
+            const npcsData = await npcsResp.json();
+            if (!npcsData.data?.length) throw new Error('没有NPC数据');
+            
+            const npcID = npcsData.data[0].id;
+            const resp = await fetch(`${API}/api/npc/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player_id: playerID,
+                    npc_id: npcID,
+                    message: '你好'
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            if (!data.reply) throw new Error('未返回对话内容');
+            return `NPC回复: ${data.reply.substring(0, 30)}...`;
+        }
+
+        async function testShopItems() {
+            const shopsResp = await fetch(`${API}/api/shops`);
+            const shopsData = await shopsResp.json();
+            if (!shopsData.data?.length) throw new Error('没有商店数据');
+            
+            const shopCode = shopsData.data[0].code;
+            const resp = await fetch(`${API}/api/game/shop/${shopCode}/items`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const count = data.items?.length || 0;
+            return `商店 ${shopCode} 有 ${count} 件商品`;
+        }
+
+        async function testBuyItem() {
+            if (!playerID) throw new Error('玩家未创建');
+            
+            const shopsResp = await fetch(`${API}/api/shops`);
+            const shopsData = await shopsResp.json();
+            if (!shopsData.data?.length) throw new Error('没有商店数据');
+            
+            const shopCode = shopsData.data[0].code;
+            const itemsResp = await fetch(`${API}/api/game/shop/${shopCode}/items`);
+            const itemsData = await itemsResp.json();
+            if (!itemsData.items?.length) throw new Error('商店没有商品');
+            
+            const itemID = itemsData.items[0].item_id;
+            const resp = await fetch(`${API}/api/shop/buy`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player_id: playerID,
+                    shop_code: shopCode,
+                    item_id: itemID,
+                    count: 1
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            return `购买成功 消费:${data.total_price}`;
+        }
+
+        async function testMCPInitialize() {
+            const resp = await fetch(`${API}/mcp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'initialize'
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            if (data.result?.serverInfo?.name !== 'agentgame-mcp') {
+                throw new Error('服务器名称不匹配');
+            }
+            return `MCP服务器 ${data.result.serverInfo.name} v${data.result.serverInfo.version}`;
+        }
+
+        async function testMCPTools() {
+            const resp = await fetch(`${API}/mcp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 2,
+                    method: 'tools/list'
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const tools = data.result?.tools || [];
+            return `获取到 ${tools.length} 个MCP工具`;
+        }
+
+        async function testMCPCall() {
+            const resp = await fetch(`${API}/mcp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 3,
+                    method: 'tools/call',
+                    params: {
+                        name: 'list_scenes',
+                        arguments: {}
+                    }
+                })
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error.message);
+            return 'MCP工具调用成功';
+        }
+
+        async function testExportData() {
+            const resp = await fetch(`${API}/api/export`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            const keys = Object.keys(data.data || {});
+            return `导出 ${keys.length} 种数据类型`;
+        }
+    </script>
+</body>
+</html>

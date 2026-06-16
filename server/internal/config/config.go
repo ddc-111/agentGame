@@ -30,10 +30,12 @@ type DatabaseConfig struct {
 }
 
 type AIConfig struct {
-	Provider string `yaml:"provider"`
-	BaseURL  string `yaml:"base_url"`
-	APIKey   string `yaml:"api_key"`
-	Model    string `yaml:"model"`
+	Provider    string  `yaml:"provider"`
+	BaseURL     string  `yaml:"base_url"`
+	APIKey      string  `yaml:"api_key"`
+	Model       string  `yaml:"model"`
+	Temperature float64 `yaml:"temperature"`
+	MaxTokens   int     `yaml:"max_tokens"`
 }
 
 // GeneratorConfig 生成智能体配置（独立大模型地址）
@@ -64,9 +66,11 @@ func Default() *Config {
 			DSN:    "game.db",
 		},
 		AI: AIConfig{
-			Provider: "openai",
-			BaseURL:  "https://api.openai.com/v1",
-			Model:    "gpt-4",
+			Provider:    "openai",
+			BaseURL:     "https://api.openai.com/v1",
+			Model:       "gpt-4",
+			Temperature: 0.7,
+			MaxTokens:   500,
 		},
 		Generator: GeneratorConfig{
 			Enabled:     true,

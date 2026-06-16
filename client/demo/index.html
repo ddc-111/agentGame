@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>青石村传说 - 演示播放器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #eee; overflow: hidden; height: 100vh; }
+
+    .demo-container { display: flex; height: 100vh; }
+
+    .game-area { flex: 1; position: relative; background: #16213e; overflow: hidden; }
+    .game-canvas { width: 100%; height: 100%; }
+    .game-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+
+    .scene-title { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 24px; border-radius: 20px; font-size: 14px; color: #e6a23c; }
+    .scene-desc { position: absolute; bottom: 80px; left: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.8; border: 1px solid #333; }
+
+    .npc-dialog { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 600px; background: rgba(0,0,0,0.9); border: 2px solid #e6a23c; border-radius: 12px; padding: 20px; display: none; }
+    .npc-dialog.show { display: block; }
+    .npc-name { color: #e6a23c; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .npc-text { color: #ddd; font-size: 14px; line-height: 1.8; }
+    .npc-text .typing { border-right: 2px solid #fff; animation: blink 0.7s infinite; }
+    @keyframes blink { 50% { border-color: transparent; } }
+
+    .combat-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; background: rgba(0,0,0,0.95); border: 2px solid #f56c6c; border-radius: 12px; padding: 24px; display: none; }
+    .combat-ui.show { display: block; }
+    .combat-header { text-align: center; font-size: 20px; color: #f56c6c; margin-bottom: 20px; }
+    .combat-arena { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .combatant { text-align: center; width: 200px; }
+    .combatant-name { font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+    .hp-bar { width: 100%; height: 20px; background: #333; border-radius: 10px; overflow: hidden; margin-bottom: 4px; }
+    .hp-fill { height: 100%; background: linear-gradient(90deg, #f56c6c, #67c23a); transition: width 0.5s; border-radius: 10px; }
+    .hp-text { font-size: 12px; color: #999; }
+    .vs { font-size: 32px; color: #f56c6c; font-weight: bold; }
+    .combat-log { max-height: 150px; overflow-y: auto; background: #111; padding: 12px; border-radius: 8px; font-size: 13px; }
+    .combat-log div { padding: 4px 0; border-bottom: 1px solid #222; }
+    .combat-log .player-action { color: #409eff; }
+    .combat-log .enemy-action { color: #f56c6c; }
+    .combat-log .system { color: #e6a23c; }
+
+    .achievement-popup { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.9); border: 2px solid #e6a23c; border-radius: 12px; padding: 16px 24px; display: none; animation: slideIn 0.5s; }
+    .achievement-popup.show { display: block; }
+    .achievement-popup .ach-title { color: #e6a23c; font-size: 12px; margin-bottom: 4px; }
+    .achievement-popup .ach-name { color: #fff; font-size: 16px; font-weight: bold; }
+    @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .reward-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); border: 2px solid #67c23a; border-radius: 12px; padding: 32px; text-align: center; display: none; }
+    .reward-popup.show { display: block; animation: scaleIn 0.3s; }
+    @keyframes scaleIn { from { transform: translate(-50%, -50%) scale(0.5); } to { transform: translate(-50%, -50%) scale(1); } }
+    .reward-title { color: #67c23a; font-size: 24px; margin-bottom: 16px; }
+    .reward-items { display: flex; gap: 20px; justify-content: center; }
+    .reward-item { text-align: center; }
+    .reward-item .icon { font-size: 32px; }
+    .reward-item .label { font-size: 12px; color: #999; margin-top: 4px; }
+    .reward-item .value { font-size: 18px; color: #e6a23c; font-weight: bold; }
+
+    .control-panel { width: 320px; background: #0f3460; border-left: 1px solid #333; display: flex; flex-direction: column; }
+    .panel-header { padding: 16px; background: #16213e; border-bottom: 1px solid #333; }
+    .panel-header h3 { color: #e6a23c; font-size: 16px; }
+    .panel-content { flex: 1; overflow-y: auto; padding: 16px; }
+
+    .step-list { display: flex; flex-direction: column; gap: 8px; }
+    .step-item { padding: 12px; background: #16213e; border-radius: 8px; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
+    .step-item:hover { border-color: #409eff; }
+    .step-item.active { border-color: #e6a23c; background: #1a2a4a; }
+    .step-item.done { border-color: #67c23a; }
+    .step-item.fail { border-color: #f56c6c; }
+    .step-num { font-size: 12px; color: #666; }
+    .step-name { font-size: 14px; font-weight: 500; margin-top: 4px; }
+    .step-status { font-size: 12px; margin-top: 4px; }
+    .step-status.pass { color: #67c23a; }
+    .step-status.fail { color: #f56c6c; }
+    .step-status.current { color: #e6a23c; }
+
+    .controls { padding: 16px; background: #16213e; border-top: 1px solid #333; }
+    .btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+    .btn-primary { background: #409eff; color: #fff; }
+    .btn-primary:hover { background: #66b1ff; }
+    .btn-success { background: #67c23a; color: #fff; }
+    .btn-success:hover { background: #85ce61; }
+    .btn-warning { background: #e6a23c; color: #fff; }
+    .btn-warning:hover { background: #ebb563; }
+    .btn-danger { background: #f56c6c; color: #fff; }
+    .btn-danger:hover { background: #f78989; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .progress-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #409eff; transition: width 0.3s; }
+
+    .demo-selector { margin-bottom: 16px; }
+    .demo-selector select { width: 100%; padding: 8px; background: #16213e; color: #eee; border: 1px solid #333; border-radius: 6px; font-size: 14px; }
+
+    .speed-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .speed-control label { font-size: 12px; color: #999; }
+    .speed-control input { width: 60px; }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="game-area">
+      <canvas class="game-canvas" id="gameCanvas"></canvas>
+      <div class="game-overlay">
+        <div class="scene-title" id="sceneTitle">青石村 - 村口</div>
+        <div class="scene-desc" id="sceneDesc" style="display:none"></div>
+
+        <div class="npc-dialog" id="npcDialog">
+          <div class="npc-name" id="npcName"></div>
+          <div class="npc-text" id="npcText"></div>
+        </div>
+
+        <div class="combat-ui" id="combatUI">
+          <div class="combat-header">战斗开始！</div>
+          <div class="combat-arena">
+            <div class="combatant">
+              <div class="combatant-name" style="color:#409eff">冒险者</div>
+              <div class="hp-bar"><div class="hp-fill" id="playerHP" style="width:100%"></div></div>
+              <div class="hp-text" id="playerHPText">100/100</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="combatant">
+              <div class="combatant-name" style="color:#f56c6c">野狼</div>
+              <div class="hp-bar"><div class="hp-fill" id="enemyHP" style="width:100%"></div></div>
+              <div class="hp-text" id="enemyHPText">80/80</div>
+            </div>
+          </div>
+          <div class="combat-log" id="combatLog"></div>
+        </div>
+
+        <div class="achievement-popup" id="achievementPopup">
+          <div class="ach-title">成就解锁</div>
+          <div class="ach-name" id="achName"></div>
+        </div>
+
+        <div class="reward-popup" id="rewardPopup">
+          <div class="reward-title">任务完成！</div>
+          <div class="reward-items" id="rewardItems"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="panel-header">
+        <h3>演示播放器</h3>
+        <div class="demo-selector">
+          <select id="demoSelect" onchange="selectDemo(this.value)">
+            <option value="beginner_village">新手村完整流程</option>
+            <option value="combat_demo">战斗系统演示</option>
+            <option value="npc_ai_demo">AI对话演示</option>
+          </select>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+
+      <div class="panel-content">
+        <div class="step-list" id="stepList"></div>
+      </div>
+
+      <div class="controls">
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnPrev" onclick="prevStep()">上一步</button>
+          <button class="btn btn-success" id="btnPlay" onclick="togglePlay()">播放</button>
+          <button class="btn btn-primary" id="btnNext" onclick="nextStep()">下一步</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-warning" onclick="resetDemo()">重置</button>
+          <button class="btn btn-danger" onclick="autoPlay()">自动播放</button>
+        </div>
+        <div class="speed-control">
+          <label>速度:</label>
+          <input type="range" id="speedSlider" min="0.5" max="3" step="0.5" value="1" onchange="setSpeed(this.value)">
+          <span id="speedLabel">1x</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const demos = {
+      beginner_village: {
+        name: '新手村完整流程',
+        scenes: {
+          'scene_village_entrance': { bg: '#4a7c59', name: '青石村 - 村口', npcs: [{ x: 400, y: 400, name: '老村长', avatar: '👴' }] },
+          'scene_village_center': { bg: '#8b7355', name: '青石村 - 村中心', npcs: [{ x: 400, y: 600, name: '王大娘', avatar: '👩' }] },
+          'scene_general_store': { bg: '#6b4226', name: '李记杂货铺', npcs: [{ x: 600, y: 400, name: '李掌柜', avatar: '🧔' }] },
+          'scene_blacksmith': { bg: '#4a4a4a', name: '张记铁匠铺', npcs: [{ x: 600, y: 400, name: '张铁匠', avatar: '👨‍🔧' }] },
+          'scene_village_path': { bg: '#556b2f', name: '村外小路', npcs: [{ x: 300, y: 450, name: '猎户老周', avatar: '🏹' }] }
+        },
+        steps: [
+          { scene: 'scene_village_entrance', action: 'enter', desc: '玩家创建角色，出现在青石村村口' },
+          { scene: 'scene_village_entrance', action: 'talk', npc: '老村长', dialog: '呵呵，年轻人，欢迎来到青石村！老朽是这里的村长，姓陈。你一路辛苦了，先在村里歇歇脚吧。', desc: '与老村长对话' },
+          { scene: 'scene_village_center', action: 'move', desc: '前往村中心广场' },
+          { scene: 'scene_village_center', action: 'talk', npc: '王大娘', dialog: '哎呀，新来的客官！来来来，坐下喝杯茶。我跟你讲，咱们青石村可是有年头了...', desc: '拜访王大娘茶摊' },
+          { scene: 'scene_general_store', action: 'move', desc: '前往杂货铺' },
+          { scene: 'scene_general_store', action: 'talk', npc: '李掌柜', dialog: '客官好！在下李掌柜，欢迎光临小店。看客官是新来的冒险者吧？推荐您买些草药和馒头，有备无患啊！', desc: '与李掌柜对话' },
+          { scene: 'scene_general_store', action: 'buy', items: ['草药×3', '馒头×5'], gold: -250, desc: '购买补给品' },
+          { scene: 'scene_blacksmith', action: 'move', desc: '前往铁匠铺' },
+          { scene: 'scene_blacksmith', action: 'talk', npc: '张铁匠', dialog: '俺是张铁匠。你想要什么兵器？铁剑五百文，攻击+10，适合新手。精钢刀一千文，攻击+25，那才叫锋利！', desc: '与张铁匠对话' },
+          { scene: 'scene_blacksmith', action: 'buy', items: ['铁剑×1'], gold: -500, atk: 10, desc: '购买铁剑' },
+          { scene: 'scene_village_path', action: 'move', desc: '前往村外小路' },
+          { scene: 'scene_village_path', action: 'talk', npc: '猎户老周', dialog: '嗯。你来了。村外狼群越来越多，你小心点。前面有几只野狼，你去帮我看看情况。', desc: '与猎户老周对话' },
+          { scene: 'scene_village_path', action: 'combat', enemy: '野狼', desc: '遭遇野狼，进入战斗' },
+          { scene: 'scene_village_path', action: 'use_item', item: '草药', desc: '使用草药恢复生命' },
+          { scene: 'scene_village_entrance', action: 'return', desc: '返回村庄' },
+          { scene: 'scene_village_entrance', action: 'reward', exp: 200, gold: 500, items: ['回城符×3'], desc: '完成任务获得奖励' },
+          { scene: 'scene_village_entrance', action: 'achievement', name: '初来乍到', desc: '解锁成就' }
+        ]
+      },
+      combat_demo: {
+        name: '战斗系统演示',
+        scenes: { 'scene_village_path': { bg: '#556b2f', name: '村外小路', npcs: [] } },
+        steps: [
+          { scene: 'scene_village_path', action: 'enter', desc: '进入村外小路' },
+          { scene: 'scene_village_path', action: 'combat', enemy: '野狼', desc: '遭遇野狼' },
+          { scene: 'scene_village_path', action: 'attack', dmg: 17, desc: '普通攻击造成17点伤害' },
+          { scene: 'scene_village_path', action: 'skill', name: '基础斩击', dmg: 25, desc: '使用基础斩击造成25点伤害' },
+          { scene: 'scene_village_path', action: 'skill', name: '战吼', desc: '使用战吼提升攻击力30%' },
+          { scene: 'scene_village_path', action: 'use_item', item: '草药', heal: 20, desc: '使用草药恢复20HP' },
+          { scene: 'scene_village_path', action: 'crit', dmg: 39, desc: '触发暴击！造成39点伤害' },
+          { scene: 'scene_village_path', action: 'victory', exp: 100, gold: 50, desc: '击败野狼，获得奖励' },
+          { scene: 'scene_village_path', action: 'flee', desc: '尝试逃跑（60%成功率）' },
+          { scene: 'scene_village_path', action: 'defeat', desc: '战斗失败，自动回城' }
+        ]
+      },
+      npc_ai_demo: {
+        name: 'AI对话演示',
+        scenes: {
+          'scene_village_entrance': { bg: '#4a7c59', name: '青石村 - 村口', npcs: [{ x: 400, y: 400, name: '老村长', avatar: '👴' }] },
+          'scene_general_store': { bg: '#6b4226', name: '李记杂货铺', npcs: [{ x: 600, y: 400, name: '李掌柜', avatar: '🧔' }] },
+          'scene_tea_stand': { bg: '#6b8e23', name: '王大娘茶摊', npcs: [{ x: 500, y: 350, name: '王大娘', avatar: '👩' }] },
+          'scene_blacksmith': { bg: '#4a4a4a', name: '张记铁匠铺', npcs: [{ x: 600, y: 400, name: '张铁匠', avatar: '👨‍🔧' }] },
+          'scene_village_path': { bg: '#556b2f', name: '村外小路', npcs: [{ x: 300, y: 450, name: '猎户老周', avatar: '🏹' }] }
+        },
+        steps: [
+          { scene: 'scene_village_entrance', action: 'talk', npc: '老村长', dialog: '呵呵，年轻人，欢迎来到青石村！老朽是这里的村长。你从哪里来啊？', desc: '初次对话 - 老村长' },
+          { scene: 'scene_village_entrance', action: 'talk', npc: '老村长', dialog: '青石村因盛产青石而得名，已有数百年历史了。村口那块石碑，据说是开村先祖所立...', desc: '追问村庄历史' },
+          { scene: 'scene_village_entrance', action: 'talk', npc: '老村长', dialog: '你去杂货铺找李掌柜，他最近进了一批新货。去茶摊找王大娘聊聊，她知道村里的大小事情。', desc: '请求任务指引' },
+          { scene: 'scene_general_store', action: 'talk', npc: '李掌柜', dialog: '客官好！看您是新来的冒险者吧？在下推荐您买些草药和馒头，有备无患啊！草药50文，馒头20文。', desc: '智能商品推荐' },
+          { scene: 'scene_general_store', action: 'talk', npc: '李掌柜', dialog: '看客官这么有诚意，给打个九折吧！草药45文，馒头18文，怎么样？', desc: '讨价还价' },
+          { scene: 'scene_tea_stand', action: 'talk', npc: '王大娘', dialog: '哎呀，日头正毒呢，来杯凉茶。你知道吗，我听说村外的狼群最近越来越凶了...', desc: '时间感知对话' },
+          { scene: 'scene_tea_stand', action: 'talk', npc: '王大娘', dialog: '嘘...村后的山洞据说有宝贝，但村长不让去。你要去的话，先去找猎户老周问问路。', desc: '隐藏信息获取' },
+          { scene: 'scene_blacksmith', action: 'talk', npc: '张铁匠', dialog: '嗯，你小子有两下子！铁剑和精钢刀的区别你都知道。给你打个八折吧！', desc: '知识问答获得折扣' },
+          { scene: 'scene_village_path', action: 'talk', npc: '猎户老周', dialog: '嗯。最近狼群出没越来越频繁了。你去村外小路查看一下，看看有多少只狼。小心点。', desc: '动态任务生成' }
+        ]
+      }
+    };
+
+    let currentDemo = 'beginner_village';
+    let currentStep = 0;
+    let isPlaying = false;
+    let autoPlayTimer = null;
+    let speed = 1;
+    let playerState = { hp: 100, maxHp: 100, gold: 500, atk: 10, level: 1 };
+
+    function selectDemo(id) {
+      currentDemo = id;
+      currentStep = 0;
+      isPlaying = false;
+      clearTimeout(autoPlayTimer);
+      playerState = { hp: 100, maxHp: 100, gold: 500, atk: 10, level: 1 };
+      renderStepList();
+      renderScene();
+      hideAll();
+    }
+
+    function renderStepList() {
+      const list = document.getElementById('stepList');
+      const steps = demos[currentDemo].steps;
+      list.innerHTML = steps.map((s, i) => {
+        let cls = 'step-item';
+        let status = '';
+        if (i === currentStep) { cls += ' active'; status = '<div class="step-status current">当前步骤</div>'; }
+        else if (i < currentStep) { cls += ' done'; status = '<div class="step-status pass">已完成</div>'; }
+        return `<div class="${cls}" onclick="goToStep(${i})"><div class="step-num">步骤 ${i + 1}</div><div class="step-name">${s.desc}</div>${status}</div>`;
+      }).join('');
+      document.getElementById('progressFill').style.width = (currentStep / (steps.length - 1) * 100) + '%';
+    }
+
+    function renderScene() {
+      const demo = demos[currentDemo];
+      const step = demo.steps[currentStep];
+      const scene = demo.scenes[step.scene];
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+
+      ctx.fillStyle = scene.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      for (let i = 0; i < 50; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 3 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (scene.npcs) {
+        scene.npcs.forEach(npc => {
+          ctx.font = '48px serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(npc.avatar, npc.x, npc.y);
+          ctx.font = '14px Microsoft YaHei';
+          ctx.fillStyle = '#fff';
+          ctx.fillText(npc.name, npc.x, npc.y + 30);
+        });
+      }
+
+      ctx.font = '32px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🧑', canvas.width / 2, canvas.height / 2 + 50);
+      ctx.font = '14px Microsoft YaHei';
+      ctx.fillStyle = '#409eff';
+      ctx.fillText('冒险者', canvas.width / 2, canvas.height / 2 + 80);
+
+      document.getElementById('sceneTitle').textContent = scene.name;
+    }
+
+    function hideAll() {
+      document.getElementById('npcDialog').classList.remove('show');
+      document.getElementById('combatUI').classList.remove('show');
+      document.getElementById('achievementPopup').classList.remove('show');
+      document.getElementById('rewardPopup').classList.remove('show');
+    }
+
+    function typeText(element, text, callback) {
+      element.innerHTML = '';
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i < text.length) {
+          element.innerHTML = text.substring(0, i + 1) + '<span class="typing"></span>';
+          i++;
+        } else {
+          element.innerHTML = text;
+          clearInterval(interval);
+          if (callback) setTimeout(callback, 1000);
+        }
+      }, 50);
+    }
+
+    function showDialog(npc, text, callback) {
+      document.getElementById('npcName').textContent = npc;
+      const dialog = document.getElementById('npcDialog');
+      dialog.classList.add('show');
+      typeText(document.getElementById('npcText'), text, callback);
+    }
+
+    function showCombat(enemy, log, callback) {
+      const ui = document.getElementById('combatUI');
+      ui.classList.add('show');
+      document.querySelector('.combatant-name[style*="f56c6c"]').textContent = enemy;
+      document.getElementById('enemyHP').style.width = '100%';
+      document.getElementById('enemyHPText').textContent = '80/80';
+      const logEl = document.getElementById('combatLog');
+      logEl.innerHTML = '';
+      let i = 0;
+      const addLog = () => {
+        if (i < log.length) {
+          const div = document.createElement('div');
+          div.className = log[i].type;
+          div.textContent = log[i].text;
+          logEl.appendChild(div);
+          logEl.scrollTop = logEl.scrollHeight;
+          if (log[i].playerHP !== undefined) {
+            document.getElementById('playerHP').style.width = (log[i].playerHP / playerState.maxHp * 100) + '%';
+            document.getElementById('playerHPText').textContent = `${log[i].playerHP}/${playerState.maxHp}`;
+          }
+          if (log[i].enemyHP !== undefined) {
+            document.getElementById('enemyHP').style.width = (log[i].enemyHP / 80 * 100) + '%';
+            document.getElementById('enemyHPText').textContent = `${log[i].enemyHP}/80`;
+          }
+          i++;
+          setTimeout(addLog, 1500 / speed);
+        } else {
+          setTimeout(() => { ui.classList.remove('show'); if (callback) callback(); }, 1000);
+        }
+      };
+      addLog();
+    }
+
+    function showAchievement(name, callback) {
+      document.getElementById('achName').textContent = name;
+      const popup = document.getElementById('achievementPopup');
+      popup.classList.add('show');
+      setTimeout(() => { popup.classList.remove('show'); if (callback) callback(); }, 2500);
+    }
+
+    function showReward(exp, gold, items, callback) {
+      const popup = document.getElementById('rewardPopup');
+      let html = '';
+      if (exp) html += `<div class="reward-item"><div class="icon">⭐</div><div class="label">经验</div><div class="value">+${exp}</div></div>`;
+      if (gold) html += `<div class="reward-item"><div class="icon">💰</div><div class="label">金币</div><div class="value">+${gold}</div></div>`;
+      if (items) items.forEach(item => {
+        html += `<div class="reward-item"><div class="icon">📦</div><div class="label">${item}</div><div class="value">+1</div></div>`;
+      });
+      document.getElementById('rewardItems').innerHTML = html;
+      popup.classList.add('show');
+      setTimeout(() => { popup.classList.remove('show'); if (callback) callback(); }, 3000);
+    }
+
+    function executeStep(index) {
+      const demo = demos[currentDemo];
+      if (index >= demo.steps.length) {
+        isPlaying = false;
+        document.getElementById('btnPlay').textContent = '播放';
+        return;
+      }
+      currentStep = index;
+      renderStepList();
+      renderScene();
+      hideAll();
+
+      const step = demo.steps[index];
+      const delay = 500 / speed;
+
+      switch (step.action) {
+        case 'enter':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = step.desc;
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 2000 / speed);
+          break;
+        case 'move':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = '正在前往 ' + demos[currentDemo].scenes[step.scene].name + '...';
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 1500 / speed);
+          break;
+        case 'talk':
+          showDialog(step.npc, step.dialog, nextAuto);
+          break;
+        case 'buy':
+          showReward(0, step.gold, step.items, nextAuto);
+          break;
+        case 'combat':
+          const combatLog = [
+            { type: 'player-action', text: '玩家攻击，造成17点伤害', playerHP: 100, enemyHP: 63 },
+            { type: 'enemy-action', text: '野狼反击，造成7点伤害', playerHP: 93, enemyHP: 63 },
+            { type: 'player-action', text: '使用基础斩击，造成25点伤害', playerHP: 93, enemyHP: 38 },
+            { type: 'enemy-action', text: '野狼攻击，造成7点伤害', playerHP: 86, enemyHP: 38 },
+            { type: 'player-action', text: '普通攻击，造成17点伤害', playerHP: 86, enemyHP: 21 },
+            { type: 'enemy-action', text: '野狼攻击，造成7点伤害', playerHP: 79, enemyHP: 21 },
+            { type: 'system', text: '暴击！造成39点伤害', playerHP: 79, enemyHP: 0 },
+            { type: 'system', text: '胜利！获得100经验，50金币' }
+          ];
+          showCombat(step.enemy, combatLog, nextAuto);
+          break;
+        case 'attack':
+        case 'skill':
+        case 'crit':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = step.desc;
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 1500 / speed);
+          break;
+        case 'use_item':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = step.desc;
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 1500 / speed);
+          break;
+        case 'flee':
+        case 'defeat':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = step.desc;
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 2000 / speed);
+          break;
+        case 'return':
+          document.getElementById('sceneDesc').style.display = 'block';
+          document.getElementById('sceneDesc').textContent = '使用回城符...';
+          setTimeout(() => { document.getElementById('sceneDesc').style.display = 'none'; nextAuto(); }, 1500 / speed);
+          break;
+        case 'reward':
+          showReward(step.exp, step.gold, step.items, nextAuto);
+          break;
+        case 'achievement':
+          showAchievement(step.name, nextAuto);
+          break;
+        case 'victory':
+          showReward(step.exp, step.gold, null, nextAuto);
+          break;
+        default:
+          nextAuto();
+      }
+    }
+
+    function nextAuto() {
+      if (isPlaying && currentStep < demos[currentDemo].steps.length - 1) {
+        autoPlayTimer = setTimeout(() => executeStep(currentStep + 1), 1000 / speed);
+      } else if (currentStep >= demos[currentDemo].steps.length - 1) {
+        isPlaying = false;
+        document.getElementById('btnPlay').textContent = '播放';
+      }
+    }
+
+    function nextStep() { if (currentStep < demos[currentDemo].steps.length - 1) executeStep(currentStep + 1); }
+    function prevStep() { if (currentStep > 0) executeStep(currentStep - 1); }
+    function goToStep(i) { executeStep(i); }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      document.getElementById('btnPlay').textContent = isPlaying ? '暂停' : '播放';
+      if (isPlaying) nextAuto();
+      else clearTimeout(autoPlayTimer);
+    }
+
+    function autoPlay() {
+      currentStep = 0;
+      isPlaying = true;
+      document.getElementById('btnPlay').textContent = '暂停';
+      executeStep(0);
+    }
+
+    function resetDemo() {
+      currentStep = 0;
+      isPlaying = false;
+      clearTimeout(autoPlayTimer);
+      document.getElementById('btnPlay').textContent = '播放';
+      playerState = { hp: 100, maxHp: 100, gold: 500, atk: 10, level: 1 };
+      renderStepList();
+      renderScene();
+      hideAll();
+    }
+
+    function setSpeed(val) {
+      speed = parseFloat(val);
+      document.getElementById('speedLabel').textContent = speed + 'x';
+    }
+
+    window.addEventListener('resize', () => { if (demos[currentDemo]) renderScene(); });
+    selectDemo('beginner_village');
+  </script>
+</body>
+</html>

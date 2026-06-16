@@ -1,0 +1,700 @@
+package tests
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
+)
+
+// TestHealthEndpoint 测试健康检查端点
+func TestHealthEndpoint(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/health")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if result["status"] != "ok" {
+		t.Errorf("期望 status=ok, 得到 %v", result["status"])
+	}
+	t.Log("健康检查端点测试通过")
+}
+
+// TestGetGameInit 测试获取游戏初始化数据
+func TestGetGameInit(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/game/init")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	// 验证返回的数据结构
+	if _, ok := result["config"]; !ok {
+		t.Error("响应缺少 config 字段")
+	}
+	if _, ok := result["scenes"]; !ok {
+		t.Error("响应缺少 scenes 字段")
+	}
+	if _, ok := result["npcs"]; !ok {
+		t.Error("响应缺少 npcs 字段")
+	}
+	if _, ok := result["tasks"]; !ok {
+		t.Error("响应缺少 tasks 字段")
+	}
+	if _, ok := result["items"]; !ok {
+		t.Error("响应缺少 items 字段")
+	}
+	t.Log("游戏初始化数据测试通过")
+}
+
+// TestCreatePlayer 测试创建玩家
+func TestCreatePlayer(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 测试成功创建
+	resp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if data["name"] != TestPlayer["name"] {
+		t.Errorf("期望 name=%v, 得到 %v", TestPlayer["name"], data["name"])
+	}
+	if data["account"] != TestPlayer["account"] {
+		t.Errorf("期望 account=%v, 得到 %v", TestPlayer["account"], data["account"])
+	}
+	t.Logf("创建玩家测试通过, ID=%v", data["id"])
+
+	// 测试重复创建（应返回已有玩家）
+	resp2, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("重复创建请求失败: %v", err)
+	}
+	defer resp2.Body.Close()
+
+	assertStatusCode(t, resp2.StatusCode, http.StatusOK)
+
+	var result2 map[string]interface{}
+	if err := json.NewDecoder(resp2.Body).Decode(&result2); err != nil {
+		t.Fatalf("解析重复创建响应失败: %v", err)
+	}
+
+	data2, ok := result2["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("重复创建响应 data 字段格式错误")
+	}
+
+	if data2["id"] != data["id"] {
+		t.Errorf("重复创建应返回相同ID, 期望 %v, 得到 %v", data["id"], data2["id"])
+	}
+	t.Log("重复创建玩家测试通过")
+}
+
+// TestGetPlayer 测试获取玩家信息
+func TestGetPlayer(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 先创建玩家
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	data := createResult["data"].(map[string]interface{})
+	playerID := uint(data["id"].(float64))
+
+	// 获取玩家信息
+	resp, err := http.Get(fmt.Sprintf("%s/api/player/%d", ts.URL, playerID))
+	if err != nil {
+		t.Fatalf("获取玩家失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	playerData, ok := result["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if playerData["name"] != TestPlayer["name"] {
+		t.Errorf("期望 name=%v, 得到 %v", TestPlayer["name"], playerData["name"])
+	}
+	t.Log("获取玩家信息测试通过")
+
+	// 测试不存在的玩家
+	resp404, err := http.Get(fmt.Sprintf("%s/api/player/99999", ts.URL))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp404.Body.Close()
+
+	assertStatusCode(t, resp404.StatusCode, http.StatusNotFound)
+	t.Log("不存在玩家测试通过")
+}
+
+// TestUpdatePlayerPos 测试更新玩家位置
+func TestUpdatePlayerPos(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 先创建玩家
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	data := createResult["data"].(map[string]interface{})
+	playerID := uint(data["id"].(float64))
+
+	// 更新位置
+	updateData := map[string]interface{}{
+		"scene_id": "scene_village_square",
+		"pos_x":    500,
+		"pos_y":    300,
+	}
+
+	resp, err := makeRequest("PUT", fmt.Sprintf("%s/api/player/%d/pos", ts.URL, playerID), updateData)
+	if err != nil {
+		t.Fatalf("更新位置失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	playerData := result["data"].(map[string]interface{})
+	if playerData["scene_id"] != updateData["scene_id"] {
+		t.Errorf("期望 scene_id=%v, 得到 %v", updateData["scene_id"], playerData["scene_id"])
+	}
+	if playerData["pos_x"].(float64) != float64(updateData["pos_x"].(int)) {
+		t.Errorf("期望 pos_x=%v, 得到 %v", updateData["pos_x"], playerData["pos_x"])
+	}
+	t.Log("更新玩家位置测试通过")
+}
+
+// TestNPCChat 测试NPC对话
+func TestNPCChat(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 先创建玩家
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	// 获取NPC列表（使用种子数据中的NPC）
+	npcsResp, err := http.Get(ts.URL + "/api/npcs")
+	if err != nil {
+		t.Fatalf("获取NPC列表失败: %v", err)
+	}
+	defer npcsResp.Body.Close()
+
+	var npcsResult map[string]interface{}
+	json.NewDecoder(npcsResp.Body).Decode(&npcsResult)
+	npcs := npcsResult["data"].([]interface{})
+	if len(npcs) == 0 {
+		t.Skip("没有NPC数据，跳过对话测试")
+	}
+
+	npc := npcs[0].(map[string]interface{})
+	npcID := uint(npc["id"].(float64))
+
+	// 发送对话请求
+	chatData := map[string]interface{}{
+		"player_id": playerID,
+		"npc_id":    npcID,
+		"message":   "你好",
+	}
+
+	resp, err := makeRequest("POST", ts.URL+"/api/npc/chat", chatData)
+	if err != nil {
+		t.Fatalf("对话请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["reply"]; !ok {
+		t.Error("响应缺少 reply 字段")
+	}
+	if _, ok := result["npc_name"]; !ok {
+		t.Error("响应缺少 npc_name 字段")
+	}
+	t.Logf("NPC对话测试通过, 回复: %v", result["reply"])
+}
+
+// TestGetShopItems 测试获取商店商品
+func TestGetShopItems(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 获取商店列表
+	shopsResp, err := http.Get(ts.URL + "/api/shops")
+	if err != nil {
+		t.Fatalf("获取商店列表失败: %v", err)
+	}
+	defer shopsResp.Body.Close()
+
+	var shopsResult map[string]interface{}
+	json.NewDecoder(shopsResp.Body).Decode(&shopsResult)
+	shops := shopsResult["data"].([]interface{})
+	if len(shops) == 0 {
+		t.Skip("没有商店数据，跳过商店商品测试")
+	}
+
+	shop := shops[0].(map[string]interface{})
+	shopCode := shop["code"].(string)
+
+	// 获取商店商品
+	resp, err := http.Get(fmt.Sprintf("%s/api/game/shop/%s/items", ts.URL, shopCode))
+	if err != nil {
+		t.Fatalf("获取商店商品失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if _, ok := result["shop"]; !ok {
+		t.Error("响应缺少 shop 字段")
+	}
+	if _, ok := result["items"]; !ok {
+		t.Error("响应缺少 items 字段")
+	}
+	t.Logf("获取商店商品测试通过, 商店: %v", shopCode)
+}
+
+// TestBuyItem 测试购买道具
+func TestBuyItem(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 先创建玩家
+	createResp, err := makeRequest("POST", ts.URL+"/api/player/create", TestPlayer2)
+	if err != nil {
+		t.Fatalf("创建玩家失败: %v", err)
+	}
+	defer createResp.Body.Close()
+
+	var createResult map[string]interface{}
+	json.NewDecoder(createResp.Body).Decode(&createResult)
+	playerData := createResult["data"].(map[string]interface{})
+	playerID := uint(playerData["id"].(float64))
+
+	// 获取商店商品
+	shopsResp, err := http.Get(ts.URL + "/api/shops")
+	if err != nil {
+		t.Fatalf("获取商店列表失败: %v", err)
+	}
+	defer shopsResp.Body.Close()
+
+	var shopsResult map[string]interface{}
+	json.NewDecoder(shopsResp.Body).Decode(&shopsResult)
+	shops := shopsResult["data"].([]interface{})
+	if len(shops) == 0 {
+		t.Skip("没有商店数据，跳过购买测试")
+	}
+
+	shop := shops[0].(map[string]interface{})
+	shopCode := shop["code"].(string)
+
+	// 获取商品列表
+	itemsResp, err := http.Get(fmt.Sprintf("%s/api/game/shop/%s/items", ts.URL, shopCode))
+	if err != nil {
+		t.Fatalf("获取商品列表失败: %v", err)
+	}
+	defer itemsResp.Body.Close()
+
+	var itemsResult map[string]interface{}
+	json.NewDecoder(itemsResp.Body).Decode(&itemsResult)
+	items := itemsResult["items"].([]interface{})
+	if len(items) == 0 {
+		t.Skip("商店没有商品，跳过购买测试")
+	}
+
+	item := items[0].(map[string]interface{})
+	itemID := uint(item["item_id"].(float64))
+
+	// 购买道具
+	buyData := map[string]interface{}{
+		"player_id": playerID,
+		"shop_code": shopCode,
+		"item_id":   itemID,
+		"count":     1,
+	}
+
+	resp, err := makeRequest("POST", ts.URL+"/api/shop/buy", buyData)
+	if err != nil {
+		t.Fatalf("购买请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	if result["message"] != "购买成功" {
+		t.Errorf("期望 message=购买成功, 得到 %v", result["message"])
+	}
+	t.Logf("购买道具测试通过, 消费: %v", result["total_price"])
+}
+
+// TestGetScenes 测试获取场景列表
+func TestGetScenes(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/scenes")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("场景列表为空")
+	}
+	t.Logf("获取场景列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetSceneByCode 测试通过代码获取场景
+func TestGetSceneByCode(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	// 先获取场景列表
+	listResp, err := http.Get(ts.URL + "/api/scenes")
+	if err != nil {
+		t.Fatalf("获取场景列表失败: %v", err)
+	}
+	defer listResp.Body.Close()
+
+	var listResult map[string]interface{}
+	json.NewDecoder(listResp.Body).Decode(&listResult)
+	scenes := listResult["data"].([]interface{})
+	if len(scenes) == 0 {
+		t.Skip("没有场景数据，跳过测试")
+	}
+
+	scene := scenes[0].(map[string]interface{})
+	sceneCode := scene["code"].(string)
+
+	// 通过代码获取场景
+	resp, err := http.Get(fmt.Sprintf("%s/api/game/scene/%s", ts.URL, sceneCode))
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	sceneData := result["data"].(map[string]interface{})
+	if sceneData["code"] != sceneCode {
+		t.Errorf("期望 code=%v, 得到 %v", sceneCode, sceneData["code"])
+	}
+	t.Logf("通过代码获取场景测试通过, 场景: %v", sceneCode)
+
+	// 测试不存在的场景
+	resp404, err := http.Get(ts.URL + "/api/game/scene/nonexistent_scene")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp404.Body.Close()
+
+	assertStatusCode(t, resp404.StatusCode, http.StatusNotFound)
+	t.Log("不存在场景测试通过")
+}
+
+// TestGetNPCs 测试获取NPC列表
+func TestGetNPCs(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/npcs")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("NPC列表为空")
+	}
+	t.Logf("获取NPC列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetTasks 测试获取任务列表
+func TestGetTasks(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/tasks")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("任务列表为空")
+	}
+	t.Logf("获取任务列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetItems 测试获取道具列表
+func TestGetItems(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/items")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("道具列表为空")
+	}
+	t.Logf("获取道具列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetShops 测试获取商店列表
+func TestGetShops(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/shops")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("商店列表为空")
+	}
+	t.Logf("获取商店列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetAgents 测试获取智能体列表
+func TestGetAgents(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/agents")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("智能体列表为空")
+	}
+	t.Logf("获取智能体列表测试通过, 数量: %d", len(data))
+}
+
+// TestGetFlows 测试获取流程列表
+func TestGetFlows(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/flows")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].([]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	if len(data) == 0 {
+		t.Error("流程列表为空")
+	}
+	t.Logf("获取流程列表测试通过, 数量: %d", len(data))
+}
+
+// TestExportData 测试导出数据
+func TestExportData(t *testing.T) {
+	ts := setupTestServer()
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/api/export")
+	if err != nil {
+		t.Fatalf("请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatusCode(t, resp.StatusCode, http.StatusOK)
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("解析响应失败: %v", err)
+	}
+
+	data, ok := result["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("响应 data 字段格式错误")
+	}
+
+	// 验证导出的数据包含各种类型
+	expectedKeys := []string{"scenes", "npcs", "agents", "shops", "items", "tasks", "flows"}
+	for _, key := range expectedKeys {
+		if _, ok := data[key]; !ok {
+			t.Errorf("导出数据缺少 %s 字段", key)
+		}
+	}
+	t.Log("导出数据测试通过")
+}

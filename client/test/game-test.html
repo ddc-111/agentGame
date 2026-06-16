@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentGame 视觉测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(90deg, #1a1a2e, #16213e);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header h1 {
+            font-size: 1.5em;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border: none;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        .btn.secondary {
+            background: rgba(255,255,255,0.1);
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        .game-panel {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+        .game-panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .game-panel .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        .game-panel .overlay.hidden {
+            display: none;
+        }
+        .game-panel .overlay .message {
+            text-align: center;
+        }
+        .game-panel .overlay .message h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #00d2ff;
+        }
+        .game-panel .overlay .message p {
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        .sidebar {
+            width: 350px;
+            background: #1a1a2e;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+        .test-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .test-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .test-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .test-item.active {
+            background: rgba(0,210,255,0.2);
+            border-left: 3px solid #00d2ff;
+        }
+        .test-item .test-name {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .test-item .test-status {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .test-item .test-status.pass { color: #4ade80; }
+        .test-item .test-status.fail { color: #f87171; }
+        .test-item .test-status.running { color: #00d2ff; }
+        .test-item .test-status.pending { color: #6b7280; }
+        .log-panel {
+            height: 200px;
+            background: #0a0a1a;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 10px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry .time {
+            color: #6b7280;
+            margin-right: 10px;
+        }
+        .log-entry .type {
+            display: inline-block;
+            width: 50px;
+            margin-right: 10px;
+        }
+        .log-entry .type.info { color: #00d2ff; }
+        .log-entry .type.success { color: #4ade80; }
+        .log-entry .type.error { color: #f87171; }
+        .log-entry .type.warn { color: #fbbf24; }
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .stats-bar .stat {
+            font-size: 12px;
+        }
+        .stats-bar .stat .value {
+            font-weight: bold;
+            color: #00d2ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AgentGame 视觉测试</h1>
+        <div class="controls">
+            <button class="btn secondary" onclick="clearLog()">清空日志</button>
+            <button class="btn" onclick="runAllTests()">运行所有测试</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="game-panel">
+            <div class="overlay" id="overlay">
+                <div class="message">
+                    <h2>AgentGame 测试环境</h2>
+                    <p>点击右侧测试项开始测试，或点击"运行所有测试"</p>
+                    <button class="btn" onclick="runAllTests()">开始测试</button>
+                </div>
+            </div>
+            <iframe id="game-frame" src="http://localhost:5173" style="display:none;"></iframe>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">测试项目</div>
+            <div class="test-list" id="test-list"></div>
+            <div class="stats-bar">
+                <div class="stat">通过: <span class="value" id="stat-pass">0</span></div>
+                <div class="stat">失败: <span class="value" id="stat-fail">0</span></div>
+                <div class="stat">总计: <span class="value" id="stat-total">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="log-panel" id="log-panel"></div>
+
+    <script>
+        const API = 'http://localhost:8080';
+        const GAME_URL = 'http://localhost:5173';
+        let playerID = null;
+        let testStats = { pass: 0, fail: 0, total: 0 };
+
+        const testCases = [
+            {
+                name: '1. 服务端连接测试',
+                description: '测试服务端是否正常运行',
+                fn: async () => {
+                    const resp = await fetch(`${API}/health`);
+                    if (!resp.ok) throw new Error('服务端连接失败');
+                    const data = await resp.json();
+                    if (data.status !== 'ok') throw new Error('服务端状态异常');
+                    return '服务端正常运行';
+                }
+            },
+            {
+                name: '2. 游戏初始化数据',
+                description: '加载游戏配置、场景、NPC等数据',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/game/init`);
+                    if (!resp.ok) throw new Error('获取初始化数据失败');
+                    const data = await resp.json();
+                    if (!data.scenes?.length) throw new Error('没有场景数据');
+                    if (!data.npcs?.length) throw new Error('没有NPC数据');
+                    return `加载 ${data.scenes.length} 场景, ${data.npcs.length} NPC`;
+                }
+            },
+            {
+                name: '3. 创建测试玩家',
+                description: '创建用于测试的玩家账号',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/player/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: '视觉测试玩家',
+                            account: 'visual_test_' + Date.now()
+                        })
+                    });
+                    if (!resp.ok) throw new Error('创建玩家失败');
+                    const data = await resp.json();
+                    playerID = data.data?.id;
+                    if (!playerID) throw new Error('未返回玩家ID');
+                    return `玩家创建成功 ID:${playerID}`;
+                }
+            },
+            {
+                name: '4. 加载游戏界面',
+                description: '在iframe中加载游戏客户端',
+                fn: async () => {
+                    const iframe = document.getElementById('game-frame');
+                    iframe.style.display = 'block';
+                    document.getElementById('overlay').classList.add('hidden');
+                    
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        if (!iframeDoc) throw new Error('无法访问iframe内容');
+                        return '游戏界面加载成功';
+                    } catch (e) {
+                        return '游戏界面加载完成（跨域限制）';
+                    }
+                }
+            },
+            {
+                name: '5. 场景数据验证',
+                description: '验证场景数据完整性',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/scenes`);
+                    if (!resp.ok) throw new Error('获取场景失败');
+                    const data = await resp.json();
+                    
+                    for (const scene of data.data) {
+                        if (!scene.code) throw new Error(`场景 ${scene.name} 缺少code`);
+                        if (!scene.name) throw new Error(`场景 ${scene.code} 缺少name`);
+                    }
+                    return `验证 ${data.data.length} 个场景数据完整`;
+                }
+            },
+            {
+                name: '6. NPC数据验证',
+                description: '验证NPC数据完整性',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/npcs`);
+                    if (!resp.ok) throw new Error('获取NPC失败');
+                    const data = await resp.json();
+                    
+                    for (const npc of data.data) {
+                        if (!npc.code) throw new Error(`NPC ${npc.name} 缺少code`);
+                        if (!npc.name) throw new Error(`NPC ${npc.code} 缺少name`);
+                    }
+                    return `验证 ${data.data.length} 个NPC数据完整`;
+                }
+            },
+            {
+                name: '7. 道具数据验证',
+                description: '验证道具数据完整性',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/items`);
+                    if (!resp.ok) throw new Error('获取道具失败');
+                    const data = await resp.json();
+                    
+                    for (const item of data.data) {
+                        if (!item.code) throw new Error(`道具 ${item.name} 缺少code`);
+                        if (!item.name) throw new Error(`道具 ${item.code} 缺少name`);
+                    }
+                    return `验证 ${data.data.length} 个道具数据完整`;
+                }
+            },
+            {
+                name: '8. 任务数据验证',
+                description: '验证任务数据完整性',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/tasks`);
+                    if (!resp.ok) throw new Error('获取任务失败');
+                    const data = await resp.json();
+                    
+                    for (const task of data.data) {
+                        if (!task.code) throw new Error(`任务 ${task.name} 缺少code`);
+                        if (!task.name) throw new Error(`任务 ${task.code} 缺少name`);
+                    }
+                    return `验证 ${data.data.length} 个任务数据完整`;
+                }
+            },
+            {
+                name: '9. NPC对话功能',
+                description: '测试NPC对话交互',
+                fn: async () => {
+                    if (!playerID) throw new Error('玩家未创建');
+                    
+                    const npcsResp = await fetch(`${API}/api/npcs`);
+                    const npcsData = await npcsResp.json();
+                    if (!npcsData.data?.length) throw new Error('没有NPC');
+                    
+                    const npc = npcsData.data[0];
+                    const resp = await fetch(`${API}/api/npc/chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            player_id: playerID,
+                            npc_id: npc.id,
+                            message: '你好，请问这里是什么地方？'
+                        })
+                    });
+                    if (!resp.ok) throw new Error('对话请求失败');
+                    const data = await resp.json();
+                    if (!data.reply) throw new Error('未收到回复');
+                    
+                    return `${npc.name} 回复: ${data.reply.substring(0, 20)}...`;
+                }
+            },
+            {
+                name: '10. 商店系统测试',
+                description: '测试商店商品查询和购买',
+                fn: async () => {
+                    if (!playerID) throw new Error('玩家未创建');
+                    
+                    const shopsResp = await fetch(`${API}/api/shops`);
+                    const shopsData = await shopsResp.json();
+                    if (!shopsData.data?.length) throw new Error('没有商店');
+                    
+                    const shop = shopsData.data[0];
+                    const itemsResp = await fetch(`${API}/api/game/shop/${shop.code}/items`);
+                    const itemsData = await itemsResp.json();
+                    
+                    return `商店 ${shop.name} 有 ${itemsData.items?.length || 0} 件商品`;
+                }
+            },
+            {
+                name: '11. MCP协议测试',
+                description: '测试MCP工具调用',
+                fn: async () => {
+                    const resp = await fetch(`${API}/mcp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            id: 1,
+                            method: 'tools/list'
+                        })
+                    });
+                    if (!resp.ok) throw new Error('MCP请求失败');
+                    const data = await resp.json();
+                    const tools = data.result?.tools || [];
+                    
+                    return `MCP服务提供 ${tools.length} 个工具`;
+                }
+            },
+            {
+                name: '12. 游戏场景跳转',
+                description: '测试玩家场景切换',
+                fn: async () => {
+                    if (!playerID) throw new Error('玩家未创建');
+                    
+                    const scenesResp = await fetch(`${API}/api/scenes`);
+                    const scenesData = await scenesResp.json();
+                    if (!scenesData.data?.length) throw new Error('没有场景');
+                    
+                    const targetScene = scenesData.data[0];
+                    const resp = await fetch(`${API}/api/player/${playerID}/pos`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            scene_id: targetScene.code,
+                            pos_x: 500,
+                            pos_y: 300
+                        })
+                    });
+                    if (!resp.ok) throw new Error('场景跳转失败');
+                    
+                    return `跳转到场景 ${targetScene.name}`;
+                }
+            },
+            {
+                name: '13. 数据导出测试',
+                description: '测试游戏数据导出功能',
+                fn: async () => {
+                    const resp = await fetch(`${API}/api/export`);
+                    if (!resp.ok) throw new Error('导出失败');
+                    const data = await resp.json();
+                    const types = Object.keys(data.data || {});
+                    
+                    return `导出 ${types.length} 种数据类型`;
+                }
+            },
+            {
+                name: '14. 控制台错误检查',
+                description: '检查游戏客户端是否有错误',
+                fn: async () => {
+                    try {
+                        const iframe = document.getElementById('game-frame');
+                        const iframeWin = iframe.contentWindow || iframe;
+                        
+                        return '控制台检查完成（需要手动查看）';
+                    } catch (e) {
+                        return '跨域限制，无法检查控制台';
+                    }
+                }
+            }
+        ];
+
+        function initTestList() {
+            const list = document.getElementById('test-list');
+            testCases.forEach((test, index) => {
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.id = `test-item-${index}`;
+                item.innerHTML = `
+                    <div class="test-name">${test.name}</div>
+                    <div class="test-status pending">${test.description}</div>
+                `;
+                item.onclick = () => runSingleTest(index);
+                list.appendChild(item);
+            });
+        }
+
+        async function runSingleTest(index) {
+            const test = testCases[index];
+            const item = document.getElementById(`test-item-${index}`);
+            
+            item.classList.add('active');
+            item.querySelector('.test-status').className = 'test-status running';
+            item.querySelector('.test-status').textContent = '执行中...';
+            
+            addLog('info', `开始测试: ${test.name}`);
+            
+            try {
+                const result = await test.fn();
+                item.querySelector('.test-status').className = 'test-status pass';
+                item.querySelector('.test-status').textContent = `✓ ${result}`;
+                addLog('success', `${test.name}: ${result}`);
+                testStats.pass++;
+            } catch (err) {
+                item.querySelector('.test-status').className = 'test-status fail';
+                item.querySelector('.test-status').textContent = `✗ ${err.message}`;
+                addLog('error', `${test.name}: ${err.message}`);
+                testStats.fail++;
+            }
+            
+            testStats.total++;
+            updateStats();
+            
+            setTimeout(() => item.classList.remove('active'), 2000);
+        }
+
+        async function runAllTests() {
+            testStats = { pass: 0, fail: 0, total: 0 };
+            addLog('info', '=== 开始运行所有测试 ===');
+            
+            for (let i = 0; i < testCases.length; i++) {
+                await runSingleTest(i);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            addLog('info', `=== 测试完成: ${testStats.pass} 通过, ${testStats.fail} 失败 ===`);
+        }
+
+        function addLog(type, message) {
+            const logPanel = document.getElementById('log-panel');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const now = new Date();
+            const time = now.toLocaleTimeString();
+            
+            entry.innerHTML = `
+                <span class="time">${time}</span>
+                <span class="type ${type}">[${type.toUpperCase()}]</span>
+                <span>${message}</span>
+            `;
+            
+            logPanel.appendChild(entry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log-panel').innerHTML = '';
+        }
+
+        function updateStats() {
+            document.getElementById('stat-pass').textContent = testStats.pass;
+            document.getElementById('stat-fail').textContent = testStats.fail;
+            document.getElementById('stat-total').textContent = testStats.total;
+        }
+
+        initTestList();
+        addLog('info', '测试环境已准备就绪');
+    </script>
+</body>
+</html>

@@ -7,11 +7,19 @@ const config = {
     parent: 'game-container',
     width: window.innerWidth,
     height: window.innerHeight,
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#1a1a2e',
+    pixelArt: true,
     scene: [BootScene, GameScene],
     scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false
+        }
     }
 };
 

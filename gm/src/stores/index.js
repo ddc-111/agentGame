@@ -6,3 +6,6 @@ export { usePromptStore } from './prompt';
 export { useShopStore } from './shop';
 export { useTaskStore } from './task';
 export { useConfigStore } from './config';
+export { useSkillStore } from './skill';
+export { useAchievementStore } from './achievement';
+export { useDemoStore } from './demo';

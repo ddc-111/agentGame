@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ddc-111/agentGame/server/internal/agent"
 	"github.com/ddc-111/agentGame/server/internal/config"
 	"github.com/ddc-111/agentGame/server/internal/database"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
@@ -16,13 +17,14 @@ import (
 )
 
 type Server struct {
-	cfg       *config.Config
-	router    *gin.Engine
-	http      *http.Server
-	db        *database.Database
-	repo      *repository.Repository
-	generator *generator.Generator
-	mcp       *mcp.Server
+	cfg        *config.Config
+	router     *gin.Engine
+	http       *http.Server
+	db         *database.Database
+	repo       *repository.Repository
+	generator  *generator.Generator
+	mcp        *mcp.Server
+	chatMgr    *agent.ChatManager
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -61,6 +63,10 @@ func NewServer(cfg *config.Config) *Server {
 		&models.GameConfig{},
 		&models.Player{},
 		&models.Conversation{},
+		&models.SaveGame{},
+		&models.Skill{},
+		&models.Achievement{},
+		&models.PlayerAchievement{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
@@ -79,8 +85,18 @@ func NewServer(cfg *config.Config) *Server {
 		log.Printf("Warning: Failed to create generator: %v", err)
 	}
 
+	// 初始化AI对话管理器
+	chatMgr := agent.NewChatManager(cfg.AI)
+	if chatMgr.IsEnabled() {
+		log.Println("AI chat manager enabled")
+	} else {
+		log.Println("AI chat manager disabled, using simple replies")
+	}
+
 	// 初始化MCP服务器
 	mcpServer := mcp.New(repo, gen)
+
+	// 演示场景在seed.go中已包含
 
 	router := gin.Default()
 
@@ -91,6 +107,7 @@ func NewServer(cfg *config.Config) *Server {
 		repo:      repo,
 		generator: gen,
 		mcp:       mcpServer,
+		chatMgr:   chatMgr,
 	}
 
 	s.setupRoutes()
@@ -215,6 +232,47 @@ func (s *Server) setupRoutes() {
 		// 数据导出导入
 		api.GET("/export", s.handleExport)
 		api.POST("/import", s.handleImport)
+
+		// 游戏API
+		api.GET("/game/init", s.handleGetGameInit)
+		api.GET("/game/scene/:code", s.handleGetSceneByCode)
+		api.GET("/game/npc/:code", s.handleGetNPCByCode)
+		api.GET("/game/shop/:code/items", s.handleGetShopItems)
+
+		// 玩家API
+		api.POST("/player/create", s.handleCreatePlayer)
+		api.GET("/player/:id", s.handleGetPlayer)
+		api.PUT("/player/:id/pos", s.handleUpdatePlayerPos)
+		api.GET("/player/:id/tasks", s.handleGetPlayerTasks)
+
+		// NPC对话
+		api.POST("/npc/chat", s.handleNPCChat)
+
+		// 商店购买
+		api.POST("/shop/buy", s.handleBuyItem)
+
+		// 战斗系统API
+		api.POST("/combat/start", s.handleStartCombat)
+		api.POST("/combat/action", s.handleCombatAction)
+
+		// 背包系统API
+		api.GET("/inventory/:player_id", s.handleGetInventory)
+		api.POST("/inventory/equip", s.handleEquipItem)
+		api.POST("/inventory/unequip", s.handleUnequipItem)
+		api.POST("/inventory/use", s.handleUseItem)
+
+		// 存档系统API
+		api.POST("/save", s.handleSaveGame)
+		api.GET("/saves/:player_id", s.handleGetSaves)
+		api.POST("/load/:save_id", s.handleLoadGame)
+
+		// 技能系统API
+		api.GET("/skills", s.handleGetSkills)
+		api.POST("/skills/use", s.handleUseSkill)
+
+		// 成就系统API
+		api.GET("/achievements/:player_id", s.handleGetPlayerAchievements)
+		api.POST("/achievements/check", s.handleCheckAchievements)
 	}
 }
 
@@ -236,4 +294,9 @@ func (s *Server) Shutdown() error {
 		s.db.Close()
 	}
 	return s.http.Shutdown(context.Background())
+}
+
+// GetRouter 获取路由器（用于测试）
+func (s *Server) GetRouter() *gin.Engine {
+	return s.router
 }
