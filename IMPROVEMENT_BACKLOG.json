@@ -1,0 +1,264 @@
+[
+  {
+    "id": "IMP-001",
+    "title": "Add input validation to all API handlers",
+    "priority": 1,
+    "category": "quality",
+    "description": "validator.go has validateRequired() but it's never called. Add validation to all POST/PUT handlers for required fields, type checking, and range validation.",
+    "files": [
+      "server/internal/network/validator.go",
+      "server/internal/network/handlers.go",
+      "server/internal/network/game_handlers.go",
+      "server/internal/network/game_system_handlers.go"
+    ],
+    "test_file": "server/internal/tests/validation_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-002",
+    "title": "Split game_system_handlers.go (990 lines) into focused modules",
+    "priority": 2,
+    "category": "refactor",
+    "description": "Split into: combat_handlers.go, inventory_handlers.go, savegame_handlers.go, skill_handlers.go, achievement_handlers.go. Each file should register its own routes.",
+    "files": [
+      "server/internal/network/game_system_handlers.go"
+    ],
+    "test_file": "server/internal/tests/api_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-003",
+    "title": "Split handlers.go (822 lines) into focused modules",
+    "priority": 3,
+    "category": "refactor",
+    "description": "Split into: scene_handlers.go, npc_handlers.go, agent_handlers.go, shop_handlers.go, item_handlers.go, task_handlers.go, flow_handlers.go, player_handlers.go, export_handlers.go, generator_handlers.go, mcp_rest_handlers.go.",
+    "files": [
+      "server/internal/network/handlers.go"
+    ],
+    "test_file": "server/internal/tests/api_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-004",
+    "title": "Persist conversation memory to database",
+    "priority": 4,
+    "category": "feature",
+    "description": "Currently conversation memory is in-memory only (lost on restart). Create a DB-backed memory store using the existing Conversation model. Implement save/load for conversation history, player context, and summaries.",
+    "files": [
+      "server/internal/agent/memory.go",
+      "server/internal/database/models/models.go",
+      "server/internal/database/repository/repository.go"
+    ],
+    "test_file": "server/internal/tests/memory_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-005",
+    "title": "Implement real WebSocket game state sync",
+    "priority": 5,
+    "category": "feature",
+    "description": "Replace echo-only WebSocket with real game state synchronization. Implement: player position broadcast, NPC state updates, chat messages, combat events, and item pickup notifications.",
+    "files": [
+      "server/internal/network/handler.go",
+      "server/internal/network/server.go"
+    ],
+    "test_file": "server/internal/tests/websocket_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-006",
+    "title": "Extract duplicate equipment stat calculation code",
+    "priority": 6,
+    "category": "refactor",
+    "description": "Equipment stat calculation is duplicated in combat start, combat action, and skill use handlers. Extract into a shared function in inventory.go or a new stats.go.",
+    "files": [
+      "server/internal/game/inventory.go",
+      "server/internal/network/game_system_handlers.go"
+    ],
+    "test_file": "server/internal/tests/api_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-007",
+    "title": "Clean up unused agent stub files",
+    "priority": 7,
+    "category": "cleanup",
+    "description": "Remove agent.go (stub) and service.go (legacy). The real AI integration is in chat.go and memory.go. Update any references.",
+    "files": [
+      "server/internal/agent/agent.go",
+      "server/internal/agent/service.go"
+    ],
+    "test_file": null,
+    "status": "completed"
+  },
+  {
+    "id": "IMP-008",
+    "title": "Add pagination to all list endpoints",
+    "priority": 8,
+    "category": "feature",
+    "description": "All list endpoints return all records. Add page/page_size query parameters with defaults (page=1, page_size=20, max=100). Return total count in response header.",
+    "files": [
+      "server/internal/network/handlers.go",
+      "server/internal/database/repository/repository.go"
+    ],
+    "test_file": "server/internal/tests/pagination_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-009",
+    "title": "Integrate NPC behavior system into game loop",
+    "priority": 9,
+    "category": "feature",
+    "description": "npc_behavior.go defines schedule-based state machine and mood system but it's not used in the actual game. Wire it into NPC interactions so NPCs change behavior based on time, mood, and events.",
+    "files": [
+      "server/internal/game/npc_behavior.go",
+      "server/internal/network/game_handlers.go"
+    ],
+    "test_file": "server/internal/tests/npc_behavior_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-010",
+    "title": "Add GM editor Vue component tests",
+    "priority": 10,
+    "category": "testing",
+    "description": "Zero frontend test coverage. Add Vitest + Vue Test Utils. Write tests for: stores (scene, npc, agent, shop), API client, key components (GeneratorPanel, SceneEdit, NPCEdit).",
+    "files": [
+      "gm/package.json",
+      "gm/src/stores/",
+      "gm/src/api/"
+    ],
+    "test_file": "gm/src/__tests__/",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-011",
+    "title": "Add Docker and docker-compose configuration",
+    "priority": 11,
+    "category": "devops",
+    "description": "README mentions Docker but deploy/ is empty. Create Dockerfile for server (multi-stage Go build), docker-compose.yml with server+client+gm, and development compose with hot-reload.",
+    "files": [
+      "deploy/Dockerfile.server",
+      "deploy/Dockerfile.client",
+      "deploy/Dockerfile.gm",
+      "deploy/docker-compose.yml"
+    ],
+    "test_file": null,
+    "status": "completed"
+  },
+  {
+    "id": "IMP-012",
+    "title": "Add proper authentication and CORS config",
+    "priority": 12,
+    "category": "security",
+    "description": "GM login returns placeholder token. Implement JWT-based auth for GM endpoints. Make CORS origin configurable instead of wildcard.",
+    "files": [
+      "server/internal/network/middleware.go",
+      "server/internal/network/server.go",
+      "server/internal/config/config.go"
+    ],
+    "test_file": "server/internal/tests/auth_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-013",
+    "title": "Add context propagation throughout the stack",
+    "priority": 13,
+    "category": "quality",
+    "description": "Some repository methods lack context.Context. Add ctx parameter to all repo methods, pass request context from handlers, add context timeout to DB operations.",
+    "files": [
+      "server/internal/database/repository/repository.go",
+      "server/internal/network/handlers.go"
+    ],
+    "test_file": null,
+    "status": "completed"
+  },
+  {
+    "id": "IMP-014",
+    "title": "Fix random source per-call in combat system",
+    "priority": 14,
+    "category": "quality",
+    "description": "rand.New(rand.NewSource(time.Now().UnixNano())) is created per combat action. Use a shared source or crypto/rand for better randomness and performance.",
+    "files": [
+      "server/internal/game/combat.go"
+    ],
+    "test_file": "server/internal/tests/skills_achievements_test.go",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-015",
+    "title": "Add golangci-lint configuration and fix lint issues",
+    "priority": 15,
+    "category": "quality",
+    "description": "No linter configured. Add .golangci.yml with appropriate linters (errcheck, govet, staticcheck, unused, ineffassign). Fix all reported issues.",
+    "files": [
+      "server/.golangci.yml"
+    ],
+    "test_file": null,
+    "status": "completed"
+  },
+  {
+    "id": "IMP-016",
+    "title": "Add client-side Phaser 3 game tests",
+    "priority": 16,
+    "category": "testing",
+    "description": "No tests for the game client. Add Vitest with jsdom. Test: BootScene texture generation, GameScene state management, CombatManager logic, InventoryManager logic.",
+    "files": [
+      "client/package.json",
+      "client/src/game/"
+    ],
+    "test_file": "client/src/__tests__/",
+    "status": "completed"
+  },
+  {
+    "id": "IMP-017",
+    "title": "Add database migration versioning",
+    "priority": 17,
+    "category": "feature",
+    "description": "Auto-migrate doesn't version migrations. Add a migrations table and versioned migration files for schema changes. Support up/down migrations.",
+    "files": [
+      "server/internal/database/database.go",
+      "server/internal/database/migrations/"
+    ],
+    "test_file": "server/internal/tests/migration_test.go",
+    "status": "pending"
+  },
+  {
+    "id": "IMP-018",
+    "title": "Enhance MCP server with resource and prompt support",
+    "priority": 18,
+    "category": "feature",
+    "description": "Current MCP only supports tools. Add resources/list (game state snapshots) and prompts/list (NPC personality templates) for richer AI integration.",
+    "files": [
+      "server/internal/mcp/server.go"
+    ],
+    "test_file": "server/internal/tests/mcp_test.go",
+    "status": "pending"
+  },
+  {
+    "id": "IMP-019",
+    "title": "Add proper structured logging",
+    "priority": 19,
+    "category": "quality",
+    "description": "Replace fmt.Println/log.Printf with structured logging (slog or zerolog). Add log levels, request ID tracking, and consistent log format.",
+    "files": [
+      "server/internal/network/server.go",
+      "server/internal/network/handlers.go"
+    ],
+    "test_file": null,
+    "status": "pending"
+  },
+  {
+    "id": "IMP-020",
+    "title": "Add OpenAPI/Swagger documentation",
+    "priority": 20,
+    "category": "docs",
+    "description": "No API documentation beyond README. Add swaggo/swag annotations to all handlers. Generate OpenAPI spec. Serve Swagger UI at /swagger/.",
+    "files": [
+      "server/internal/network/handlers.go",
+      "server/internal/network/server.go"
+    ],
+    "test_file": null,
+    "status": "pending"
+  }
+]
