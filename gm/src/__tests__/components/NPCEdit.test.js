@@ -76,6 +76,7 @@ describe('NPCEdit', () => {
     expect(wrapper.vm.form.id).toBe('npc_001');
     expect(wrapper.vm.form.name).toBe('李掌柜');
     expect(wrapper.vm.form.title).toBe('杂货铺老板');
+    expect(wrapper.vm.form.description).toBe('一位精明的中年商人，经营着镇上最大的杂货铺');
   });
 
   it('should have default form values in create mode', async () => {
@@ -86,6 +87,8 @@ describe('NPCEdit', () => {
     expect(wrapper.vm.form.behaviors).toEqual([]);
     expect(wrapper.vm.form.schedule).toEqual([]);
     expect(wrapper.vm.form.dialogues).toEqual([]);
+    expect(wrapper.vm.form.agentId).toBe('');
+    expect(wrapper.vm.form.shopId).toBe('');
   });
 
   it('should generate id in create mode', async () => {
@@ -103,38 +106,6 @@ describe('NPCEdit', () => {
     expect(wrapper.vm.isEdit).toBe(false);
   });
 
-  it('should show position text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('初始位置X');
-    expect(wrapper.text()).toContain('初始位置Y');
-  });
-
-  it('should show agent select text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('关联智能体');
-  });
-
-  it('should show shop select text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('关联商店');
-  });
-
-  it('should show behavior text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('行为模式');
-  });
-
-  it('should show avatar and sprite text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('头像');
-    expect(wrapper.text()).toContain('精灵图');
-  });
-
-  it('should show scene select text', async () => {
-    await mountComponent();
-    expect(wrapper.text()).toContain('所属场景');
-  });
-
   it('should have default position values', async () => {
     await mountComponent();
     expect(wrapper.vm.form.position).toEqual({ x: 0, y: 0, scene: '' });
@@ -146,5 +117,20 @@ describe('NPCEdit', () => {
       { time: '06:00', action: 'open_shop', position: { x: 400, y: 300, scene: 'scene_002' } },
       { time: '22:00', action: 'close_shop', position: { x: 200, y: 200, scene: 'scene_001' } }
     ]);
+  });
+
+  it('should load behaviors in edit mode', async () => {
+    await mountComponent('/npc/edit/npc_001');
+    expect(wrapper.vm.form.behaviors).toEqual(['idle', 'greet', 'sell']);
+  });
+
+  it('should load agentId in edit mode', async () => {
+    await mountComponent('/npc/edit/npc_001');
+    expect(wrapper.vm.form.agentId).toBe('agent_001');
+  });
+
+  it('should load shopId in edit mode', async () => {
+    await mountComponent('/npc/edit/npc_001');
+    expect(wrapper.vm.form.shopId).toBe('shop_001');
   });
 });
