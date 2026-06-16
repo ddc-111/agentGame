@@ -81,8 +81,7 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		Effect:      skillModel.Effect,
 	}
 
-	im := game.NewInventoryManager()
-	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
+	equipStats := s.playerEquipStats(player.Equipment)
 	totalAttack := player.Attack + equipStats.Attack
 
 	sm := game.NewSkillManager()

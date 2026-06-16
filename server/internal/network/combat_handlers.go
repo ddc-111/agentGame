@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ddc-111/agentGame/server/internal/database/models"
 	"github.com/ddc-111/agentGame/server/internal/game"
 )
 
@@ -43,9 +44,7 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		return
 	}
 
-	im := game.NewInventoryManager()
-	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
-	playerStats := im.CalculateStats(player.Attack, player.Defense, player.HP, player.MP, equipStats)
+	playerStats := s.calcPlayerStats(player)
 
 	combatSys := game.NewCombatSystem()
 	state := combatSys.StartCombat(req.PlayerID, req.EnemyType, playerStats.TotalHP, player.MP)
@@ -91,10 +90,10 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		return
 	}
 
-	im := game.NewInventoryManager()
-	equipStats, _ := im.EquipmentStatsFromEquip(player.Equipment, s.itemEffectLookup())
+	equipStats := s.playerEquipStats(player.Equipment)
 	totalAttack := player.Attack + equipStats.Attack
 
+	im := game.NewInventoryManager()
 	combatSys := game.NewCombatSystem()
 	var newState *game.CombatState
 
@@ -219,6 +218,18 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		"data":    newState,
 		"message": "战斗更新",
 	})
+}
+
+func (s *Server) playerEquipStats(equipJSON string) game.EquipmentStats {
+	im := game.NewInventoryManager()
+	stats, _ := im.EquipmentStatsFromEquip(equipJSON, s.itemEffectLookup())
+	return stats
+}
+
+func (s *Server) calcPlayerStats(p *models.Player) *game.PlayerStats {
+	im := game.NewInventoryManager()
+	equipStats := s.playerEquipStats(p.Equipment)
+	return im.CalculateStats(p.Attack, p.Defense, p.HP, p.MP, equipStats)
 }
 
 func (s *Server) itemEffectLookup() game.ItemLookupFunc {

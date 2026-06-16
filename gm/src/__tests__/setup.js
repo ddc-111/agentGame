@@ -1,6 +1,5 @@
 import { vi } from 'vitest';
 import { config } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
 
 globalThis.fetch = vi.fn();
 
@@ -27,6 +26,16 @@ const elStubWithSlots = {
   props: ['modelValue', 'label', 'value', 'type', 'size', 'title', 'placeholder', 'rows', 'min', 'max', 'step', 'disabled', 'loading', 'closable', 'show-icon', 'content-position', 'format', 'multiple', 'clearable', 'auto-upload', 'on-change', 'action', 'data', 'gutter', 'span']
 };
 
+const ElTableStub = {
+  props: ['data'],
+  template: '<div class="el-table-stub"><slot /><div v-for="(item, $index) in (data || [])" :key="$index"><slot name="default" :row="item" :$index="$index" /></div></div>'
+};
+
+const ElTableColumnStub = {
+  props: ['prop', 'label', 'width'],
+  template: '<div class="el-table-column-stub"><slot /></div>'
+};
+
 config.global.stubs = {
   'el-card': elStubWithSlots,
   'el-form': elStubWithSlots,
@@ -38,14 +47,8 @@ config.global.stubs = {
   'el-button': elStub,
   'el-row': elStubWithSlots,
   'el-col': elStubWithSlots,
-  'el-table': {
-    template: '<div><slot /></div>',
-    props: ['data', 'style']
-  },
-  'el-table-column': {
-    template: '<div><slot /></div>',
-    props: ['prop', 'label', 'width']
-  },
+  'el-table': ElTableStub,
+  'el-table-column': ElTableColumnStub,
   'el-divider': elStub,
   'el-upload': elStubWithSlots,
   'el-icon': elStubWithSlots,
