@@ -56,7 +56,7 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 		Account string `json:"account"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -88,7 +88,7 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 	}
 
 	if err := s.repo.CreatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (s *Server) handleGetPlayer(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	player, err := s.repo.GetPlayerByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": player})
@@ -111,7 +111,7 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	player, err := s.repo.GetPlayerByID(uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -121,7 +121,7 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 		PosY    int    `json:"pos_y"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -132,7 +132,7 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	player.PosY = req.PosY
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (s *Server) handleGetSceneByCode(c *gin.Context) {
 	code := c.Param("code")
 	scene, err := s.repo.GetSceneByCode(code)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Scene not found"})
+		respondError(c, http.StatusNotFound, NotFound("Scene"))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": scene})
@@ -155,7 +155,7 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 	code := c.Param("code")
 	npc, err := s.repo.GetNPCByCode(code)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "NPC not found"})
+		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": npc})
@@ -165,7 +165,7 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 func (s *Server) handleGetPlayerTasks(c *gin.Context) {
 	tasks, err := s.repo.GetTasks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": tasks})
@@ -179,21 +179,21 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 		Message  string `json:"message"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	// 获取NPC和Agent信息
 	npc, err := s.repo.GetNPCByID(req.NPCID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "NPC not found"})
+		respondError(c, http.StatusNotFound, NotFound("NPC"))
 		return
 	}
 
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -281,7 +281,7 @@ func (s *Server) handleGetShopItems(c *gin.Context) {
 	code := c.Param("code")
 	shop, err := s.repo.GetShopByCode(code)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Shop not found"})
+		respondError(c, http.StatusNotFound, NotFound("Shop"))
 		return
 	}
 
@@ -324,7 +324,7 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 		Count    int    `json:"count"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -335,14 +335,14 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	// 获取玩家
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	// 获取商店商品
 	shop, err := s.repo.GetShopByCode(req.ShopCode)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Shop not found"})
+		respondError(c, http.StatusNotFound, NotFound("Shop"))
 		return
 	}
 
@@ -356,13 +356,13 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	}
 
 	if shopItem == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Item not found in shop"})
+		respondError(c, http.StatusBadRequest, BadRequest("Item not found in shop"))
 		return
 	}
 
 	// 检查库存
 	if shopItem.Stock < req.Count {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough stock"})
+		respondError(c, http.StatusBadRequest, BadRequest("Not enough stock"))
 		return
 	}
 
@@ -371,7 +371,7 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 
 	// 检查金币
 	if player.Gold < totalPrice {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Not enough gold"})
+		respondError(c, http.StatusBadRequest, BadRequest("Not enough gold"))
 		return
 	}
 
@@ -396,10 +396,31 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	s.repo.UpdatePlayer(player)
 	s.repo.SaveShopItem(shopItem)
 
+	// 解析装备信息返回
+	equipment := map[string]interface{}{
+		"weapon_id": nil,
+		"armor_id":  nil,
+	}
+	if player.Equipment != "" {
+		var equip struct {
+			WeaponID uint `json:"weapon_id"`
+			ArmorID  uint `json:"armor_id"`
+		}
+		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
+			if equip.WeaponID > 0 {
+				equipment["weapon_id"] = equip.WeaponID
+			}
+			if equip.ArmorID > 0 {
+				equipment["armor_id"] = equip.ArmorID
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":     "购买成功",
 		"gold":        player.Gold,
 		"items":       player.Items,
+		"equipment":   equipment,
 		"item_name":   shopItem.Item.Name,
 		"total_price": totalPrice,
 	})

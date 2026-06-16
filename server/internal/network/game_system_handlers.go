@@ -20,20 +20,21 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		EnemyType string `json:"enemy_type"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	// 创建战斗系统
 	combatSys := game.NewCombatSystem()
 	state := combatSys.StartCombat(req.PlayerID, req.EnemyType, player.HP, player.MP)
+	state.PlayerDef = player.Defense
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":    state,
@@ -51,19 +52,19 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		State    *game.CombatState `json:"state"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	if req.State == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Combat state is required"})
+		respondError(c, http.StatusBadRequest, BadRequest("Combat state is required"))
 		return
 	}
 
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -76,12 +77,12 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 
 	case "skill":
 		if req.SkillID == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Skill ID is required"})
+			respondError(c, http.StatusBadRequest, BadRequest("Skill ID is required"))
 			return
 		}
 		skillModel, err := s.repo.GetSkillByID(req.SkillID)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Skill not found"})
+			respondError(c, http.StatusNotFound, NotFound("Skill"))
 			return
 		}
 		skill := &game.Skill{
@@ -99,7 +100,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		sm := game.NewSkillManager()
 		newState, _, err = sm.UseSkill(skill, req.State, player.Attack)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 			return
 		}
 
@@ -107,14 +108,14 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		// 获取道具效果
 		item, err := s.repo.GetItemByID(req.ItemID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Item not found"})
+			respondError(c, http.StatusBadRequest, BadRequest("Item not found"))
 			return
 		}
 
 		// 解析道具效果
 		var effect map[string]int
 		if err := json.Unmarshal([]byte(item.Effect), &effect); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item effect"})
+			respondError(c, http.StatusBadRequest, BadRequest("Invalid item effect"))
 			return
 		}
 
@@ -140,7 +141,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		}
 
 	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid action"})
+		respondError(c, http.StatusBadRequest, BadRequest("Invalid action"))
 		return
 	}
 
@@ -182,7 +183,7 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 
 	player, err := s.repo.GetPlayerByID(uint(playerID))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -215,10 +216,34 @@ func (s *Server) handleGetInventory(c *gin.Context) {
 		})
 	}
 
+	// 解析装备
+	equipment := map[string]interface{}{
+		"weapon_id": nil,
+		"armor_id":  nil,
+	}
+	if player.Equipment != "" {
+		var equip game.Equipment
+		if err := json.Unmarshal([]byte(player.Equipment), &equip); err == nil {
+			if equip.WeaponID > 0 {
+				equipment["weapon_id"] = equip.WeaponID
+			}
+			if equip.ArmorID > 0 {
+				equipment["armor_id"] = equip.ArmorID
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"player_id": playerID,
 		"items":     itemDetails,
+		"equipment": equipment,
 		"gold":      player.Gold,
+		"stats": gin.H{
+			"attack":  player.Attack,
+			"defense": player.Defense,
+			"hp":      player.HP,
+			"mp":      player.MP,
+		},
 	})
 }
 
@@ -229,19 +254,19 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 		ItemID   uint   `json:"item_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	item, err := s.repo.GetItemByID(req.ItemID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		respondError(c, http.StatusNotFound, NotFound("Item"))
 		return
 	}
 
@@ -252,7 +277,7 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 	}
 	newEquipJSON, newItemsJSON, err := im.EquipItem(equipJSON, player.Items, req.ItemID, item.Category)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -260,7 +285,7 @@ func (s *Server) handleEquipItem(c *gin.Context) {
 	player.Equipment = newEquipJSON
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -278,13 +303,13 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 		Slot     string `json:"slot"` // weapon, armor
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -295,7 +320,7 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 	}
 	newEquipJSON, newItemsJSON, err := im.UnequipItem(equipJSON, player.Items, req.Slot)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -303,7 +328,7 @@ func (s *Server) handleUnequipItem(c *gin.Context) {
 	player.Equipment = newEquipJSON
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -320,33 +345,33 @@ func (s *Server) handleUseItem(c *gin.Context) {
 		ItemID   uint `json:"item_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	item, err := s.repo.GetItemByID(req.ItemID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		respondError(c, http.StatusNotFound, NotFound("Item"))
 		return
 	}
 
 	// 解析道具效果
 	var effect map[string]int
 	if err := json.Unmarshal([]byte(item.Effect), &effect); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid item effect"})
+		respondError(c, http.StatusBadRequest, BadRequest("Invalid item effect"))
 		return
 	}
 
 	im := game.NewInventoryManager()
 	newItemsJSON, appliedEffect, err := im.UseItem(player.Items, req.ItemID, effect)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -360,7 +385,7 @@ func (s *Server) handleUseItem(c *gin.Context) {
 
 	player.Items = newItemsJSON
 	if err := s.repo.UpdatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -386,21 +411,21 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		Name     string `json:"name"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	// 验证槽位
 	sgm := game.NewSaveGameManager()
 	if err := sgm.ValidateSlot(req.Slot); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	// 获取玩家信息
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -423,7 +448,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 
 	snapshotJSON, err := sgm.SerializeSnapshot(snapshot)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to serialize snapshot"})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -440,7 +465,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		existingSave.Name = saveName
 		existingSave.Snapshot = snapshotJSON
 		if err := s.repo.UpdateSaveGame(existingSave); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			respondInternalError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -456,7 +481,7 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 			Snapshot: snapshotJSON,
 		}
 		if err := s.repo.CreateSaveGame(save); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			respondInternalError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -472,7 +497,7 @@ func (s *Server) handleGetSaves(c *gin.Context) {
 
 	saves, err := s.repo.GetSaveGames(uint(playerID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -518,14 +543,14 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 		PlayerID uint `json:"player_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	// 获取存档
 	saves, err := s.repo.GetSaveGames(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -538,7 +563,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	}
 
 	if targetSave == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Save not found"})
+		respondError(c, http.StatusNotFound, NotFound("Save"))
 		return
 	}
 
@@ -546,14 +571,14 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	sgm := game.NewSaveGameManager()
 	snapshot, err := sgm.DeserializeSnapshot(targetSave.Snapshot)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to deserialize snapshot"})
+		respondInternalError(c, err)
 		return
 	}
 
 	// 获取玩家
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
@@ -572,7 +597,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	player.Items = snapshot.Items
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -588,7 +613,7 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 func (s *Server) handleGetSkills(c *gin.Context) {
 	skills, err := s.repo.GetSkills()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": skills})
@@ -602,32 +627,32 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		State    *game.CombatState `json:"state"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	if req.State == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Combat state is required"})
+		respondError(c, http.StatusBadRequest, BadRequest("Combat state is required"))
 		return
 	}
 
 	// Get player
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	// Get skill
 	skillModel, err := s.repo.GetSkillByID(req.SkillID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Skill not found"})
+		respondError(c, http.StatusNotFound, NotFound("Skill"))
 		return
 	}
 
 	// Check level requirement
 	if player.Level < skillModel.Level {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("等级不足，需要 %d 级", skillModel.Level)})
+		respondError(c, http.StatusBadRequest, BadRequest(fmt.Sprintf("等级不足，需要 %d 级", skillModel.Level)))
 		return
 	}
 
@@ -649,7 +674,7 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 	sm := game.NewSkillManager()
 	newState, logMsg, err := sm.UseSkill(skill, req.State, player.Attack)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
@@ -699,14 +724,14 @@ func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 	// Get all achievements
 	allAchievements, err := s.repo.GetAchievements()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
 	// Get player's unlocked achievements
 	playerAchievements, err := s.repo.GetPlayerAchievements(uint(playerID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -742,27 +767,27 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 		PlayerID uint `json:"player_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 		return
 	}
 
 	player, err := s.repo.GetPlayerByID(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Player not found"})
+		respondError(c, http.StatusNotFound, NotFound("Player"))
 		return
 	}
 
 	// Get all achievements
 	allAchievements, err := s.repo.GetAchievements()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
 	// Get player's unlocked achievements
 	playerAchievements, err := s.repo.GetPlayerAchievements(req.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 

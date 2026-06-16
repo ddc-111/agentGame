@@ -9,9 +9,29 @@ export class InventoryManager {
 
     parseInventory() {
         try {
+            // 解析道具 - 服务器存储格式为 {item_id: count} 扁平格式
             const raw = JSON.parse(this.playerData.items || '{}');
-            this.items = raw.items || {};
-            this.equipment = raw.equipment || { weapon: null, armor: null, shield: null };
+            if (raw.items) {
+                // 兼容旧的嵌套格式 {items: {...}, equipment: {...}}
+                this.items = raw.items;
+                this.equipment = raw.equipment || { weapon: null, armor: null, shield: null };
+            } else {
+                // 服务器扁平格式 {item_id: count}
+                this.items = raw;
+            }
+
+            // 解析装备 - 服务器单独存储 equipment 字段
+            if (this.playerData.equipment) {
+                try {
+                    const equip = JSON.parse(this.playerData.equipment);
+                    // 服务器格式 {weapon_id: 8, armor_id: 0} -> 客户端格式 {weapon: "8", armor: null}
+                    this.equipment = {
+                        weapon: equip.weapon_id ? String(equip.weapon_id) : null,
+                        armor: equip.armor_id ? String(equip.armor_id) : null,
+                        shield: null
+                    };
+                } catch (e) {}
+            }
         } catch (e) {
             this.items = {};
             this.equipment = { weapon: null, armor: null, shield: null };
@@ -19,10 +39,8 @@ export class InventoryManager {
     }
 
     saveInventory() {
-        this.playerData.items = JSON.stringify({
-            items: this.items,
-            equipment: this.equipment
-        });
+        // 保存道具为服务器扁平格式 {item_id: count}
+        this.playerData.items = JSON.stringify(this.items);
     }
 
     getItems() {
@@ -187,6 +205,37 @@ export class InventoryManager {
         }
 
         return result;
+    }
+
+    // 从服务器同步背包数据
+    async syncWithServer(playerId) {
+        try {
+            const resp = await fetch(`http://localhost:8080/api/inventory/${playerId}`);
+            const data = await resp.json();
+            if (data.items) {
+                // 更新本地道具数据
+                this.items = {};
+                data.items.forEach(item => {
+                    this.items[String(item.item_id)] = item.count;
+                });
+            }
+            if (data.equipment) {
+                this.equipment = {
+                    weapon: data.equipment.weapon_id ? String(data.equipment.weapon_id) : null,
+                    armor: data.equipment.armor_id ? String(data.equipment.armor_id) : null,
+                    shield: null
+                };
+            }
+            // 更新玩家数据
+            if (data.gold !== undefined) {
+                this.playerData.gold = data.gold;
+            }
+            this.saveInventory();
+            return true;
+        } catch (e) {
+            console.error('同步背包失败:', e);
+            return false;
+        }
     }
 
     getItemIcon(item) {

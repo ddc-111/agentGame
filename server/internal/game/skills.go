@@ -100,7 +100,7 @@ func (sm *SkillManager) UseSkill(skill *Skill, state *CombatState, playerAtk int
 	}
 
 	// Enemy counterattack
-	enemyDamage := sm.calculateEnemyDamage(state.EnemyAtk, 5)
+	enemyDamage := sm.calculateEnemyDamage(state.EnemyAtk, state.PlayerDef)
 	state.PlayerHP -= enemyDamage
 	state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
 
@@ -127,8 +127,8 @@ func (sm *SkillManager) CalculateDamage(skill *Skill, playerAtk, enemyDef int) i
 	min := float64(baseDamage) - variation
 	max := float64(baseDamage) + variation
 
-	rand.Seed(time.Now().UnixNano())
-	damage := int(min + rand.Float64()*(max-min))
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	damage := int(min + rng.Float64()*(max-min))
 
 	if damage < 1 {
 		damage = 1
@@ -147,8 +147,8 @@ func (sm *SkillManager) calculateEnemyDamage(enemyAtk, playerDef int) int {
 	min := float64(baseDamage) - variation
 	max := float64(baseDamage) + variation
 
-	rand.Seed(time.Now().UnixNano())
-	damage := int(min + rand.Float64()*(max-min))
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	damage := int(min + rng.Float64()*(max-min))
 
 	if damage < 1 {
 		damage = 1

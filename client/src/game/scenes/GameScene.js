@@ -847,7 +847,16 @@ export class GameScene extends Phaser.Scene {
                             if (result.error) {
                                 this.showNotification(`❌ ${result.error}`);
                             } else {
+                                // 更新玩家数据
                                 this.playerData.gold = result.gold;
+                                this.playerData.items = result.items;
+                                if (result.equipment) {
+                                    this.playerData.equipment = JSON.stringify(result.equipment);
+                                }
+                                // 刷新背包管理器
+                                if (this.inventoryManager) {
+                                    this.inventoryManager.parseInventory();
+                                }
                                 goldDisplay.setText(`💰 ${this.playerData.gold}`);
                                 this.showNotification(`✓ 购买了 ${item.item_name}`);
                             }
@@ -960,6 +969,10 @@ export class GameScene extends Phaser.Scene {
             this.combatUI = new CombatUI(this, this.combatManager, this.inventoryManager);
             this.combatUI.onCombatEnd = (result) => {
                 this.createGameUI();
+                if (result.victory && this.inventoryManager) {
+                    // 战斗胜利后同步背包
+                    this.inventoryManager.syncWithServer(this.playerData.id);
+                }
                 if (!result.victory && !result.fled) {
                     this.scene.restart();
                 }

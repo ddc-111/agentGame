@@ -17,6 +17,7 @@ type CombatState struct {
 	EnemyName string   `json:"enemy_name"`
 	PlayerHP  int      `json:"player_hp"`
 	PlayerMP  int      `json:"player_mp"`
+	PlayerDef int      `json:"player_def"`
 	EnemyHP   int      `json:"enemy_hp"`
 	EnemyAtk  int      `json:"enemy_atk"`
 	EnemyDef  int      `json:"enemy_def"`
@@ -106,6 +107,7 @@ func (cs *CombatSystem) StartCombat(playerID uint, enemyType string, playerHP, p
 		EnemyName: enemy.Name,
 		PlayerHP:  playerHP,
 		PlayerMP:  playerMP,
+		PlayerDef: 5,
 		EnemyHP:   enemy.HP,
 		EnemyAtk:  enemy.Attack,
 		EnemyDef:  enemy.Defense,
@@ -142,7 +144,7 @@ func (cs *CombatSystem) Attack(state *CombatState, playerAtk int) *CombatState {
 	}
 
 	// 敌人反击
-	enemyDamage := cs.calculateDamage(state.EnemyAtk, 5) // 假设玩家防御为5
+	enemyDamage := cs.calculateDamage(state.EnemyAtk, state.PlayerDef)
 	state.PlayerHP -= enemyDamage
 	state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
 
@@ -174,7 +176,7 @@ func (cs *CombatSystem) UseItem(state *CombatState, itemEffect map[string]int) *
 	}
 
 	// 敌人回合
-	enemyDamage := cs.calculateDamage(state.EnemyAtk, 5)
+	enemyDamage := cs.calculateDamage(state.EnemyAtk, state.PlayerDef)
 	state.PlayerHP -= enemyDamage
 	state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
 
@@ -200,15 +202,15 @@ func (cs *CombatSystem) Flee(state *CombatState, playerLevel int) (bool, *Combat
 		baseChance = 90
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	if rand.Intn(100) < baseChance {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	if rng.Intn(100) < baseChance {
 		state.IsActive = false
 		state.Log = append(state.Log, "逃跑成功！")
 		return true, state
 	}
 
 	// 逃跑失败，敌人攻击
-	enemyDamage := cs.calculateDamage(state.EnemyAtk, 5)
+	enemyDamage := cs.calculateDamage(state.EnemyAtk, state.PlayerDef)
 	state.PlayerHP -= enemyDamage
 	state.Log = append(state.Log, "逃跑失败！"+state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
 
@@ -239,8 +241,8 @@ func (cs *CombatSystem) calculateDamage(atk, def int) int {
 	min := float64(baseDamage) - variation
 	max := float64(baseDamage) + variation
 
-	rand.Seed(time.Now().UnixNano())
-	damage := int(min + rand.Float64()*(max-min))
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	damage := int(min + rng.Float64()*(max-min))
 
 	if damage < 1 {
 		damage = 1

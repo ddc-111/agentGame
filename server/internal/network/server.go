@@ -145,6 +145,7 @@ func (s *Server) setupRoutes() {
 	})
 
 	api := s.router.Group("/api")
+	api.Use(RateLimitMiddleware(100, 200))
 	{
 		// WebSocket
 		api.GET("/ws", s.handleWebSocket)
@@ -246,14 +247,20 @@ func (s *Server) setupRoutes() {
 		api.GET("/player/:id/tasks", s.handleGetPlayerTasks)
 
 		// NPC对话
-		api.POST("/npc/chat", s.handleNPCChat)
+		chat := api.Group("/npc/chat")
+		chat.Use(RateLimitMiddleware(10, 20))
+		chat.POST("", s.handleNPCChat)
 
 		// 商店购买
 		api.POST("/shop/buy", s.handleBuyItem)
 
 		// 战斗系统API
-		api.POST("/combat/start", s.handleStartCombat)
-		api.POST("/combat/action", s.handleCombatAction)
+		combat := api.Group("/combat")
+		combat.Use(RateLimitMiddleware(30, 50))
+		{
+			combat.POST("/start", s.handleStartCombat)
+			combat.POST("/action", s.handleCombatAction)
+		}
 
 		// 背包系统API
 		api.GET("/inventory/:player_id", s.handleGetInventory)
