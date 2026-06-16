@@ -4,6 +4,7 @@ import { CombatManager } from '../systems/CombatManager.js';
 import { InventoryUI } from '../ui/InventoryUI.js';
 import { CombatUI } from '../ui/CombatUI.js';
 import { MiniMap } from '../ui/MiniMap.js';
+import { SaveLoadUI } from '../ui/SaveLoadUI.js';
 
 const API_BASE = 'http://localhost:8080/api';
 
@@ -31,6 +32,7 @@ export class GameScene extends Phaser.Scene {
         this.inventoryUI = null;
         this.combatUI = null;
         this.miniMap = null;
+        this.saveLoadUI = null;
         this.encounterCooldown = 0;
     }
 
@@ -106,7 +108,7 @@ export class GameScene extends Phaser.Scene {
         });
 
         // Instructions
-        this.add.text(width/2, height - 80, 'WASD/方向键移动 | 点击NPC对话 | 空格键跳过教程', {
+        this.add.text(width/2, height - 80, 'WASD/方向键移动 | 点击NPC对话 | I背包 | F5保存 | F9读档 | 空格跳过教程', {
             font: '14px Microsoft YaHei',
             fill: '#666'
         }).setOrigin(0.5);
@@ -168,6 +170,26 @@ export class GameScene extends Phaser.Scene {
             this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.I).on('down', () => {
                 if (!this.showingDialog && !this.showingShop && !this.showingTutorial) {
                     this.toggleInventory();
+                }
+            });
+
+            // Save key (F5)
+            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F5).on('down', () => {
+                if (!this.showingDialog && !this.showingShop && !this.showingTutorial) {
+                    if (!this.saveLoadUI) {
+                        this.saveLoadUI = new SaveLoadUI(this, this.playerData);
+                    }
+                    this.saveLoadUI.toggle('save');
+                }
+            });
+
+            // Load key (F9)
+            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F9).on('down', () => {
+                if (!this.showingDialog && !this.showingShop && !this.showingTutorial) {
+                    if (!this.saveLoadUI) {
+                        this.saveLoadUI = new SaveLoadUI(this, this.playerData);
+                    }
+                    this.saveLoadUI.toggle('load');
                 }
             });
 
@@ -989,9 +1011,15 @@ export class GameScene extends Phaser.Scene {
 
         const encounterChance = 0.005;
         if (Math.random() < encounterChance) {
-            const isAlpha = Math.random() < 0.1;
+            const roll = Math.random();
+            let enemyType = 'wolf';
+            if (roll < 0.05) enemyType = 'ghost';
+            else if (roll < 0.15) enemyType = 'tiger';
+            else if (roll < 0.30) enemyType = 'bear';
+            else if (roll < 0.50) enemyType = 'bandit';
+            else if (roll < 0.60) enemyType = 'alpha_wolf';
             this.encounterCooldown = 180;
-            this.triggerCombat(isAlpha ? 'alpha_wolf' : 'wolf');
+            this.triggerCombat(enemyType);
         }
     }
 

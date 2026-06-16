@@ -56,11 +56,17 @@ func (sm *SkillManager) UseSkill(skill *Skill, state *CombatState, playerAtk int
 	// Deduct MP
 	state.PlayerMP -= skill.MPCost
 
+	// Process enemy effects (poison damage, stun check)
+	combatSys := NewCombatSystem()
+	enemyStunned := combatSys.ProcessEffects(state, "enemy")
+
 	var logMsg string
 
 	switch skill.Type {
 	case "attack":
-		damage := sm.CalculateDamage(skill, playerAtk, state.EnemyDef)
+		// Apply attack_up bonus
+		atkBonus := combatSys.GetEffectBonus(state, "player", "attack_up")
+		damage := sm.CalculateDamage(skill, playerAtk+atkBonus, state.EnemyDef)
 		state.EnemyHP -= damage
 		logMsg = fmt.Sprintf("使用【%s】对 %s 造成了 %d 点伤害！(消耗 %d MP)", skill.Name, state.EnemyName, damage, skill.MPCost)
 
@@ -72,6 +78,7 @@ func (sm *SkillManager) UseSkill(skill *Skill, state *CombatState, playerAtk int
 	case "buff":
 		effect := sm.ParseEffect(skill.Effect)
 		if effect != nil {
+			combatSys.AddEffect(state, effect.Type, effect.Duration, effect.Value, "player")
 			logMsg = fmt.Sprintf("使用【%s】！%s效果持续 %d 回合！(消耗 %d MP)", skill.Name, effect.Type, effect.Duration, skill.MPCost)
 		} else {
 			logMsg = fmt.Sprintf("使用【%s】！(消耗 %d MP)", skill.Name, skill.MPCost)
@@ -80,7 +87,18 @@ func (sm *SkillManager) UseSkill(skill *Skill, state *CombatState, playerAtk int
 	case "debuff":
 		effect := sm.ParseEffect(skill.Effect)
 		if effect != nil {
-			logMsg = fmt.Sprintf("对 %s 使用【%s】！%s效果持续 %d 回合！(消耗 %d MP)", state.EnemyName, skill.Name, effect.Type, effect.Duration, skill.MPCost)
+			combatSys.AddEffect(state, effect.Type, effect.Duration, effect.Value, "enemy")
+
+			// Also apply damage for debuff attacks
+			if skill.Damage > 0 {
+				damage := sm.CalculateDamage(skill, playerAtk, state.EnemyDef)
+				state.EnemyHP -= damage
+				logMsg = fmt.Sprintf("对 %s 使用【%s】！造成 %d 点伤害并附加 %s 效果 %d 回合！(消耗 %d MP)",
+					state.EnemyName, skill.Name, damage, effect.Type, effect.Duration, skill.MPCost)
+			} else {
+				logMsg = fmt.Sprintf("对 %s 使用【%s】！%s效果持续 %d 回合！(消耗 %d MP)",
+					state.EnemyName, skill.Name, effect.Type, effect.Duration, skill.MPCost)
+			}
 		} else {
 			logMsg = fmt.Sprintf("对 %s 使用【%s】！(消耗 %d MP)", state.EnemyName, skill.Name, skill.MPCost)
 		}
@@ -99,15 +117,25 @@ func (sm *SkillManager) UseSkill(skill *Skill, state *CombatState, playerAtk int
 		return state, logMsg, nil
 	}
 
-	// Enemy counterattack
-	enemyDamage := sm.calculateEnemyDamage(state.EnemyAtk, state.PlayerDef)
-	state.PlayerHP -= enemyDamage
-	state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
+	// Enemy counterattack (skip if stunned)
+	if !enemyStunned {
+		defBonus := combatSys.GetEffectBonus(state, "player", "defense_up")
+		enemyDamage := sm.calculateEnemyDamage(state.EnemyAtk, state.PlayerDef+defBonus)
+		state.PlayerHP -= enemyDamage
+		state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
+	}
 
 	if state.PlayerHP <= 0 {
 		state.PlayerHP = 0
 		state.IsActive = false
 		state.Log = append(state.Log, "你被击败了！战斗失败...")
+	}
+
+	// Process player effects (poison etc.)
+	combatSys.ProcessEffects(state, "player")
+	if state.PlayerHP <= 0 {
+		state.PlayerHP = 0
+		state.IsActive = false
 	}
 
 	state.Turn++

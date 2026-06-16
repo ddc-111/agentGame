@@ -1,6 +1,7 @@
 package network
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -31,4 +32,12 @@ func respondError(c *gin.Context, status int, err APIError) {
 func respondInternalError(c *gin.Context, actualErr error) {
 	log.Printf("Internal error: %v", actualErr)
 	c.JSON(http.StatusInternalServerError, gin.H{"error": InternalError()})
+}
+
+func jsonMarshal(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+func jsonUnmarshal(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
 }

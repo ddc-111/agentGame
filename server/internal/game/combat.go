@@ -12,19 +12,20 @@ type CombatSystem struct{}
 
 // CombatState 战斗状态
 type CombatState struct {
-	PlayerID  uint     `json:"player_id"`
-	EnemyType string   `json:"enemy_type"`
-	EnemyName string   `json:"enemy_name"`
-	PlayerHP  int      `json:"player_hp"`
-	PlayerMP  int      `json:"player_mp"`
-	PlayerDef int      `json:"player_def"`
-	EnemyHP   int      `json:"enemy_hp"`
-	EnemyAtk  int      `json:"enemy_atk"`
-	EnemyDef  int      `json:"enemy_def"`
-	Turn      int      `json:"turn"`
-	Log       []string `json:"log"`
-	IsActive  bool     `json:"is_active"`
-	Rewards   Rewards  `json:"rewards"`
+	PlayerID     uint           `json:"player_id"`
+	EnemyType    string         `json:"enemy_type"`
+	EnemyName    string         `json:"enemy_name"`
+	PlayerHP     int            `json:"player_hp"`
+	PlayerMP     int            `json:"player_mp"`
+	PlayerDef    int            `json:"player_def"`
+	EnemyHP      int            `json:"enemy_hp"`
+	EnemyAtk     int            `json:"enemy_atk"`
+	EnemyDef     int            `json:"enemy_def"`
+	Turn         int            `json:"turn"`
+	Log          []string       `json:"log"`
+	IsActive     bool           `json:"is_active"`
+	Rewards      Rewards        `json:"rewards"`
+	ActiveEffects []StatusEffect `json:"active_effects,omitempty"`
 }
 
 // Rewards 战斗奖励
@@ -32,6 +33,14 @@ type Rewards struct {
 	Exp   int    `json:"exp"`
 	Gold  int    `json:"gold"`
 	Items []uint `json:"items,omitempty"`
+}
+
+// StatusEffect 战斗中的状态效果
+type StatusEffect struct {
+	Type      string `json:"type"`      // stun, poison, defense_up, attack_up
+	Duration  int    `json:"duration"`  // remaining turns
+	Value     int    `json:"value"`     // effect magnitude
+	Source    string `json:"source"`    // "player" or "enemy"
 }
 
 // EnemyConfig 敌人配置
@@ -130,8 +139,14 @@ func (cs *CombatSystem) Attack(state *CombatState, playerAtk int) *CombatState {
 		return state
 	}
 
+	// Process enemy effects (poison, stun)
+	enemyStunned := cs.ProcessEffects(state, "enemy")
+
+	// Apply attack_up bonus
+	atkBonus := cs.GetEffectBonus(state, "player", "attack_up")
+
 	// 玩家攻击
-	damage := cs.calculateDamage(playerAtk, state.EnemyDef)
+	damage := cs.calculateDamage(playerAtk+atkBonus, state.EnemyDef)
 	state.EnemyHP -= damage
 	state.Log = append(state.Log, "你对"+state.EnemyName+"造成了"+formatInt(damage)+"点伤害")
 
@@ -143,10 +158,16 @@ func (cs *CombatSystem) Attack(state *CombatState, playerAtk int) *CombatState {
 		return state
 	}
 
-	// 敌人反击
-	enemyDamage := cs.calculateDamage(state.EnemyAtk, state.PlayerDef)
-	state.PlayerHP -= enemyDamage
-	state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
+	// 敌人反击（眩晕则跳过）
+	if !enemyStunned {
+		defBonus := cs.GetEffectBonus(state, "player", "defense_up")
+		enemyDamage := cs.calculateDamage(state.EnemyAtk, state.PlayerDef+defBonus)
+		state.PlayerHP -= enemyDamage
+		state.Log = append(state.Log, state.EnemyName+"对你造成了"+formatInt(enemyDamage)+"点伤害")
+	}
+
+	// Process player effects (poison)
+	cs.ProcessEffects(state, "player")
 
 	// 检查玩家是否死亡
 	if state.PlayerHP <= 0 {
@@ -227,6 +248,87 @@ func (cs *CombatSystem) Flee(state *CombatState, playerLevel int) (bool, *Combat
 // GetRewards 获取战斗奖励
 func (cs *CombatSystem) GetRewards(state *CombatState) Rewards {
 	return state.Rewards
+}
+
+// AddEffect 添加状态效果
+func (cs *CombatSystem) AddEffect(state *CombatState, effectType string, duration, value int, source string) {
+	// Remove existing effect of same type from same source
+	var filtered []StatusEffect
+	for _, e := range state.ActiveEffects {
+		if !(e.Type == effectType && e.Source == source) {
+			filtered = append(filtered, e)
+		}
+	}
+	filtered = append(filtered, StatusEffect{
+		Type:     effectType,
+		Duration: duration,
+		Value:    value,
+		Source:   source,
+	})
+	state.ActiveEffects = filtered
+}
+
+// ProcessEffects 处理回合开始时的状态效果，返回true表示目标被眩晕跳过回合
+func (cs *CombatSystem) ProcessEffects(state *CombatState, target string) bool {
+	stunned := false
+	var remaining []StatusEffect
+
+	for _, effect := range state.ActiveEffects {
+		if effect.Source != target {
+			remaining = append(remaining, effect)
+			continue
+		}
+
+		switch effect.Type {
+		case "stun":
+			if target == "enemy" {
+				state.Log = append(state.Log, state.EnemyName+"被眩晕，无法行动！")
+			} else {
+				state.Log = append(state.Log, "你被眩晕，无法行动！")
+			}
+			stunned = true
+		case "poison":
+			damage := effect.Value
+			if target == "enemy" {
+				state.EnemyHP -= damage
+				if state.EnemyHP < 0 {
+					state.EnemyHP = 0
+				}
+				state.Log = append(state.Log, state.EnemyName+"受到中毒伤害 "+formatInt(damage)+" 点")
+			} else {
+				state.PlayerHP -= damage
+				if state.PlayerHP < 0 {
+					state.PlayerHP = 0
+				}
+				state.Log = append(state.Log, "你受到中毒伤害 "+formatInt(damage)+" 点")
+			}
+		case "defense_up":
+			// Applied during damage calculation, just tick here
+		case "attack_up":
+			// Applied during damage calculation, just tick here
+		}
+
+		effect.Duration--
+		if effect.Duration > 0 {
+			remaining = append(remaining, effect)
+		} else {
+			state.Log = append(state.Log, effect.Type+" 效果结束了")
+		}
+	}
+
+	state.ActiveEffects = remaining
+	return stunned
+}
+
+// GetEffectBonus 计算效果加成
+func (cs *CombatSystem) GetEffectBonus(state *CombatState, source string, effectType string) int {
+	bonus := 0
+	for _, effect := range state.ActiveEffects {
+		if effect.Source == source && effect.Type == effectType {
+			bonus += effect.Value
+		}
+	}
+	return bonus
 }
 
 // calculateDamage 计算伤害

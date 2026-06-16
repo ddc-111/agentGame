@@ -19,27 +19,85 @@ export class CombatManager {
         const enemies = {
             'wolf': {
                 name: '野狼',
-                hp: 30,
-                max_hp: 30,
-                attack: 8,
+                hp: 50,
+                max_hp: 50,
+                attack: 12,
                 defense: 3,
                 speed: 12,
-                exp: 15,
-                gold: 5,
+                exp: 30,
+                gold: 20,
                 drops: [
                     { item_id: 1001, chance: 0.3, count: 1 }
                 ],
                 emoji: '🐺'
             },
+            'bandit': {
+                name: '山贼',
+                hp: 80,
+                max_hp: 80,
+                attack: 15,
+                defense: 5,
+                speed: 8,
+                exp: 50,
+                gold: 50,
+                drops: [
+                    { item_id: 1002, chance: 0.4, count: 1 },
+                    { item_id: 1001, chance: 0.6, count: 1 }
+                ],
+                emoji: '🗡️'
+            },
+            'bear': {
+                name: '黑熊',
+                hp: 120,
+                max_hp: 120,
+                attack: 20,
+                defense: 8,
+                speed: 6,
+                exp: 80,
+                gold: 30,
+                drops: [
+                    { item_id: 1003, chance: 0.5, count: 1 }
+                ],
+                emoji: '🐻'
+            },
+            'tiger': {
+                name: '猛虎',
+                hp: 150,
+                max_hp: 150,
+                attack: 25,
+                defense: 10,
+                speed: 14,
+                exp: 100,
+                gold: 60,
+                drops: [
+                    { item_id: 1003, chance: 0.6, count: 2 },
+                    { item_id: 1002, chance: 0.3, count: 1 }
+                ],
+                emoji: '🐅'
+            },
+            'ghost': {
+                name: '厉鬼',
+                hp: 100,
+                max_hp: 100,
+                attack: 18,
+                defense: 2,
+                speed: 16,
+                exp: 70,
+                gold: 40,
+                drops: [
+                    { item_id: 1004, chance: 0.4, count: 1 }
+                ],
+                emoji: '👻'
+            },
             'alpha_wolf': {
                 name: '头狼',
-                hp: 60,
-                max_hp: 60,
-                attack: 15,
-                defense: 8,
+                hp: 90,
+                max_hp: 90,
+                attack: 18,
+                defense: 6,
                 speed: 10,
-                exp: 40,
-                gold: 20,
+                exp: 45,
+                gold: 35,
                 drops: [
                     { item_id: 1002, chance: 0.5, count: 1 },
                     { item_id: 1001, chance: 0.8, count: 2 }
@@ -264,6 +322,11 @@ export class CombatManager {
                     this.addLog(`获得了 ${item.name} x${item.count}！`);
                 });
             }
+            if (this.rewards.levelUps && this.rewards.levelUps.length > 0) {
+                this.rewards.levelUps.forEach(lv => {
+                    this.addLog(`恭喜！升级到 ${lv} 级！`);
+                });
+            }
             return true;
         }
 
@@ -301,6 +364,20 @@ export class CombatManager {
 
         this.playerData.gold += rewards.gold;
         this.playerData.exp = (this.playerData.exp || 0) + rewards.exp;
+
+        // Check for level up
+        rewards.levelUps = [];
+        let expNeeded = this.playerData.level * 100;
+        while (this.playerData.exp >= expNeeded) {
+            this.playerData.exp -= expNeeded;
+            this.playerData.level++;
+            this.playerData.hp += 10;
+            this.playerData.mp += 5;
+            this.playerData.attack += 2;
+            this.playerData.defense += 1;
+            rewards.levelUps.push(this.playerData.level);
+            expNeeded = this.playerData.level * 100;
+        }
 
         return rewards;
     }

@@ -154,17 +154,36 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			player.Exp += rewards.Exp
 			player.Gold += rewards.Gold
 
-			// 检查升级
-			expNeeded := player.Level * 100
-			if player.Exp >= expNeeded {
-				player.Level++
+			// 检查升级（支持连续升级）
+			levelsGained := 0
+			for {
+				expNeeded := player.Level * 100
+				if player.Exp < expNeeded {
+					break
+				}
 				player.Exp -= expNeeded
+				player.Level++
 				player.HP += 10
 				player.MP += 5
 				player.Attack += 2
 				player.Defense += 1
+				levelsGained++
 			}
 
+			// Sync HP/MP from combat state (combat damage applied)
+			player.HP = newState.PlayerHP
+			player.MP = newState.PlayerMP
+
+			s.repo.UpdatePlayer(player)
+
+			// Add level-up info to response
+			if levelsGained > 0 {
+				newState.Log = append(newState.Log, fmt.Sprintf("恭喜！升级到 %d 级！", player.Level))
+			}
+		} else {
+			// Defeat - still sync HP/MP
+			player.HP = newState.PlayerHP
+			player.MP = newState.PlayerMP
 			s.repo.UpdatePlayer(player)
 		}
 	}
@@ -515,6 +534,7 @@ func (s *Server) handleGetSaves(c *gin.Context) {
 		for _, save := range saves {
 			if save.Slot == i {
 				snapshot, _ := sgm.DeserializeSnapshot(save.Snapshot)
+				info.SaveID = save.ID
 				info.Name = save.Name
 				info.IsEmpty = false
 				info.CreatedAt = save.CreatedAt
@@ -686,15 +706,24 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 			player.Exp += rewards.Exp
 			player.Gold += rewards.Gold
 
-			// Level up check
-			expNeeded := player.Level * 100
-			if player.Exp >= expNeeded {
-				player.Level++
+			// Level up check (support multi-level)
+			levelsGained := 0
+			for {
+				expNeeded := player.Level * 100
+				if player.Exp < expNeeded {
+					break
+				}
 				player.Exp -= expNeeded
+				player.Level++
 				player.HP += 10
 				player.MP += 5
 				player.Attack += 2
 				player.Defense += 1
+				levelsGained++
+			}
+
+			if levelsGained > 0 {
+				newState.Log = append(newState.Log, fmt.Sprintf("恭喜！升级到 %d 级！", player.Level))
 			}
 		}
 		// Update HP/MP from combat state

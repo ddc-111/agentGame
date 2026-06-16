@@ -38,6 +38,7 @@ type Snapshot struct {
 
 // SaveSlotInfo 存档槽信息
 type SaveSlotInfo struct {
+	SaveID    uint      `json:"save_id"`
 	Slot      int       `json:"slot"`
 	Name      string    `json:"name"`
 	Level     int       `json:"level"`
