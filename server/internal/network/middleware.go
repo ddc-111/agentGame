@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -191,8 +192,45 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		}
 		ctx := context.WithValue(c.Request.Context(), requestIDKey, reqID)
 		c.Request = c.Request.WithContext(ctx)
+		c.Set("request_id", reqID)
 		c.Header("X-Request-ID", reqID)
 		c.Next()
+	}
+}
+
+func RequestLoggingMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		c.Next()
+
+		latency := time.Since(start)
+		status := c.Writer.Status()
+
+		logger := LoggerFromContext(c.Request.Context())
+		attrs := []slog.Attr{
+			slog.String("method", c.Request.Method),
+			slog.String("path", path),
+			slog.Int("status", status),
+			slog.Duration("latency", latency),
+			slog.String("client_ip", c.ClientIP()),
+		}
+		if query != "" {
+			attrs = append(attrs, slog.String("query", query))
+		}
+		if len(c.Errors) > 0 {
+			attrs = append(attrs, slog.String("errors", c.Errors.String()))
+		}
+
+		level := slog.LevelInfo
+		if status >= 500 {
+			level = slog.LevelError
+		} else if status >= 400 {
+			level = slog.LevelWarn
+		}
+		logger.LogAttrs(c.Request.Context(), level, "HTTP request", attrs...)
 	}
 }
 

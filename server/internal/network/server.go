@@ -41,7 +41,7 @@ func NewServer(cfg *config.Config) *Server {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	SetupLogger("info")
+	SetupLogger(cfg.Server.LogLevel)
 
 	db, err := database.New(database.Config{
 		Driver:   cfg.Database.Driver,
@@ -118,6 +118,7 @@ func (s *Server) setupRoutes() {
 
 	s.router.Use(CORSMiddleware(s.cfg.CORS.AllowedOrigins))
 	s.router.Use(RequestIDMiddleware())
+	s.router.Use(RequestLoggingMiddleware())
 
 	// MCP端点
 	s.router.POST("/mcp", func(c *gin.Context) {
@@ -281,7 +282,7 @@ func (s *Server) Start() error {
 
 	slog.Info("Starting server", "addr", addr)
 	slog.Info("Generator enabled", "enabled", s.generator.IsEnabled())
-	slog.Info("MCP endpoint", "url", fmt.Sprintf("http://localhost:%d/mcp", s.cfg.Server.Port))
+	slog.Info("MCP endpoint", "port", s.cfg.Server.Port, "path", "/mcp")
 	return s.http.ListenAndServe()
 }
 

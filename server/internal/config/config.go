@@ -17,8 +17,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port int    `yaml:"port"`
-	Mode string `yaml:"mode"`
+	Port     int    `yaml:"port"`
+	Mode     string `yaml:"mode"`
+	LogLevel string `yaml:"log_level"`
 }
 
 type AuthConfig struct {
@@ -71,8 +72,9 @@ type GameConfig struct {
 func Default() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Port: 8080,
-			Mode: "debug",
+			Port:     8080,
+			Mode:     "debug",
+			LogLevel: "info",
 		},
 		Database: DatabaseConfig{
 			Driver: "sqlite",

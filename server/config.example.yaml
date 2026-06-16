@@ -1,6 +1,7 @@
 server:
   port: 8080
   mode: debug
+  log_level: info
 
 database:
   # 使用SQLite（默认）
