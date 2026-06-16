@@ -193,6 +193,13 @@ export class GameScene extends Phaser.Scene {
                 }
             });
 
+            // Help key (?)
+            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.FORWARD_SLASH).on('down', () => {
+                if (!this.showingDialog && !this.showingShop && !this.showingTutorial) {
+                    this.showHelpOverlay();
+                }
+            });
+
             // Show tutorial
             this.showTutorial();
 
@@ -352,6 +359,13 @@ export class GameScene extends Phaser.Scene {
         npc.setData('npcData', npcData);
         npc.setData('sceneNPC', sceneNPC);
         npc.setImmovable(true);
+        npc.setData('mood', 'neutral');
+
+        // Mood emoji
+        const moodEmoji = this.add.text(sceneNPC.x, sceneNPC.y - 55, '😐', {
+            font: '18px Microsoft YaHei'
+        }).setOrigin(0.5);
+        npc.setData('moodEmoji', moodEmoji);
 
         // Name label
         const nameTag = this.add.text(sceneNPC.x, sceneNPC.y - 40, npcData.name, {
@@ -649,6 +663,14 @@ export class GameScene extends Phaser.Scene {
     async interactWithNPC(npcData) {
         this.showingDialog = true;
 
+        // Change NPC mood to happy when talked to
+        const npcSprite = this.npcSprites.get(npcData.id);
+        if (npcSprite) {
+            npcSprite.setData('mood', 'happy');
+            const moodEmoji = npcSprite.getData('moodEmoji');
+            if (moodEmoji) moodEmoji.setText('😊');
+        }
+
         // Check for dialogue objectives
         this.questLog.forEach(quest => {
             if (quest.status !== 'active') return;
@@ -783,15 +805,57 @@ export class GameScene extends Phaser.Scene {
     }
 
     getNPCGreeting(npcData) {
+        // Determine mood from NPC sprite
+        let mood = 'neutral';
+        const npcSprite = this.npcSprites.get(npcData.id);
+        if (npcSprite) {
+            mood = npcSprite.getData('mood') || 'neutral';
+        }
+
         const greetings = {
-            'npc_chief_chen': '呵呵，年轻人，欢迎来到青石村！老朽是这里的村长。你初来乍到，有什么不懂的尽管问老朽。',
-            'npc_merchant_li': '客官好！欢迎光临李记杂货铺！在下经营各种日用品和药材，物美价廉！',
-            'npc_tea_wang': '哎呀，客官来了！快坐下喝杯茶歇歇脚。我跟你说，咱们青石村可是个好地方！',
-            'npc_blacksmith_zhang': '嗯，客官好。俺是这儿的铁匠，姓张。俺打的兵器在方圆百里都小有名气。',
-            'npc_hunter_zhou': '嗯，你好。俺是猎户老周。村外最近不太平，你出去的时候小心点。',
-            'npc_kid_stone': '大哥哥好！你是新来的冒险者吗？好酷啊！你能给我看看你的武器吗？'
+            'npc_chief_chen': {
+                happy: '呵呵，又见面了年轻人！有什么需要老朽帮忙的吗？',
+                neutral: '呵呵，年轻人，欢迎来到青石村！老朽是这里的村长。你初来乍到，有什么不懂的尽管问老朽。',
+                angry: '哼，年轻人怎么这么没规矩！有话好好说！',
+                scared: '呃...年轻人，你那眼神怪吓人的，有话好商量...'
+            },
+            'npc_merchant_li': {
+                happy: '哟，老客又来了！今天有什么需要的？给你打折！',
+                neutral: '客官好！欢迎光临李记杂货铺！在下经营各种日用品和药材，物美价廉！',
+                angry: '客官...你这表情在下有点慌，买卖不成仁义在啊...',
+                scared: '客、客官...在下可是正经生意人...'
+            },
+            'npc_tea_wang': {
+                happy: '哎呀，老熟人来了！快坐快坐，今天请你喝好茶！',
+                neutral: '哎呀，客官来了！快坐下喝杯茶歇歇脚。我跟你说，咱们青石村可是个好地方！',
+                angry: '呃...客官，先喝口茶消消火？',
+                scared: '客官你...你别吓老汉啊...'
+            },
+            'npc_blacksmith_zhang': {
+                happy: '嘿，老弟又来了！俺刚打了把好刀，要不要看看？',
+                neutral: '嗯，客官好。俺是这儿的铁匠，姓张。俺打的兵器在方圆百里都小有名气。',
+                angry: '咋了老弟？谁惹你了？俺帮你出头！',
+                scared: '呃...老弟你冷静点，俺这有锤子...'
+            },
+            'npc_hunter_zhou': {
+                happy: '嘿，兄弟！村外最近野兽少了，多亏你帮忙。',
+                neutral: '嗯，你好。俺是猎户老周。村外最近不太平，你出去的时候小心点。',
+                angry: '兄弟...你这架势俺有点虚啊...',
+                scared: '兄弟你...你别冲动，俺给你弓箭...'
+            },
+            'npc_kid_stone': {
+                happy: '大哥哥又来啦！你今天能教我打拳吗？',
+                neutral: '大哥哥好！你是新来的冒险者吗？好酷啊！你能给我看看你的武器吗？',
+                angry: '呜...大哥哥好凶...我要去找村长爷爷...',
+                scared: '哇啊啊！大哥哥好可怕！'
+            }
         };
-        return greetings[npcData.code] || '你好，客官！';
+
+        const npcGreetings = greetings[npcData.code];
+        if (npcGreetings) {
+            return npcGreetings[mood] || npcGreetings.neutral;
+        }
+        return '你好，客官！';
     }
 
     showShopDialog(npcData) {
@@ -906,67 +970,108 @@ export class GameScene extends Phaser.Scene {
         const height = this.cameras.main.height;
 
         const tutorials = [
-            { title: '欢迎来到青石村！', text: '这是一个古风RPG冒险游戏。你将探索村庄，与NPC对话，完成任务。' },
-            { title: '移动', text: '使用 WASD 键或方向键移动角色。' },
-            { title: '与NPC对话', text: '点击NPC可以与其对话。NPC头上有黄色标记表示有任务。' },
-            { title: '传送', text: '走到紫色传送点可以前往其他场景。' },
-            { title: '任务', text: '左上角显示当前任务。完成任务可以获得奖励！' },
-            { title: '准备好了吗？', text: '去找老村长聊聊吧！按空格键跳过教程。' }
+            { title: '欢迎！', text: '欢迎来到青石村！', arrow: null },
+            { title: '移动', text: 'WASD 或方向键移动', arrow: { x: width / 2, y: height - 60, dir: 'down' } },
+            { title: '对话', text: '点击NPC进行对话', arrow: { x: 200, y: 200, dir: 'up' } },
+            { title: '传送', text: '走到紫色传送点前往新场景', arrow: null },
+            { title: '开始冒险！', text: '去找老村长聊聊吧！', arrow: null }
         ];
 
         this.tutorialStep = 0;
 
-        const overlay = this.add.rectangle(width/2, height/2, width, height, 0x000000, 0.7)
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6)
             .setScrollFactor(0).setDepth(500);
-        const box = this.add.rectangle(width/2, height/2, 450, 200, 0x1a1a1a, 0.95)
+        const box = this.add.rectangle(width / 2, height / 2 - 20, 320, 140, 0x1a1a1a, 0.95)
             .setScrollFactor(0).setDepth(501);
-        const border = this.add.rectangle(width/2, height/2, 450, 200)
+        const border = this.add.rectangle(width / 2, height / 2 - 20, 320, 140)
             .setStrokeStyle(2, 0xd4a574).setScrollFactor(0).setDepth(502);
 
-        const titleText = this.add.text(width/2, height/2 - 60, tutorials[0].title, {
-            font: 'bold 22px Microsoft YaHei', fill: '#d4a574'
+        const titleText = this.add.text(width / 2, height / 2 - 65, tutorials[0].title, {
+            font: 'bold 20px Microsoft YaHei', fill: '#d4a574'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(503);
 
-        const contentText = this.add.text(width/2, height/2, tutorials[0].text, {
-            font: '16px Microsoft YaHei', fill: '#fff',
-            wordWrap: { width: 400 },
+        const contentText = this.add.text(width / 2, height / 2 - 20, tutorials[0].text, {
+            font: '15px Microsoft YaHei', fill: '#fff',
+            wordWrap: { width: 280 },
             align: 'center'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(503);
 
-        const stepText = this.add.text(width/2, height/2 + 60, `${this.tutorialStep + 1}/${tutorials.length}`, {
-            font: '12px Microsoft YaHei', fill: '#888'
+        const stepText = this.add.text(width / 2, height / 2 + 30, `${this.tutorialStep + 1}/${tutorials.length}`, {
+            font: '11px Microsoft YaHei', fill: '#888'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(503);
 
-        const nextBtn = this.add.text(width/2 + 150, height/2 + 80, '下一步 →', {
-            font: '16px Microsoft YaHei', fill: '#4a7c59'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(503).setInteractive({ useHandCursor: true });
+        // Arrow indicator (hidden by default)
+        const arrow = this.add.text(0, 0, '⬇', {
+            font: '28px Microsoft YaHei', fill: '#f1c40f'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(504).setVisible(false);
+        this.tweens.add({
+            targets: arrow,
+            y: arrow.y + 10,
+            duration: 600,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
 
-        const skipBtn = this.add.text(width/2, height/2 + 80, '跳过教程', {
-            font: '14px Microsoft YaHei', fill: '#888'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(503).setInteractive({ useHandCursor: true });
+        const nextBtn = this.add.rectangle(width / 2 + 80, height / 2 + 55, 100, 34, 0x4a7c59)
+            .setStrokeStyle(1, 0x6aaa79).setScrollFactor(0).setDepth(503);
+        const nextText = this.add.text(width / 2 + 80, height / 2 + 55, '下一步 →', {
+            font: '14px Microsoft YaHei', fill: '#fff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(504);
+        nextBtn.setInteractive({ useHandCursor: true });
 
-        const tutorialElements = [overlay, box, border, titleText, contentText, stepText, nextBtn, skipBtn];
+        const skipBtn = this.add.rectangle(width / 2 - 80, height / 2 + 55, 100, 34, 0x555555)
+            .setStrokeStyle(1, 0x888888).setScrollFactor(0).setDepth(503);
+        const skipText = this.add.text(width / 2 - 80, height / 2 + 55, '跳过 ✕', {
+            font: 'bold 14px Microsoft YaHei', fill: '#ff6b6b'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(504);
+        skipBtn.setInteractive({ useHandCursor: true });
+
+        const tutorialElements = [overlay, box, border, titleText, contentText, stepText, arrow, nextBtn, nextText, skipBtn, skipText];
+
+        const updateArrow = () => {
+            const t = tutorials[this.tutorialStep];
+            if (t.arrow) {
+                arrow.setPosition(t.arrow.x, t.arrow.y);
+                const arrows = { down: '⬇', up: '⬆', left: '⬅', right: '➡' };
+                arrow.setText(arrows[t.arrow.dir] || '⬇');
+                arrow.setVisible(true);
+            } else {
+                arrow.setVisible(false);
+            }
+        };
+        updateArrow();
 
         const advanceTutorial = () => {
             this.tutorialStep++;
             if (this.tutorialStep >= tutorials.length) {
                 tutorialElements.forEach(el => el.destroy());
                 this.showingTutorial = false;
-                this.showNotification('🎮 冒险开始！去找老村长对话吧！');
+                this.showNotification('冒险开始！去找老村长对话吧！');
                 return;
             }
             const t = tutorials[this.tutorialStep];
             titleText.setText(t.title);
             contentText.setText(t.text);
             stepText.setText(`${this.tutorialStep + 1}/${tutorials.length}`);
+            updateArrow();
         };
 
         nextBtn.on('pointerdown', advanceTutorial);
-        skipBtn.on('pointerdown', () => {
+        nextBtn.on('pointerover', () => nextBtn.setFillStyle(0x5a8c69));
+        nextBtn.on('pointerout', () => nextBtn.setFillStyle(0x4a7c59));
+        nextText.setInteractive({ useHandCursor: true });
+        nextText.on('pointerdown', advanceTutorial);
+
+        const skipTutorial = () => {
             tutorialElements.forEach(el => el.destroy());
             this.showingTutorial = false;
-            this.showNotification('🎮 冒险开始！去找老村长对话吧！');
-        });
+            this.showNotification('冒险开始！去找老村长对话吧！');
+        };
+        skipBtn.on('pointerdown', skipTutorial);
+        skipBtn.on('pointerover', () => skipBtn.setFillStyle(0x666666));
+        skipBtn.on('pointerout', () => skipBtn.setFillStyle(0x555555));
+        skipText.on('pointerdown', skipTutorial);
 
         this.skipTutorial = () => {
             tutorialElements.forEach(el => el.destroy());
@@ -983,6 +1088,64 @@ export class GameScene extends Phaser.Scene {
             this.inventoryUI = new InventoryUI(this, this.inventoryManager);
         }
         this.inventoryUI.toggle();
+    }
+
+    showHelpOverlay() {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+
+        const helpContainer = this.scene ? this.add.container(0, 0) : this.add.container(0, 0);
+        helpContainer.setDepth(600).setScrollFactor(0);
+
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.75);
+        helpContainer.add(overlay);
+
+        const panelBg = this.add.rectangle(width / 2, height / 2, 340, 320, 0x1a1a2a, 0.95).setStrokeStyle(2, 0xd4a574);
+        helpContainer.add(panelBg);
+
+        const title = this.add.text(width / 2, height / 2 - 130, '快捷键帮助', {
+            font: 'bold 20px Microsoft YaHei', fill: '#d4a574'
+        }).setOrigin(0.5);
+        helpContainer.add(title);
+
+        const controls = [
+            ['WASD / 方向键', '移动角色'],
+            ['点击NPC', '与NPC对话'],
+            ['I', '打开/关闭背包'],
+            ['F5', '保存游戏'],
+            ['F9', '读取存档'],
+            ['?', '显示此帮助'],
+            ['ESC', '关闭当前窗口']
+        ];
+
+        controls.forEach((ctrl, i) => {
+            const y = height / 2 - 80 + i * 36;
+            const keyText = this.add.text(width / 2 - 140, y, ctrl[0], {
+                font: 'bold 14px Microsoft YaHei', fill: '#f1c40f'
+            });
+            helpContainer.add(keyText);
+
+            const descText = this.add.text(width / 2 + 10, y, ctrl[1], {
+                font: '14px Microsoft YaHei', fill: '#fff'
+            });
+            helpContainer.add(descText);
+        });
+
+        const closeHint = this.add.text(width / 2, height / 2 + 130, '按 ESC 或 ? 关闭', {
+            font: '12px Microsoft YaHei', fill: '#888'
+        }).setOrigin(0.5);
+        helpContainer.add(closeHint);
+
+        const closeHelp = () => {
+            helpContainer.destroy();
+            this.input.keyboard.off('keydown-ESC', closeHelp);
+        };
+
+        this.input.keyboard.once('keydown-ESC', closeHelp);
+        this.input.keyboard.once('keydown-FORWARD_SLASH', closeHelp);
+
+        overlay.setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', closeHelp);
     }
 
     triggerCombat(enemyType) {
@@ -1098,6 +1261,11 @@ export class GameScene extends Phaser.Scene {
             const nameTag = npcSprite.getData('nameTag');
             if (nameTag) {
                 nameTag.setAlpha(dist < 100 ? 1 : 0.5);
+                nameTag.setPosition(npcSprite.x, npcSprite.y - 40);
+            }
+            const moodEmoji = npcSprite.getData('moodEmoji');
+            if (moodEmoji) {
+                moodEmoji.setPosition(npcSprite.x, npcSprite.y - 55);
             }
         });
 

@@ -471,60 +471,122 @@ export class CombatUI {
         const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
         victoryContainer.add(overlay);
 
-        const panelBg = this.scene.add.rectangle(width / 2, height / 2, 350, 300, 0x1a2a1a, 0.95).setStrokeStyle(2, 0xf1c40f);
+        const panelBg = this.scene.add.rectangle(width / 2, height / 2, 380, 350, 0x1a2a1a, 0.95).setStrokeStyle(2, 0xf1c40f);
         victoryContainer.add(panelBg);
 
-        const victoryText = this.scene.add.text(width / 2, height / 2 - 110, '🎉 战斗胜利！', {
+        const victoryText = this.scene.add.text(width / 2, height / 2 - 140, '🎉 战斗胜利！', {
             font: 'bold 24px Microsoft YaHei', fill: '#f1c40f'
         }).setOrigin(0.5);
         victoryContainer.add(victoryText);
 
-        const rewardsText = [
-            `经验: +${rewards.exp}`,
-            `金币: +${rewards.gold}`,
-            ...rewards.items.map(item => `${item.name} x${item.count}`)
-        ].join('\n');
-
-        const rewardsDisplay = this.scene.add.text(width / 2, height / 2, rewardsText, {
-            font: '16px Microsoft YaHei', fill: '#fff', lineSpacing: 10, align: 'center'
+        const state = this.combatManager.getCombatState();
+        const enemyName = state.enemy ? state.enemy.name : '敌人';
+        const enemyLabel = this.scene.add.text(width / 2, height / 2 - 105, `击败了 ${enemyName}`, {
+            font: '14px Microsoft YaHei', fill: '#e74c3c'
         }).setOrigin(0.5);
-        victoryContainer.add(rewardsDisplay);
+        victoryContainer.add(enemyLabel);
 
-        const continueBtn = this.scene.add.text(width / 2, height / 2 + 100, '继续', {
-            font: '18px Microsoft YaHei', fill: '#4a7c59', backgroundColor: '#2a4a3a', padding: { x: 20, y: 8 }
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        let rewardY = height / 2 - 65;
+        const lineH = 28;
+
+        const expLine = this.scene.add.text(width / 2, rewardY, `✨ 经验: +${rewards.exp}`, {
+            font: '16px Microsoft YaHei', fill: '#9b59b6'
+        }).setOrigin(0.5);
+        victoryContainer.add(expLine);
+        rewardY += lineH;
+
+        const goldLine = this.scene.add.text(width / 2, rewardY, `💰 金币: +${rewards.gold}`, {
+            font: '16px Microsoft YaHei', fill: '#f1c40f'
+        }).setOrigin(0.5);
+        victoryContainer.add(goldLine);
+        rewardY += lineH;
+
+        if (rewards.items && rewards.items.length > 0) {
+            const itemsLabel = this.scene.add.text(width / 2, rewardY, '🎒 获得物品:', {
+                font: '14px Microsoft YaHei', fill: '#2ecc71'
+            }).setOrigin(0.5);
+            victoryContainer.add(itemsLabel);
+            rewardY += 22;
+
+            rewards.items.forEach(item => {
+                const itemLine = this.scene.add.text(width / 2, rewardY, `  ${item.name} x${item.count}`, {
+                    font: '13px Microsoft YaHei', fill: '#ccc'
+                }).setOrigin(0.5);
+                victoryContainer.add(itemLine);
+                rewardY += 20;
+            });
+        }
+
+        // Check for level up
+        const prevLevel = this.scene.playerData.level || 1;
+        const newExp = (this.scene.playerData.exp || 0) + rewards.exp;
+        const expNeeded = prevLevel * 100;
+        if (newExp >= expNeeded) {
+            const levelUpText = this.scene.add.text(width / 2, rewardY + 10, '🎊 等级提升！', {
+                font: 'bold 18px Microsoft YaHei', fill: '#f39c12'
+            }).setOrigin(0.5);
+            victoryContainer.add(levelUpText);
+
+            this.scene.tweens.add({
+                targets: levelUpText,
+                scaleX: 1.2,
+                scaleY: 1.2,
+                duration: 500,
+                yoyo: true,
+                repeat: 2,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        const continueBtn = this.scene.add.rectangle(width / 2, height / 2 + 140, 160, 45, 0x4a7c59)
+            .setStrokeStyle(2, 0x6aaa79).setScrollFactor(0).setDepth(801);
+        const continueText = this.scene.add.text(width / 2, height / 2 + 140, '▶ 继续', {
+            font: 'bold 18px Microsoft YaHei', fill: '#fff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(802);
+
+        continueBtn.setInteractive({ useHandCursor: true });
+        continueBtn.on('pointerover', () => continueBtn.setFillStyle(0x5a8c69));
+        continueBtn.on('pointerout', () => continueBtn.setFillStyle(0x4a7c59));
         continueBtn.on('pointerdown', () => {
             victoryContainer.destroy();
             this.close();
             if (this.onCombatEnd) this.onCombatEnd({ victory: true, rewards });
         });
         victoryContainer.add(continueBtn);
+        victoryContainer.add(continueText);
     }
 
     showDefeatScreen() {
         const width = this.scene.cameras.main.width;
         const height = this.scene.cameras.main.height;
 
+        const state = this.combatManager.getCombatState();
+        const enemyName = state.enemy ? state.enemy.name : '敌人';
+
         const defeatContainer = this.scene.add.container(0, 0).setDepth(800).setScrollFactor(0);
         const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.9);
         defeatContainer.add(overlay);
 
-        const panelBg = this.scene.add.rectangle(width / 2, height / 2, 350, 200, 0x2a1a1a, 0.95).setStrokeStyle(2, 0xe74c3c);
+        const panelBg = this.scene.add.rectangle(width / 2, height / 2, 350, 220, 0x2a1a1a, 0.95).setStrokeStyle(2, 0xe74c3c);
         defeatContainer.add(panelBg);
 
-        const defeatText = this.scene.add.text(width / 2, height / 2 - 50, '💀 战斗失败', {
+        const defeatText = this.scene.add.text(width / 2, height / 2 - 60, '💀 战斗失败', {
             font: 'bold 24px Microsoft YaHei', fill: '#e74c3c'
         }).setOrigin(0.5);
         defeatContainer.add(defeatText);
 
-        const messageText = this.scene.add.text(width / 2, height / 2 + 10, '你被击败了...', {
+        const messageText = this.scene.add.text(width / 2, height / 2 - 20, `你被 ${enemyName} 击败了...`, {
             font: '16px Microsoft YaHei', fill: '#aaa'
         }).setOrigin(0.5);
         defeatContainer.add(messageText);
 
-        const respawnBtn = this.scene.add.text(width / 2, height / 2 + 60, '复活', {
-            font: '18px Microsoft YaHei', fill: '#e74c3c', backgroundColor: '#4a2a2a', padding: { x: 20, y: 8 }
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+        const respawnBtn = this.scene.add.rectangle(width / 2, height / 2 + 60, 140, 42, 0x4a2a2a)
+            .setStrokeStyle(2, 0xe74c3c).setScrollFactor(0).setDepth(801);
+        const respawnText = this.scene.add.text(width / 2, height / 2 + 60, '复活', {
+            font: 'bold 18px Microsoft YaHei', fill: '#e74c3c'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(802);
+
+        respawnBtn.setInteractive({ useHandCursor: true });
         respawnBtn.on('pointerdown', () => {
             this.scene.playerData.hp = Math.floor(this.inventoryManager.getStats().max_hp * 0.5);
             defeatContainer.destroy();
@@ -532,5 +594,6 @@ export class CombatUI {
             if (this.onCombatEnd) this.onCombatEnd({ victory: false, fled: false });
         });
         defeatContainer.add(respawnBtn);
+        defeatContainer.add(respawnText);
     }
 }

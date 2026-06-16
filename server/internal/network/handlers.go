@@ -585,6 +585,11 @@ func (s *Server) handleImport(c *gin.Context) {
 		return
 	}
 
+	// Unwrap "data" key if present (matches export format {"data": {...}})
+	if inner, ok := data["data"].(map[string]interface{}); ok {
+		data = inner
+	}
+
 	imported := make(map[string]int)
 
 	if scenesRaw, ok := data["scenes"].([]interface{}); ok {
@@ -694,7 +699,7 @@ func (s *Server) handleImport(c *gin.Context) {
 			flowData, _ := jsonMarshal(fr)
 			var flow models.Flow
 			if jsonUnmarshal(flowData, &flow) == nil {
-				if existing, _ := s.repo.GetFlowByID(flow.ID); existing != nil && existing.ID > 0 {
+				if existing, _ := s.repo.GetFlowByCode(flow.Code); existing != nil && existing.ID > 0 {
 					flow.ID = existing.ID
 					s.repo.UpdateFlow(&flow)
 				} else {
@@ -711,7 +716,7 @@ func (s *Server) handleImport(c *gin.Context) {
 			tmplData, _ := jsonMarshal(tr)
 			var tmpl models.PromptTemplate
 			if jsonUnmarshal(tmplData, &tmpl) == nil {
-				if existing, _ := s.repo.GetTemplateByID(tmpl.ID); existing != nil && existing.ID > 0 {
+				if existing, _ := s.repo.GetTemplateByCode(tmpl.Code); existing != nil && existing.ID > 0 {
 					tmpl.ID = existing.ID
 					s.repo.UpdateTemplate(&tmpl)
 				} else {

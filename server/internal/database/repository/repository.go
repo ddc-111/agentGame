@@ -144,6 +144,12 @@ func (r *Repository) GetTemplateByID(id uint) (*models.PromptTemplate, error) {
 	return &template, err
 }
 
+func (r *Repository) GetTemplateByCode(code string) (*models.PromptTemplate, error) {
+	var template models.PromptTemplate
+	err := r.db.Where("code = ?", code).First(&template).Error
+	return &template, err
+}
+
 func (r *Repository) CreateTemplate(template *models.PromptTemplate) error {
 	return r.db.Create(template).Error
 }
@@ -259,6 +265,12 @@ func (r *Repository) GetFlows() ([]models.Flow, error) {
 func (r *Repository) GetFlowByID(id uint) (*models.Flow, error) {
 	var flow models.Flow
 	err := r.db.First(&flow, id).Error
+	return &flow, err
+}
+
+func (r *Repository) GetFlowByCode(code string) (*models.Flow, error) {
+	var flow models.Flow
+	err := r.db.Where("code = ?", code).First(&flow).Error
 	return &flow, err
 }
 
