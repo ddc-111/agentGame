@@ -55,7 +55,7 @@
           </el-col>
         </el-row>
 
-        <el-divider content-position="left">场景NPC</el-form-item>
+        <el-divider content-position="left">场景NPC</el-divider>
 
         <el-form-item>
           <el-button @click="handleAddNPC">添加NPC</el-button>

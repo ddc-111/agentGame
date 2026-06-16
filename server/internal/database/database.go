@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -33,6 +33,7 @@ func New(cfg Config) (*Database, error) {
 		if dsn == "" {
 			dsn = "game.db"
 		}
+		// 使用纯Go实现的SQLite驱动，无需CGO
 		dialector = sqlite.Open(dsn)
 
 	case "mysql":
@@ -48,7 +49,7 @@ func New(cfg Config) (*Database, error) {
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect database: %w", err)
