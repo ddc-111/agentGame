@@ -152,7 +152,7 @@ func (cm *ChatManager) fallbackReply(persona *NPCPersona, userMsg string) string
 		return "客官请稍等，我这就去准备。"
 	}
 
-	return fmt.Sprintf("嗯，客官有什么事吗？")
+	return "嗯，客官有什么事吗？"
 }
 
 // cleanReply 清理回复内容

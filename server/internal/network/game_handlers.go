@@ -160,7 +160,7 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 		if player.SceneID != req.SceneID {
 			var sceneCodes []string
 			if player.VisitedScenes != "" {
-				json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
+				_ = json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
 			}
 			visited := false
 			for _, code := range sceneCodes {
@@ -316,7 +316,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	if npc.Agent != nil {
 		conv.AgentID = npc.Agent.ID
 	}
-	s.repo.CreateConversation(ctx, conv)
+	_ = s.repo.CreateConversation(ctx, conv)
 
 	convReply := &models.Conversation{
 		PlayerID: req.PlayerID,
@@ -328,7 +328,7 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	if npc.Agent != nil {
 		convReply.AgentID = npc.Agent.ID
 	}
-	s.repo.CreateConversation(ctx, convReply)
+	_ = s.repo.CreateConversation(ctx, convReply)
 
 	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "user", req.Message)
 	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "assistant", reply)
@@ -451,7 +451,7 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	player.Gold -= totalPrice
 
 	var items map[string]int
-	json.Unmarshal([]byte(player.Items), &items)
+	_ = json.Unmarshal([]byte(player.Items), &items)
 	if items == nil {
 		items = make(map[string]int)
 	}
@@ -462,8 +462,8 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 
 	shopItem.Stock -= req.Count
 
-	s.repo.UpdatePlayer(ctx, player)
-	s.repo.SaveShopItem(ctx, shopItem)
+	_ = s.repo.UpdatePlayer(ctx, player)
+	_ = s.repo.SaveShopItem(ctx, shopItem)
 
 	if shop.OwnerNPC != "" {
 		npc, err := s.repo.GetNPCByCode(ctx, shop.OwnerNPC)

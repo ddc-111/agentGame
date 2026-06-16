@@ -981,7 +981,7 @@ func (s *Server) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var req MCPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		json.NewEncoder(w).Encode(MCPResponse{
+		_ = json.NewEncoder(w).Encode(MCPResponse{
 			JSONRPC: "2.0",
 			Error: &MCPError{
 				Code:    -32700,
@@ -992,7 +992,7 @@ func (s *Server) HandleHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := s.HandleRequest(r.Context(), req)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // Log 工具调用日志

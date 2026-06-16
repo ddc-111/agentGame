@@ -106,7 +106,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	uniqueItems := 0
 	if player.Items != "" {
 		var items map[string]int
-		json.Unmarshal([]byte(player.Items), &items)
+		_ = json.Unmarshal([]byte(player.Items), &items)
 		uniqueItems = len(items)
 	}
 
@@ -123,7 +123,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	visitedSceneCount := 1
 	if player.VisitedScenes != "" {
 		var sceneCodes []string
-		json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
+		_ = json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
 		if len(sceneCodes) > 0 {
 			visitedSceneCount = len(sceneCodes)
 		}
@@ -162,7 +162,7 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 			PlayerID:      req.PlayerID,
 			AchievementID: ach.ID,
 		}
-		s.repo.CreatePlayerAchievement(ctx, pa)
+		_ = s.repo.CreatePlayerAchievement(ctx, pa)
 
 		reward := am.GetReward(ach.Reward)
 		player.Exp += reward.Exp

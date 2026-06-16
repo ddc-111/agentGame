@@ -46,7 +46,7 @@ func (s *Server) handleStartCombat(c *gin.Context) {
 		return
 	}
 
-	playerStats := s.calcPlayerStats(player)
+	playerStats := s.calcPlayerStats(ctx, player)
 
 	combatSys := game.NewCombatSystem()
 	state := combatSys.StartCombat(req.PlayerID, req.EnemyType, playerStats.TotalHP, player.MP)
@@ -93,7 +93,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		return
 	}
 
-	playerStats := s.calcPlayerStats(player)
+	playerStats := s.calcPlayerStats(ctx, player)
 	totalAttack := playerStats.TotalAttack
 
 	im := game.NewInventoryManager()
@@ -142,7 +142,8 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		}
 
 		var effect map[string]int
-		if err := json.Unmarshal([]byte(item.Effect), &effect); err != nil {
+		err = json.Unmarshal([]byte(item.Effect), &effect)
+		if err != nil {
 			respondError(c, http.StatusBadRequest, BadRequest("Invalid item effect"))
 			return
 		}
@@ -210,21 +211,21 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 	})
 }
 
-func (s *Server) playerEquipStats(equipJSON string) game.EquipmentStats {
+func (s *Server) playerEquipStats(ctx context.Context, equipJSON string) game.EquipmentStats {
 	im := game.NewInventoryManager()
-	stats, _ := im.EquipmentStatsFromEquip(equipJSON, s.itemEffectLookup())
+	stats, _ := im.EquipmentStatsFromEquip(equipJSON, s.itemEffectLookup(ctx))
 	return stats
 }
 
-func (s *Server) calcPlayerStats(p *models.Player) *game.PlayerStats {
+func (s *Server) calcPlayerStats(ctx context.Context, p *models.Player) *game.PlayerStats {
 	im := game.NewInventoryManager()
-	equipStats := s.playerEquipStats(p.Equipment)
+	equipStats := s.playerEquipStats(ctx, p.Equipment)
 	return im.CalculateStats(p.Attack, p.Defense, p.HP, p.MP, equipStats)
 }
 
-func (s *Server) itemEffectLookup() game.ItemLookupFunc {
+func (s *Server) itemEffectLookup(ctx context.Context) game.ItemLookupFunc {
 	return func(itemID uint) (map[string]int, error) {
-		item, err := s.repo.GetItemByID(context.Background(), itemID)
+		item, err := s.repo.GetItemByID(ctx, itemID)
 		if err != nil {
 			return nil, err
 		}

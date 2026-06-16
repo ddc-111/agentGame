@@ -86,7 +86,7 @@ func (bm *NPCBehaviorManager) UpdateBehavior(behavior *NPCBehavior, currentHour 
 
 	for _, entry := range behavior.Schedule {
 		var hour, minute int
-		fmt.Sscanf(entry.Time, "%02d:%02d", &hour, &minute)
+		_, _ = fmt.Sscanf(entry.Time, "%02d:%02d", &hour, &minute)
 
 		if currentHour == hour {
 			behavior.State = bm.actionToState(entry.Action)
@@ -209,7 +209,7 @@ func CreateDefaultBehavior(npcCode string, scheduleJSON string) *NPCBehavior {
 	}
 
 	if scheduleJSON != "" && scheduleJSON != "[]" {
-		json.Unmarshal([]byte(scheduleJSON), &behavior.Schedule)
+		_ = json.Unmarshal([]byte(scheduleJSON), &behavior.Schedule)
 	}
 
 	return behavior

@@ -151,22 +151,6 @@ func assertStatusCode(t *testing.T, got, want int) {
 	}
 }
 
-// assertNotNil 断言不为nil
-func assertNotNil(t *testing.T, val interface{}, msg string) {
-	t.Helper()
-	if val == nil {
-		t.Errorf("期望不为nil: %s", msg)
-	}
-}
-
-// assertEqual 断言相等
-func assertEqual(t *testing.T, got, want interface{}) {
-	t.Helper()
-	if got != want {
-		t.Errorf("期望 %v, 得到 %v", want, got)
-	}
-}
-
 // createMCPRequestBody 创建MCP请求体
 func createMCPRequestBody(method string, params interface{}) MCPRequest {
 	return MCPRequest{

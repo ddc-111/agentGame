@@ -52,15 +52,14 @@ func (s *Server) handleWebSocket(c *gin.Context) {
 	s.hub.register <- client
 
 	if playerID > 0 {
-		s.sendInitialState(client, playerID, sceneID)
+		s.sendInitialState(c.Request.Context(), client, playerID, sceneID)
 	}
 
 	go client.writePump()
 	go client.readPump(s.hub)
 }
 
-func (s *Server) sendInitialState(client *Client, playerID uint, sceneID string) {
-	ctx := context.Background()
+func (s *Server) sendInitialState(ctx context.Context, client *Client, playerID uint, sceneID string) {
 	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		log.Printf("Failed to get player for initial state: %v", err)
@@ -89,15 +88,14 @@ func (s *Server) sendInitialState(client *Client, playerID uint, sceneID string)
 		Timestamp: time.Now().UnixMilli(),
 		Data:      stateData,
 	}
-	writeMessage(client, msg)
+	_ = writeMessage(client, msg)
 }
 
-func (s *Server) BroadcastPlayerPosition(playerID uint, sceneID string, posX, posY int) {
+func (s *Server) BroadcastPlayerPosition(ctx context.Context, playerID uint, sceneID string, posX, posY int) {
 	if s.hub == nil {
 		return
 	}
 
-	ctx := context.Background()
 	player, err := s.repo.GetPlayerByID(ctx, playerID)
 	if err != nil {
 		return
@@ -179,12 +177,11 @@ func (s *Server) BroadcastChatMessage(playerID uint, playerName, sceneID, channe
 	}
 }
 
-func (s *Server) BroadcastCombatEvent(playerID uint, targetID uint, targetType, eventType string, damage, heal, hp int, skillCode string) {
+func (s *Server) BroadcastCombatEvent(ctx context.Context, playerID uint, targetID uint, targetType, eventType string, damage, heal, hp int, skillCode string) {
 	if s.hub == nil {
 		return
 	}
 
-	ctx := context.Background()
 	player, _ := s.repo.GetPlayerByID(ctx, playerID)
 	sceneID := ""
 	if player != nil {
@@ -218,12 +215,11 @@ func (s *Server) BroadcastCombatEvent(playerID uint, targetID uint, targetType, 
 	}
 }
 
-func (s *Server) BroadcastItemPickup(playerID uint, itemID uint, itemCode, itemName string, count int) {
+func (s *Server) BroadcastItemPickup(ctx context.Context, playerID uint, itemID uint, itemCode, itemName string, count int) {
 	if s.hub == nil {
 		return
 	}
 
-	ctx := context.Background()
 	player, _ := s.repo.GetPlayerByID(ctx, playerID)
 	sceneID := ""
 	if player != nil {

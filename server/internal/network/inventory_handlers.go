@@ -229,7 +229,8 @@ func (s *Server) handleUseItem(c *gin.Context) {
 	}
 
 	var effect map[string]int
-	if err := json.Unmarshal([]byte(item.Effect), &effect); err != nil {
+	err = json.Unmarshal([]byte(item.Effect), &effect)
+	if err != nil {
 		respondError(c, http.StatusBadRequest, BadRequest("Invalid item effect"))
 		return
 	}

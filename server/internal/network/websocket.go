@@ -258,7 +258,7 @@ func writeMessage(client *Client, msg *WSMessage) error {
 	}
 	client.mu.Lock()
 	defer client.mu.Unlock()
-	client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+	_ = client.conn.SetWriteDeadline(time.Now().Add(writeWait))
 	return client.conn.WriteMessage(websocket.TextMessage, data)
 }
 
@@ -269,9 +269,9 @@ func (c *Client) readPump(hub *Hub) {
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
 
@@ -309,18 +309,18 @@ func (c *Client) writePump() {
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
 
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -341,7 +341,7 @@ func (h *Hub) handleMessage(client *Client, msg *WSMessage) {
 			Timestamp: time.Now().UnixMilli(),
 			Data:      pongData,
 		}
-		writeMessage(client, pong)
+		_ = writeMessage(client, pong)
 	default:
 		log.Printf("Unknown message type: %s", msg.Type)
 	}

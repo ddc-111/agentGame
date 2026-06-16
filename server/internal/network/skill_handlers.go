@@ -83,7 +83,7 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		Effect:      skillModel.Effect,
 	}
 
-	playerStats := s.calcPlayerStats(player)
+	playerStats := s.calcPlayerStats(ctx, player)
 	totalAttack := playerStats.TotalAttack
 
 	sm := game.NewSkillManager()

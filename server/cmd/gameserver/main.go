@@ -32,5 +32,5 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down server...")
-	server.Shutdown()
+	_ = server.Shutdown()
 }

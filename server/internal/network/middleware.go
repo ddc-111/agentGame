@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"sync"
@@ -167,6 +168,15 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		c.Set("gm_username", claims.Username)
 		c.Set("gm_role", claims.Role)
+		c.Next()
+	}
+}
+
+func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
+		defer cancel()
+		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

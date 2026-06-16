@@ -1,0 +1,42 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+  staticcheck:
+    checks:
+      - all
+  unused:
+    check-exported: false
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - govet
+    - path: internal/database/seed\.go
+      linters:
+        - errcheck
+    - path: internal/database/demos/
+      linters:
+        - errcheck
+    - path: internal/database/demo_scenarios\.go
+      linters:
+        - errcheck

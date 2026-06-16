@@ -103,7 +103,9 @@ func (am *AchievementManager) GetReward(rewardJSON string) *AchievementReward {
 		return &AchievementReward{}
 	}
 	var reward AchievementReward
-	json.Unmarshal([]byte(rewardJSON), &reward)
+	if err := json.Unmarshal([]byte(rewardJSON), &reward); err != nil {
+		return &AchievementReward{}
+	}
 	return &reward
 }
 

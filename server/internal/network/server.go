@@ -80,7 +80,8 @@ func NewServer(cfg *config.Config) *Server {
 	}
 
 	// 初始化种子数据
-	if err := database.SeedData(db.DB); err != nil {
+	err = database.SeedData(db.DB)
+	if err != nil {
 		log.Printf("Warning: Failed to seed data: %v", err)
 	}
 
@@ -150,6 +151,7 @@ func (s *Server) setupRoutes() {
 
 	api := s.router.Group("/api")
 	api.Use(RateLimitMiddleware(100, 200))
+	api.Use(TimeoutMiddleware(30 * time.Second))
 	{
 		// WebSocket
 		api.GET("/ws", s.handleWebSocket)
@@ -303,7 +305,8 @@ func (s *Server) Shutdown() error {
 }
 
 func (s *Server) initNPCBehaviors() {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
 		log.Printf("Failed to load NPCs for behavior init: %v", err)
@@ -343,7 +346,8 @@ func (s *Server) startGameLoop() {
 }
 
 func (s *Server) broadcastAllNPCStates() {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	npcs, err := s.repo.GetNPCs(ctx)
 	if err != nil {
 		return

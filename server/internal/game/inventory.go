@@ -88,7 +88,7 @@ func (im *InventoryManager) GetItems(itemsJSON string) ([]InventoryItem, error) 
 	var result []InventoryItem
 	for key, count := range items {
 		var itemID uint
-		fmt.Sscanf(key, "%d", &itemID)
+		_, _ = fmt.Sscanf(key, "%d", &itemID)
 		if count > 0 {
 			result = append(result, InventoryItem{
 				ItemID: itemID,
