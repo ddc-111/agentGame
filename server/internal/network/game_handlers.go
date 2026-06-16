@@ -288,9 +288,9 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 	s.repo.CreateConversation(convReply)
 
 	// 更新内存记忆
-	agent.MemoryStore.AddMessage(req.PlayerID, req.NPCID, "user", req.Message)
-	agent.MemoryStore.AddMessage(req.PlayerID, req.NPCID, "assistant", reply)
-	agent.MemoryStore.UpdatePlayerInfo(req.PlayerID, req.NPCID, player.Name, player.Level)
+	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "user", req.Message)
+	agent.DefaultMemoryStore.AddMessage(req.PlayerID, req.NPCID, "assistant", reply)
+	agent.DefaultMemoryStore.UpdatePlayerInfo(req.PlayerID, req.NPCID, player.Name, player.Level)
 
 	c.JSON(http.StatusOK, gin.H{
 		"reply":      reply,

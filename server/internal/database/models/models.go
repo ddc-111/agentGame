@@ -245,3 +245,15 @@ type PlayerAchievement struct {
 	AchievementID uint   `gorm:"index" json:"achievement_id"`
 	Achievement   *Achievement `gorm:"foreignKey:AchievementID" json:"achievement,omitempty"`
 }
+
+// PlayerConversationContext 玩家NPC对话上下文
+type PlayerConversationContext struct {
+	BaseModel
+	PlayerID    uint   `gorm:"index" json:"player_id"`
+	NPCID       uint   `gorm:"index" json:"npc_id"`
+	PlayerName  string `gorm:"size:100" json:"player_name"`
+	PlayerLevel int    `gorm:"default:1" json:"player_level"`
+	TalkCount   int    `gorm:"default:0" json:"talk_count"`
+	Summary     string `gorm:"type:text" json:"summary"`
+	Extra       string `gorm:"type:text" json:"extra"`
+}

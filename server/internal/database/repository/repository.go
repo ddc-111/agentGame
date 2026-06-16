@@ -469,3 +469,46 @@ func (r *Repository) UpdateSaveGame(save *models.SaveGame) error {
 func (r *Repository) DeleteSaveGame(playerID uint, slot int) error {
 	return r.db.Where("player_id = ? AND slot = ?", playerID, slot).Delete(&models.SaveGame{}).Error
 }
+
+// PlayerConversationContext 对话上下文相关操作
+func (r *Repository) GetConversationContext(playerID, npcID uint) (*models.PlayerConversationContext, error) {
+	var ctx models.PlayerConversationContext
+	err := r.db.Where("player_id = ? AND npc_id = ?", playerID, npcID).First(&ctx).Error
+	return &ctx, err
+}
+
+func (r *Repository) CreateConversationContext(ctx *models.PlayerConversationContext) error {
+	return r.db.Create(ctx).Error
+}
+
+func (r *Repository) UpdateConversationContext(ctx *models.PlayerConversationContext) error {
+	return r.db.Save(ctx).Error
+}
+
+func (r *Repository) UpsertConversationContext(ctx *models.PlayerConversationContext) error {
+	var existing models.PlayerConversationContext
+	result := r.db.Where("player_id = ? AND npc_id = ?", ctx.PlayerID, ctx.NPCID).First(&existing)
+	if result.Error != nil {
+		return r.db.Create(ctx).Error
+	}
+	existing.PlayerName = ctx.PlayerName
+	existing.PlayerLevel = ctx.PlayerLevel
+	existing.TalkCount = ctx.TalkCount
+	existing.Summary = ctx.Summary
+	existing.Extra = ctx.Extra
+	return r.db.Save(&existing).Error
+}
+
+func (r *Repository) GetConversationsByPair(playerID, npcID uint, limit int) ([]models.Conversation, error) {
+	var conversations []models.Conversation
+	query := r.db.Where("player_id = ? AND npc_id = ?", playerID, npcID).Order("created_at desc")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	err := query.Find(&conversations).Error
+	return conversations, err
+}
+
+func (r *Repository) DeleteConversationsByPair(playerID, npcID uint) error {
+	return r.db.Where("player_id = ? AND npc_id = ?", playerID, npcID).Delete(&models.Conversation{}).Error
+}
