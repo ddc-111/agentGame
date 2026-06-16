@@ -1,0 +1,48 @@
+services:
+  server:
+    build:
+      context: ../server
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../server:/app
+      - server-data:/app/data
+      - go-cache:/go/pkg/mod
+      - go-build:/root/.cache/go-build
+    environment:
+      - SERVER_PORT=8080
+    restart: unless-stopped
+
+  client:
+    image: node:18-alpine
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../client:/app
+      - client-node-modules:/app/node_modules
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  gm:
+    image: node:18-alpine
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5174:5174"
+    volumes:
+      - ../gm:/app
+      - gm-node-modules:/app/node_modules
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  server-data:
+  go-cache:
+  go-build:
+  client-node-modules:
+  gm-node-modules:

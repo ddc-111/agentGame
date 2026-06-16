@@ -1,0 +1,40 @@
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.server
+    ports:
+      - "8080:8080"
+    volumes:
+      - server-data:/app/data
+    environment:
+      - SERVER_PORT=8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/scenes"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  client:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.client
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  gm:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.gm
+    ports:
+      - "5174:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  server-data:

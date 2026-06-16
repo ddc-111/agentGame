@@ -1,0 +1,27 @@
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /build
+
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+
+COPY server/ .
+
+RUN CGO_ENABLED=0 go build -o gameserver cmd/gameserver/main.go
+
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates tzdata
+
+WORKDIR /app
+
+COPY --from=builder /build/gameserver .
+COPY server/config.example.yaml ./config.yaml
+
+RUN mkdir -p /app/data
+
+EXPOSE 8080
+
+VOLUME ["/app/data"]
+
+CMD ["./gameserver"]
