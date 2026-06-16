@@ -150,7 +150,10 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		newItemsJSON, _, err := im.UseItem(player.Items, req.ItemID, effect)
 		if err == nil {
 			player.Items = newItemsJSON
-			s.repo.UpdatePlayer(player)
+			if err := s.repo.UpdatePlayer(player); err != nil {
+				respondInternalError(c, err)
+				return
+			}
 		}
 
 	case "flee":
@@ -194,7 +197,10 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			player.HP = newState.PlayerHP
 			player.MP = newState.PlayerMP
 
-			s.repo.UpdatePlayer(player)
+			if err := s.repo.UpdatePlayer(player); err != nil {
+				respondInternalError(c, err)
+				return
+			}
 
 			if levelsGained > 0 {
 				newState.Log = append(newState.Log, fmt.Sprintf("恭喜！升级到 %d 级！", player.Level))
@@ -202,7 +208,10 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		} else {
 			player.HP = newState.PlayerHP
 			player.MP = newState.PlayerMP
-			s.repo.UpdatePlayer(player)
+			if err := s.repo.UpdatePlayer(player); err != nil {
+				respondInternalError(c, err)
+				return
+			}
 		}
 	}
 

@@ -167,7 +167,10 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 	}
 
 	if len(newAchievements) > 0 {
-		s.repo.UpdatePlayer(player)
+		if err := s.repo.UpdatePlayer(player); err != nil {
+			respondInternalError(c, err)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

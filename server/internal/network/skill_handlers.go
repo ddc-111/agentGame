@@ -120,11 +120,17 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		}
 		player.HP = newState.PlayerHP
 		player.MP = newState.PlayerMP
-		s.repo.UpdatePlayer(player)
+		if err := s.repo.UpdatePlayer(player); err != nil {
+			respondInternalError(c, err)
+			return
+		}
 	} else {
 		player.HP = newState.PlayerHP
 		player.MP = newState.PlayerMP
-		s.repo.UpdatePlayer(player)
+		if err := s.repo.UpdatePlayer(player); err != nil {
+			respondInternalError(c, err)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
