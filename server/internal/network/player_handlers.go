@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetPlayers(c *gin.Context) {
-	players, err := s.repo.GetPlayers()
+	p := parsePagination(c)
+	players, total, err := s.repo.GetPlayersPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": players})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": players, "total": total})
 }
 
 func (s *Server) handleUpdatePlayer(c *gin.Context) {
@@ -40,14 +42,15 @@ func (s *Server) handleUpdatePlayer(c *gin.Context) {
 func (s *Server) handleGetConversations(c *gin.Context) {
 	playerID, _ := strconv.ParseUint(c.Query("player_id"), 10, 32)
 	npcID, _ := strconv.ParseUint(c.Query("npc_id"), 10, 32)
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	p := parsePagination(c)
 
-	conversations, err := s.repo.GetConversations(uint(playerID), uint(npcID), limit)
+	conversations, total, err := s.repo.GetConversationsPaginated(uint(playerID), uint(npcID), p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": conversations})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": conversations, "total": total})
 }
 
 func (s *Server) handleCreateConversation(c *gin.Context) {

@@ -194,7 +194,6 @@ func TestAchievementManager_CheckConditions(t *testing.T) {
 
 	achievements := game.PredefinedAchievements()
 
-	// New player - no achievements
 	data := &game.PlayerAchievementData{
 		Level:           1,
 		TotalGold:       100,
@@ -212,7 +211,6 @@ func TestAchievementManager_CheckConditions(t *testing.T) {
 		t.Errorf("Expected 0 achievements for new player, got %d", len(newAchs))
 	}
 
-	// Player who completed first quest
 	data.QuestCount = 1
 	data.CompletedQuests = map[string]bool{"task_first_arrival": true}
 	newAchs = am.CheckAchievements(achievements, data, unlocked)
@@ -223,7 +221,6 @@ func TestAchievementManager_CheckConditions(t *testing.T) {
 		t.Errorf("Expected ach_first_quest, got %s", newAchs[0].Code)
 	}
 
-	// Player who reached level 10
 	data.Level = 10
 	newAchs = am.CheckAchievements(achievements, data, unlocked)
 	found := false
@@ -235,6 +232,90 @@ func TestAchievementManager_CheckConditions(t *testing.T) {
 	}
 	if !found {
 		t.Error("Expected ach_level_10 achievement")
+	}
+}
+
+func TestAchievementManager_CombatWinCondition(t *testing.T) {
+	am := game.NewAchievementManager()
+	achievements := game.PredefinedAchievements()
+
+	unlocked := make(map[uint]bool)
+	data := &game.PlayerAchievementData{
+		Level:         1,
+		TotalGold:     100,
+		CombatWins:    1,
+		QuestCount:    0,
+		VisitedScenes: 1,
+		UniqueItems:   0,
+		SkillsUsed:    0,
+	}
+
+	newAchs := am.CheckAchievements(achievements, data, unlocked)
+	found := false
+	for _, a := range newAchs {
+		if a.Code == "ach_first_combat" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected ach_first_combat achievement when CombatWins=1")
+	}
+}
+
+func TestAchievementManager_ExploreCondition(t *testing.T) {
+	am := game.NewAchievementManager()
+	achievements := game.PredefinedAchievements()
+
+	unlocked := make(map[uint]bool)
+	data := &game.PlayerAchievementData{
+		Level:         1,
+		TotalGold:     100,
+		CombatWins:    0,
+		QuestCount:    0,
+		VisitedScenes: 6,
+		UniqueItems:   0,
+		SkillsUsed:    0,
+	}
+
+	newAchs := am.CheckAchievements(achievements, data, unlocked)
+	found := false
+	for _, a := range newAchs {
+		if a.Code == "ach_explorer" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected ach_explorer achievement when VisitedScenes=6")
+	}
+}
+
+func TestAchievementManager_SkillUseCondition(t *testing.T) {
+	am := game.NewAchievementManager()
+	achievements := game.PredefinedAchievements()
+
+	unlocked := make(map[uint]bool)
+	data := &game.PlayerAchievementData{
+		Level:         1,
+		TotalGold:     100,
+		CombatWins:    0,
+		QuestCount:    0,
+		VisitedScenes: 1,
+		UniqueItems:   0,
+		SkillsUsed:    100,
+	}
+
+	newAchs := am.CheckAchievements(achievements, data, unlocked)
+	found := false
+	for _, a := range newAchs {
+		if a.Code == "ach_skill_master" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected ach_skill_master achievement when SkillsUsed=100")
 	}
 }
 

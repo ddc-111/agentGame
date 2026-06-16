@@ -17,8 +17,9 @@ func (s *Server) registerAchievementRoutes(api *gin.RouterGroup) {
 
 func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 	playerID, _ := strconv.ParseUint(c.Param("player_id"), 10, 32)
+	p := parsePagination(c)
 
-	allAchievements, err := s.repo.GetAchievements()
+	allAchievements, total, err := s.repo.GetAchievementsPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
@@ -48,10 +49,11 @@ func (s *Server) handleGetPlayerAchievements(c *gin.Context) {
 		})
 	}
 
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
 	c.JSON(http.StatusOK, gin.H{
 		"player_id":    playerID,
 		"achievements": result,
-		"total":        len(allAchievements),
+		"total":        total,
 		"unlocked":     len(playerAchievements),
 	})
 }
@@ -113,18 +115,25 @@ func (s *Server) handleCheckAchievements(c *gin.Context) {
 		}
 	}
 
-	visitedScenes := 1
+	visitedSceneCount := 1
+	if player.VisitedScenes != "" {
+		var sceneCodes []string
+		json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
+		if len(sceneCodes) > 0 {
+			visitedSceneCount = len(sceneCodes)
+		}
+	}
 
 	playerData := &game.PlayerAchievementData{
 		Level:           player.Level,
 		TotalGold:       player.Gold + (player.Level-1)*500,
-		CombatWins:      0,
+		CombatWins:      player.CombatWins,
 		QuestCount:      questCount,
 		CompletedQuests: completedQuests,
-		VisitedScenes:   visitedScenes,
+		VisitedScenes:   visitedSceneCount,
 		UniqueItems:     uniqueItems,
 		TalkedToAllNPCs: false,
-		SkillsUsed:      0,
+		SkillsUsed:      player.SkillsUsed,
 	}
 
 	var gameAchievements []*game.Achievement

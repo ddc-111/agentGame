@@ -130,6 +130,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			respondError(c, http.StatusBadRequest, BadRequest(err.Error()))
 			return
 		}
+		player.SkillsUsed++
 
 	case "item":
 		item, err := s.repo.GetItemByID(req.ItemID)
@@ -173,6 +174,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		if newState.PlayerHP > 0 {
 			player.Exp += rewards.Exp
 			player.Gold += rewards.Gold
+			player.CombatWins++
 
 			levelsGained := 0
 			for {

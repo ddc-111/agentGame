@@ -2,18 +2,21 @@ package network
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/database/models"
 )
 
 func (s *Server) handleGetScenes(c *gin.Context) {
-	scenes, err := s.repo.GetScenes()
+	p := parsePagination(c)
+	scenes, total, err := s.repo.GetScenesPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": scenes})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": scenes, "total": total})
 }
 
 func (s *Server) handleGetScene(c *gin.Context) {

@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetProviders(c *gin.Context) {
-	providers, err := s.repo.GetProviders()
+	p := parsePagination(c)
+	providers, total, err := s.repo.GetProvidersPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": providers})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": providers, "total": total})
 }
 
 func (s *Server) handleCreateProvider(c *gin.Context) {

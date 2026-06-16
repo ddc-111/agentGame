@@ -26,6 +26,14 @@ func (r *Repository) GetScenes() ([]models.Scene, error) {
 	return scenes, err
 }
 
+func (r *Repository) GetScenesPaginated(offset, limit int) ([]models.Scene, int64, error) {
+	var scenes []models.Scene
+	var total int64
+	r.db.Model(&models.Scene{}).Count(&total)
+	err := r.db.Preload("SceneNPCs").Preload("Portals").Offset(offset).Limit(limit).Find(&scenes).Error
+	return scenes, total, err
+}
+
 func (r *Repository) GetSceneByID(id uint) (*models.Scene, error) {
 	var scene models.Scene
 	err := r.db.Preload("SceneNPCs").Preload("Portals").First(&scene, id).Error
@@ -55,6 +63,14 @@ func (r *Repository) GetNPCs() ([]models.NPC, error) {
 	var npcs []models.NPC
 	err := r.db.Preload("Agent").Preload("Shop").Find(&npcs).Error
 	return npcs, err
+}
+
+func (r *Repository) GetNPCsPaginated(offset, limit int) ([]models.NPC, int64, error) {
+	var npcs []models.NPC
+	var total int64
+	r.db.Model(&models.NPC{}).Count(&total)
+	err := r.db.Preload("Agent").Preload("Shop").Offset(offset).Limit(limit).Find(&npcs).Error
+	return npcs, total, err
 }
 
 func (r *Repository) GetNPCByID(id uint) (*models.NPC, error) {
@@ -88,6 +104,14 @@ func (r *Repository) GetAgents() ([]models.Agent, error) {
 	return agents, err
 }
 
+func (r *Repository) GetAgentsPaginated(offset, limit int) ([]models.Agent, int64, error) {
+	var agents []models.Agent
+	var total int64
+	r.db.Model(&models.Agent{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&agents).Error
+	return agents, total, err
+}
+
 func (r *Repository) GetAgentByID(id uint) (*models.Agent, error) {
 	var agent models.Agent
 	err := r.db.First(&agent, id).Error
@@ -119,6 +143,14 @@ func (r *Repository) GetProviders() ([]models.LLMProvider, error) {
 	return providers, err
 }
 
+func (r *Repository) GetProvidersPaginated(offset, limit int) ([]models.LLMProvider, int64, error) {
+	var providers []models.LLMProvider
+	var total int64
+	r.db.Model(&models.LLMProvider{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&providers).Error
+	return providers, total, err
+}
+
 func (r *Repository) GetProviderByID(id uint) (*models.LLMProvider, error) {
 	var provider models.LLMProvider
 	err := r.db.First(&provider, id).Error
@@ -142,6 +174,14 @@ func (r *Repository) GetTemplates() ([]models.PromptTemplate, error) {
 	var templates []models.PromptTemplate
 	err := r.db.Find(&templates).Error
 	return templates, err
+}
+
+func (r *Repository) GetTemplatesPaginated(offset, limit int) ([]models.PromptTemplate, int64, error) {
+	var templates []models.PromptTemplate
+	var total int64
+	r.db.Model(&models.PromptTemplate{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&templates).Error
+	return templates, total, err
 }
 
 func (r *Repository) GetTemplateByID(id uint) (*models.PromptTemplate, error) {
@@ -175,6 +215,14 @@ func (r *Repository) GetShops() ([]models.Shop, error) {
 	return shops, err
 }
 
+func (r *Repository) GetShopsPaginated(offset, limit int) ([]models.Shop, int64, error) {
+	var shops []models.Shop
+	var total int64
+	r.db.Model(&models.Shop{}).Count(&total)
+	err := r.db.Preload("Items.Item").Offset(offset).Limit(limit).Find(&shops).Error
+	return shops, total, err
+}
+
 func (r *Repository) GetShopByID(id uint) (*models.Shop, error) {
 	var shop models.Shop
 	err := r.db.Preload("Items.Item").First(&shop, id).Error
@@ -204,6 +252,14 @@ func (r *Repository) GetItems() ([]models.Item, error) {
 	var items []models.Item
 	err := r.db.Find(&items).Error
 	return items, err
+}
+
+func (r *Repository) GetItemsPaginated(offset, limit int) ([]models.Item, int64, error) {
+	var items []models.Item
+	var total int64
+	r.db.Model(&models.Item{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&items).Error
+	return items, total, err
 }
 
 func (r *Repository) GetItemByID(id uint) (*models.Item, error) {
@@ -237,6 +293,14 @@ func (r *Repository) GetTasks() ([]models.Task, error) {
 	return tasks, err
 }
 
+func (r *Repository) GetTasksPaginated(offset, limit int) ([]models.Task, int64, error) {
+	var tasks []models.Task
+	var total int64
+	r.db.Model(&models.Task{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&tasks).Error
+	return tasks, total, err
+}
+
 func (r *Repository) GetTaskByID(id uint) (*models.Task, error) {
 	var task models.Task
 	err := r.db.First(&task, id).Error
@@ -266,6 +330,14 @@ func (r *Repository) GetFlows() ([]models.Flow, error) {
 	var flows []models.Flow
 	err := r.db.Find(&flows).Error
 	return flows, err
+}
+
+func (r *Repository) GetFlowsPaginated(offset, limit int) ([]models.Flow, int64, error) {
+	var flows []models.Flow
+	var total int64
+	r.db.Model(&models.Flow{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&flows).Error
+	return flows, total, err
 }
 
 func (r *Repository) GetFlowByID(id uint) (*models.Flow, error) {
@@ -317,6 +389,14 @@ func (r *Repository) GetPlayers() ([]models.Player, error) {
 	return players, err
 }
 
+func (r *Repository) GetPlayersPaginated(offset, limit int) ([]models.Player, int64, error) {
+	var players []models.Player
+	var total int64
+	r.db.Model(&models.Player{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&players).Error
+	return players, total, err
+}
+
 func (r *Repository) GetPlayerByID(id uint) (*models.Player, error) {
 	var player models.Player
 	err := r.db.First(&player, id).Error
@@ -346,6 +426,28 @@ func (r *Repository) GetConversations(playerID, npcID uint, limit int) ([]models
 	}
 	err := query.Find(&conversations).Error
 	return conversations, err
+}
+
+func (r *Repository) GetConversationsPaginated(playerID, npcID uint, offset, limit int) ([]models.Conversation, int64, error) {
+	var conversations []models.Conversation
+	var total int64
+	countQuery := r.db.Model(&models.Conversation{})
+	if playerID > 0 {
+		countQuery = countQuery.Where("player_id = ?", playerID)
+	}
+	if npcID > 0 {
+		countQuery = countQuery.Where("npc_id = ?", npcID)
+	}
+	countQuery.Count(&total)
+	query := r.db.Order("created_at desc")
+	if playerID > 0 {
+		query = query.Where("player_id = ?", playerID)
+	}
+	if npcID > 0 {
+		query = query.Where("npc_id = ?", npcID)
+	}
+	err := query.Offset(offset).Limit(limit).Find(&conversations).Error
+	return conversations, total, err
 }
 
 func (r *Repository) CreateConversation(conv *models.Conversation) error {
@@ -388,6 +490,14 @@ func (r *Repository) GetSkills() ([]models.Skill, error) {
 	return skills, err
 }
 
+func (r *Repository) GetSkillsPaginated(offset, limit int) ([]models.Skill, int64, error) {
+	var skills []models.Skill
+	var total int64
+	r.db.Model(&models.Skill{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&skills).Error
+	return skills, total, err
+}
+
 func (r *Repository) GetSkillByID(id uint) (*models.Skill, error) {
 	var skill models.Skill
 	err := r.db.First(&skill, id).Error
@@ -417,6 +527,14 @@ func (r *Repository) GetAchievements() ([]models.Achievement, error) {
 	var achievements []models.Achievement
 	err := r.db.Find(&achievements).Error
 	return achievements, err
+}
+
+func (r *Repository) GetAchievementsPaginated(offset, limit int) ([]models.Achievement, int64, error) {
+	var achievements []models.Achievement
+	var total int64
+	r.db.Model(&models.Achievement{}).Count(&total)
+	err := r.db.Offset(offset).Limit(limit).Find(&achievements).Error
+	return achievements, total, err
 }
 
 func (r *Repository) GetAchievementByID(id uint) (*models.Achievement, error) {

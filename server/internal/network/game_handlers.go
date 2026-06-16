@@ -80,17 +80,21 @@ func (s *Server) handleCreatePlayer(c *gin.Context) {
 	defaultMP, _ := strconv.Atoi(getConfigValue(s, "default_mp", "50"))
 	defaultGold, _ := strconv.Atoi(getConfigValue(s, "default_gold", "500"))
 
+	startScene := getConfigValue(s, "start_scene", "scene_village_entrance")
+	startVisited, _ := json.Marshal([]string{startScene})
+
 	player := &models.Player{
-		Name:    req.Name,
-		Account: req.Account,
-		Level:   1,
-		HP:      defaultHP,
-		MP:      defaultMP,
-		Gold:    defaultGold,
-		SceneID: getConfigValue(s, "start_scene", "scene_village_entrance"),
-		PosX:    startX,
-		PosY:    startY,
-		Items:   "{}",
+		Name:          req.Name,
+		Account:       req.Account,
+		Level:         1,
+		HP:            defaultHP,
+		MP:            defaultMP,
+		Gold:          defaultGold,
+		SceneID:       startScene,
+		PosX:          startX,
+		PosY:          startY,
+		Items:         "{}",
+		VisitedScenes: string(startVisited),
 	}
 
 	if err := s.repo.CreatePlayer(player); err != nil {
@@ -141,6 +145,24 @@ func (s *Server) handleUpdatePlayerPos(c *gin.Context) {
 	}
 
 	if req.SceneID != "" {
+		if player.SceneID != req.SceneID {
+			var sceneCodes []string
+			if player.VisitedScenes != "" {
+				json.Unmarshal([]byte(player.VisitedScenes), &sceneCodes)
+			}
+			visited := false
+			for _, code := range sceneCodes {
+				if code == req.SceneID {
+					visited = true
+					break
+				}
+			}
+			if !visited {
+				sceneCodes = append(sceneCodes, req.SceneID)
+				data, _ := json.Marshal(sceneCodes)
+				player.VisitedScenes = string(data)
+			}
+		}
 		player.SceneID = req.SceneID
 	}
 	player.PosX = req.PosX

@@ -3,6 +3,7 @@ package network
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ddc-111/agentGame/server/internal/game"
@@ -14,12 +15,14 @@ func (s *Server) registerSkillRoutes(api *gin.RouterGroup) {
 }
 
 func (s *Server) handleGetSkills(c *gin.Context) {
-	skills, err := s.repo.GetSkills()
+	p := parsePagination(c)
+	skills, total, err := s.repo.GetSkillsPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": skills})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": skills, "total": total})
 }
 
 func (s *Server) handleUseSkill(c *gin.Context) {

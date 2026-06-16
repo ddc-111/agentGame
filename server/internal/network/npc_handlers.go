@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetNPCs(c *gin.Context) {
-	npcs, err := s.repo.GetNPCs()
+	p := parsePagination(c)
+	npcs, total, err := s.repo.GetNPCsPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": npcs})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": npcs, "total": total})
 }
 
 func (s *Server) handleGetNPC(c *gin.Context) {

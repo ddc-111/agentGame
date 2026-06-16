@@ -176,20 +176,23 @@ type GameConfig struct {
 // Player 玩家
 type Player struct {
 	BaseModel
-	Name     string `gorm:"size:100;not null" json:"name"`
-	Account  string `gorm:"size:100;uniqueIndex" json:"account"`
-	Level    int    `gorm:"default:1" json:"level"`
-	Exp      int    `gorm:"default:0" json:"exp"`
-	Gold     int    `gorm:"default:1000" json:"gold"`
-	HP       int    `gorm:"default:100" json:"hp"`
-	MP       int    `gorm:"default:50" json:"mp"`
-	Attack   int    `gorm:"default:10" json:"attack"`
-	Defense  int    `gorm:"default:5" json:"defense"`
-	SceneID  string `gorm:"size:50" json:"scene_id"`
-	PosX     int    `gorm:"default:0" json:"pos_x"`
-	PosY     int    `gorm:"default:0" json:"pos_y"`
-	Items    string `gorm:"type:text" json:"items"` // JSON对象 {item_id: count}
-	Equipment string `gorm:"type:text" json:"equipment"` // JSON对象 {weapon_id, armor_id}
+	Name         string `gorm:"size:100;not null" json:"name"`
+	Account      string `gorm:"size:100;uniqueIndex" json:"account"`
+	Level        int    `gorm:"default:1" json:"level"`
+	Exp          int    `gorm:"default:0" json:"exp"`
+	Gold         int    `gorm:"default:1000" json:"gold"`
+	HP           int    `gorm:"default:100" json:"hp"`
+	MP           int    `gorm:"default:50" json:"mp"`
+	Attack       int    `gorm:"default:10" json:"attack"`
+	Defense      int    `gorm:"default:5" json:"defense"`
+	SceneID      string `gorm:"size:50" json:"scene_id"`
+	PosX         int    `gorm:"default:0" json:"pos_x"`
+	PosY         int    `gorm:"default:0" json:"pos_y"`
+	Items        string `gorm:"type:text" json:"items"`        // JSON对象 {item_id: count}
+	Equipment    string `gorm:"type:text" json:"equipment"`    // JSON对象 {weapon_id, armor_id}
+	CombatWins   int    `gorm:"default:0" json:"combat_wins"`
+	SkillsUsed   int    `gorm:"default:0" json:"skills_used"`
+	VisitedScenes string `gorm:"type:text" json:"visited_scenes"` // JSON数组 ["scene_code", ...]
 }
 
 // Conversation 对话记录

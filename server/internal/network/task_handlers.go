@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetTasks(c *gin.Context) {
-	tasks, err := s.repo.GetTasks()
+	p := parsePagination(c)
+	tasks, total, err := s.repo.GetTasksPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": tasks})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": tasks, "total": total})
 }
 
 func (s *Server) handleGetTask(c *gin.Context) {

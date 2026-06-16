@@ -62,6 +62,9 @@ func (s *Server) handleSaveGame(c *gin.Context) {
 		player.PosY,
 		player.Items,
 		player.Equipment,
+		player.CombatWins,
+		player.SkillsUsed,
+		player.VisitedScenes,
 	)
 
 	snapshotJSON, err := sgm.SerializeSnapshot(snapshot)
@@ -210,6 +213,9 @@ func (s *Server) handleLoadGame(c *gin.Context) {
 	player.PosY = snapshot.PosY
 	player.Items = snapshot.Items
 	player.Equipment = snapshot.Equipment
+	player.CombatWins = snapshot.CombatWins
+	player.SkillsUsed = snapshot.SkillsUsed
+	player.VisitedScenes = snapshot.VisitedScenes
 
 	if err := s.repo.UpdatePlayer(player); err != nil {
 		respondInternalError(c, err)

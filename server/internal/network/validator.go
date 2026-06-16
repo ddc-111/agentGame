@@ -109,3 +109,28 @@ func parseID(c *gin.Context, param string) (uint, bool) {
 	}
 	return uint(id), true
 }
+
+type Pagination struct {
+	Page     int
+	PageSize int
+	Offset   int
+}
+
+func parsePagination(c *gin.Context) Pagination {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	return Pagination{
+		Page:     page,
+		PageSize: pageSize,
+		Offset:   (page - 1) * pageSize,
+	}
+}

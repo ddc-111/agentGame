@@ -21,19 +21,22 @@ type SaveGame struct {
 
 // Snapshot 玩家状态快照
 type Snapshot struct {
-	Name     string `json:"name"`
-	Level    int    `json:"level"`
-	Exp      int    `json:"exp"`
-	Gold     int    `json:"gold"`
-	HP       int    `json:"hp"`
-	MP       int    `json:"mp"`
-	Attack   int    `json:"attack"`
-	Defense  int    `json:"defense"`
-	SceneID  string `json:"scene_id"`
-	PosX     int    `json:"pos_x"`
-	PosY     int    `json:"pos_y"`
-	Items    string `json:"items"`
-	Equipment string `json:"equipment"`
+	Name          string `json:"name"`
+	Level         int    `json:"level"`
+	Exp           int    `json:"exp"`
+	Gold          int    `json:"gold"`
+	HP            int    `json:"hp"`
+	MP            int    `json:"mp"`
+	Attack        int    `json:"attack"`
+	Defense       int    `json:"defense"`
+	SceneID       string `json:"scene_id"`
+	PosX          int    `json:"pos_x"`
+	PosY          int    `json:"pos_y"`
+	Items         string `json:"items"`
+	Equipment     string `json:"equipment"`
+	CombatWins    int    `json:"combat_wins"`
+	SkillsUsed    int    `json:"skills_used"`
+	VisitedScenes string `json:"visited_scenes"`
 }
 
 // SaveSlotInfo 存档槽信息
@@ -53,21 +56,24 @@ func NewSaveGameManager() *SaveGameManager {
 }
 
 // CreateSnapshot 创建玩家状态快照
-func (sgm *SaveGameManager) CreateSnapshot(name string, level, exp, gold, hp, mp, attack, defense int, sceneID string, posX, posY int, items, equipment string) *Snapshot {
+func (sgm *SaveGameManager) CreateSnapshot(name string, level, exp, gold, hp, mp, attack, defense int, sceneID string, posX, posY int, items, equipment string, combatWins, skillsUsed int, visitedScenes string) *Snapshot {
 	return &Snapshot{
-		Name:      name,
-		Level:     level,
-		Exp:       exp,
-		Gold:      gold,
-		HP:        hp,
-		MP:        mp,
-		Attack:    attack,
-		Defense:   defense,
-		SceneID:   sceneID,
-		PosX:      posX,
-		PosY:      posY,
-		Items:     items,
-		Equipment: equipment,
+		Name:          name,
+		Level:         level,
+		Exp:           exp,
+		Gold:          gold,
+		HP:            hp,
+		MP:            mp,
+		Attack:        attack,
+		Defense:       defense,
+		SceneID:       sceneID,
+		PosX:          posX,
+		PosY:          posY,
+		Items:         items,
+		Equipment:     equipment,
+		CombatWins:    combatWins,
+		SkillsUsed:    skillsUsed,
+		VisitedScenes: visitedScenes,
 	}
 }
 

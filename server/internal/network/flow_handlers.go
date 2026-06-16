@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetFlows(c *gin.Context) {
-	flows, err := s.repo.GetFlows()
+	p := parsePagination(c)
+	flows, total, err := s.repo.GetFlowsPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": flows})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": flows, "total": total})
 }
 
 func (s *Server) handleCreateFlow(c *gin.Context) {

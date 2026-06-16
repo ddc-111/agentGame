@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetTemplates(c *gin.Context) {
-	templates, err := s.repo.GetTemplates()
+	p := parsePagination(c)
+	templates, total, err := s.repo.GetTemplatesPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": templates})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": templates, "total": total})
 }
 
 func (s *Server) handleCreateTemplate(c *gin.Context) {

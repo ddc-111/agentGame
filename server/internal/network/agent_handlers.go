@@ -9,12 +9,14 @@ import (
 )
 
 func (s *Server) handleGetAgents(c *gin.Context) {
-	agents, err := s.repo.GetAgents()
+	p := parsePagination(c)
+	agents, total, err := s.repo.GetAgentsPaginated(p.Offset, p.PageSize)
 	if err != nil {
 		respondInternalError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": agents})
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	c.JSON(http.StatusOK, gin.H{"data": agents, "total": total})
 }
 
 func (s *Server) handleGetAgent(c *gin.Context) {
