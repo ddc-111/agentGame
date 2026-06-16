@@ -81,8 +81,8 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 		Effect:      skillModel.Effect,
 	}
 
-	equipStats := s.playerEquipStats(player.Equipment)
-	totalAttack := player.Attack + equipStats.Attack
+	playerStats := s.calcPlayerStats(player)
+	totalAttack := playerStats.TotalAttack
 
 	sm := game.NewSkillManager()
 	newState, logMsg, err := sm.UseSkill(skill, req.State, totalAttack)
@@ -98,20 +98,7 @@ func (s *Server) handleUseSkill(c *gin.Context) {
 			player.Exp += rewards.Exp
 			player.Gold += rewards.Gold
 
-			levelsGained := 0
-			for {
-				expNeeded := player.Level * 100
-				if player.Exp < expNeeded {
-					break
-				}
-				player.Exp -= expNeeded
-				player.Level++
-				player.HP += 10
-				player.MP += 5
-				player.Attack += 2
-				player.Defense += 1
-				levelsGained++
-			}
+			levelsGained := processLevelUp(player)
 
 			if levelsGained > 0 {
 				newState.Log = append(newState.Log, fmt.Sprintf("恭喜！升级到 %d 级！", player.Level))

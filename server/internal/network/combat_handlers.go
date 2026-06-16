@@ -90,8 +90,8 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 		return
 	}
 
-	equipStats := s.playerEquipStats(player.Equipment)
-	totalAttack := player.Attack + equipStats.Attack
+	playerStats := s.calcPlayerStats(player)
+	totalAttack := playerStats.TotalAttack
 
 	im := game.NewInventoryManager()
 	combatSys := game.NewCombatSystem()
@@ -178,20 +178,7 @@ func (s *Server) handleCombatAction(c *gin.Context) {
 			player.Gold += rewards.Gold
 			player.CombatWins++
 
-			levelsGained := 0
-			for {
-				expNeeded := player.Level * 100
-				if player.Exp < expNeeded {
-					break
-				}
-				player.Exp -= expNeeded
-				player.Level++
-				player.HP += 10
-				player.MP += 5
-				player.Attack += 2
-				player.Defense += 1
-				levelsGained++
-			}
+			levelsGained := processLevelUp(player)
 
 			player.HP = newState.PlayerHP
 			player.MP = newState.PlayerMP
