@@ -28,12 +28,12 @@ const elStubWithSlots = {
 
 const ElTableStub = {
   props: ['data'],
-  template: '<div class="el-table-stub"><slot /><div v-for="(item, $index) in (data || [])" :key="$index"><slot name="default" :row="item" :$index="$index" /></div></div>'
+  template: '<div class="el-table-stub"></div>'
 };
 
 const ElTableColumnStub = {
   props: ['prop', 'label', 'width'],
-  template: '<div class="el-table-column-stub"><slot /></div>'
+  template: '<div class="el-table-column-stub"></div>'
 };
 
 config.global.stubs = {
