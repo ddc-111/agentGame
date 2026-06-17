@@ -1,0 +1,15 @@
+# Windows scripts must keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts use LF
+*.sh text eol=lf
+
+# Go, JS, Vue, JSON - auto
+*.go text
+*.js text
+*.vue text
+*.json text
+*.yaml text
+*.yml text
+*.md text
