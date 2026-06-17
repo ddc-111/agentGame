@@ -1,0 +1,68 @@
+# AgentGame 自循环Agent 配置文件
+version: "1.0.0"
+
+# 迭代配置
+iterations:
+  max_iterations: 10
+  delay_between: 1  # 秒
+  stop_on_critical: false
+  stop_on_stable: true
+
+# 分析配置
+analysis:
+  include_patterns:
+    - "*.go"
+    - "*.js"
+    - "*.vue"
+    - "*.ts"
+  exclude_patterns:
+    - "node_modules"
+    - "vendor"
+    - ".git"
+    - "__pycache__"
+  complexity_threshold: 10
+
+# 测试配置
+testing:
+  timeout: 300
+  retry_on_failure: true
+  max_retries: 3
+  coverage_threshold:
+    server: 60
+    client: 50
+    gm: 50
+
+# LLM配置（用于自动执行任务）
+llm:
+  enabled: false
+  api_url: "https://api.openai.com/v1"
+  api_key: ""  # 设置你的API密钥
+  model: "gpt-4"
+  temperature: 0.3
+  max_tokens: 4096
+
+# 任务配置
+tasks:
+  auto_execute: false
+  verify_after_execute: true
+  max_concurrent: 1
+  priority_filter:
+    - critical
+    - high
+
+# 报告配置
+reports:
+  format:
+    - markdown
+    - json
+    - html
+  include_code_snippets: true
+  include_history: true
+  history_limit: 10
+
+# 通知配置
+notifications:
+  enabled: false
+  on_critical: true
+  on_failure: true
+  webhook_url: ""

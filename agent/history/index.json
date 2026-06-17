@@ -1,0 +1,310 @@
+{
+  "iterations": [
+    {
+      "id": "iter_20260617_111144",
+      "timestamp": "2026-06-17T11:11:44.139210",
+      "iteration": 1,
+      "duration": 54.79611086845398,
+      "metrics": {
+        "test_passed": 466,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 16,
+        "tasks_generated": 28
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_115356",
+      "timestamp": "2026-06-17T11:53:56.451929",
+      "iteration": 1,
+      "duration": 518.5170786380768,
+      "metrics": {
+        "test_passed": 466,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 16,
+        "tasks_generated": 28
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134234",
+      "timestamp": "2026-06-17T13:42:34.790532",
+      "iteration": 1,
+      "duration": 34.91368913650513,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134308",
+      "timestamp": "2026-06-17T13:43:08.469199",
+      "iteration": 2,
+      "duration": 32.66774940490723,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134344",
+      "timestamp": "2026-06-17T13:43:44.087118",
+      "iteration": 3,
+      "duration": 34.59988522529602,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134419",
+      "timestamp": "2026-06-17T13:44:19.587679",
+      "iteration": 4,
+      "duration": 34.47946739196777,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134455",
+      "timestamp": "2026-06-17T13:44:55.207322",
+      "iteration": 5,
+      "duration": 34.60609149932861,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134530",
+      "timestamp": "2026-06-17T13:45:30.543606",
+      "iteration": 6,
+      "duration": 34.318233489990234,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134606",
+      "timestamp": "2026-06-17T13:46:06.049509",
+      "iteration": 7,
+      "duration": 34.49188947677612,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134710",
+      "timestamp": "2026-06-17T13:47:10.193982",
+      "iteration": 8,
+      "duration": 63.136204957962036,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134745",
+      "timestamp": "2026-06-17T13:47:45.853771",
+      "iteration": 9,
+      "duration": 34.648887634277344,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_134821",
+      "timestamp": "2026-06-17T13:48:21.400485",
+      "iteration": 10,
+      "duration": 34.53298044204712,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_141247",
+      "timestamp": "2026-06-17T14:12:47.898283",
+      "iteration": 1,
+      "duration": 471.5208191871643,
+      "metrics": {
+        "test_passed": 504,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 13,
+        "tasks_generated": 22
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_152210",
+      "timestamp": "2026-06-17T15:22:10.888057",
+      "iteration": 1,
+      "duration": 524.5695250034332,
+      "metrics": {
+        "test_passed": 562,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 11,
+        "tasks_generated": 18
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_153028",
+      "timestamp": "2026-06-17T15:30:28.736722",
+      "iteration": 2,
+      "duration": 496.83591985702515,
+      "metrics": {
+        "test_passed": 562,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 11,
+        "tasks_generated": 18
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    },
+    {
+      "id": "iter_20260617_154036",
+      "timestamp": "2026-06-17T15:40:36.203214",
+      "iteration": 3,
+      "duration": 606.4518964290619,
+      "metrics": {
+        "test_passed": 562,
+        "test_failed": 0,
+        "critical_issues": 0,
+        "improvements": 11,
+        "tasks_generated": 18
+      },
+      "scores": {
+        "test_pass_rate": 100.0,
+        "test_coverage_score": 100,
+        "code_health_score": 100,
+        "overall_score": 100.0
+      }
+    }
+  ],
+  "created_at": "2026-06-17T11:10:49.337963",
+  "total_iterations": 16
+}

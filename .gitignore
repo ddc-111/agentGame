@@ -45,6 +45,7 @@ server/vendor/
 
 # Config
 server/config.yaml
+agent_config.yaml
 
 # Temp
 tmp/

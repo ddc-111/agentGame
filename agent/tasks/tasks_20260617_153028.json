@@ -1,0 +1,292 @@
+{
+  "iteration": 2,
+  "generated_at": "2026-06-17T15:30:28.737716",
+  "tasks": [
+    {
+      "id": "task_8819b5c5",
+      "type": "add_test",
+      "title": "为 gm/stores/achievement.js 添加测试",
+      "description": "Store achievement.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/achievement.js",
+      "priority": "high",
+      "requirements": [
+        "分析 achievement.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_6a101b67",
+      "type": "add_test",
+      "title": "为 gm/stores/config.js 添加测试",
+      "description": "Store config.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/config.js",
+      "priority": "high",
+      "requirements": [
+        "分析 config.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_6276616e",
+      "type": "add_test",
+      "title": "为 gm/stores/demo.js 添加测试",
+      "description": "Store demo.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/demo.js",
+      "priority": "high",
+      "requirements": [
+        "分析 demo.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_2de1e31f",
+      "type": "add_test",
+      "title": "为 gm/stores/index.js 添加测试",
+      "description": "Store index.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/index.js",
+      "priority": "high",
+      "requirements": [
+        "分析 index.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_424d61f7",
+      "type": "add_test",
+      "title": "为 gm/stores/llm.js 添加测试",
+      "description": "Store llm.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/llm.js",
+      "priority": "high",
+      "requirements": [
+        "分析 llm.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_116103ae",
+      "type": "add_test",
+      "title": "为 gm/stores/prompt.js 添加测试",
+      "description": "Store prompt.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/prompt.js",
+      "priority": "high",
+      "requirements": [
+        "分析 prompt.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_02bd1cb1",
+      "type": "add_test",
+      "title": "为 gm/stores/skill.js 添加测试",
+      "description": "Store skill.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/skill.js",
+      "priority": "high",
+      "requirements": [
+        "分析 skill.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_39ec26de",
+      "type": "add_test",
+      "title": "为 gm/stores/task.js 添加测试",
+      "description": "Store task.js 缺少单元测试",
+      "target": "gm",
+      "module": "stores/task.js",
+      "priority": "high",
+      "requirements": [
+        "分析 task.js Store的状态管理",
+        "使用Pinia测试工具编写测试",
+        "测试actions和getters",
+        "测试状态变更"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_c711c98f",
+      "type": "add_test",
+      "title": "添加测试: achievement.js",
+      "description": "为 gm/achievement.js 添加单元测试",
+      "target": "gm",
+      "module": "achievement.js",
+      "priority": "medium",
+      "requirements": [
+        "为 achievement.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_b0b28800",
+      "type": "add_test",
+      "title": "添加测试: config.js",
+      "description": "为 gm/config.js 添加单元测试",
+      "target": "gm",
+      "module": "config.js",
+      "priority": "medium",
+      "requirements": [
+        "为 config.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_b2d66cb1",
+      "type": "add_test",
+      "title": "添加测试: demo.js",
+      "description": "为 gm/demo.js 添加单元测试",
+      "target": "gm",
+      "module": "demo.js",
+      "priority": "medium",
+      "requirements": [
+        "为 demo.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_08f888bd",
+      "type": "add_test",
+      "title": "添加测试: index.js",
+      "description": "为 gm/index.js 添加单元测试",
+      "target": "gm",
+      "module": "index.js",
+      "priority": "medium",
+      "requirements": [
+        "为 index.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_18534ac2",
+      "type": "add_test",
+      "title": "添加测试: llm.js",
+      "description": "为 gm/llm.js 添加单元测试",
+      "target": "gm",
+      "module": "llm.js",
+      "priority": "medium",
+      "requirements": [
+        "为 llm.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_04f70c00",
+      "type": "add_test",
+      "title": "添加测试: prompt.js",
+      "description": "为 gm/prompt.js 添加单元测试",
+      "target": "gm",
+      "module": "prompt.js",
+      "priority": "medium",
+      "requirements": [
+        "为 prompt.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_96d084bf",
+      "type": "add_test",
+      "title": "添加测试: skill.js",
+      "description": "为 gm/skill.js 添加单元测试",
+      "target": "gm",
+      "module": "skill.js",
+      "priority": "medium",
+      "requirements": [
+        "为 skill.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_3228ae70",
+      "type": "add_test",
+      "title": "添加测试: task.js",
+      "description": "为 gm/task.js 添加单元测试",
+      "target": "gm",
+      "module": "task.js",
+      "priority": "medium",
+      "requirements": [
+        "为 task.js 编写单元测试",
+        "覆盖主要功能点",
+        "测试边界条件",
+        "确保测试可重复运行"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_b9b175b6",
+      "type": "refactor",
+      "title": "升级 client 框架",
+      "description": "考虑升级到Phaser最新版本或评估其他框架",
+      "target": "client",
+      "priority": "low",
+      "requirements": [
+        "评估新版本兼容性",
+        "更新依赖",
+        "修复破坏性变更",
+        "运行回归测试"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    },
+    {
+      "id": "task_ed0059e1",
+      "type": "refactor",
+      "title": "迁移到TypeScript",
+      "description": "考虑迁移到TypeScript以获得更好的类型安全",
+      "target": "client,gm",
+      "priority": "low",
+      "requirements": [
+        "添加tsconfig配置",
+        "逐步迁移JS文件到TS",
+        "添加类型定义",
+        "更新构建配置"
+      ],
+      "created_at": "2026-06-17T15:22:36.944513"
+    }
+  ]
+}
