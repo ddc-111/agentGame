@@ -47,6 +47,28 @@ server/vendor/
 server/config.yaml
 agent_config.yaml
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Agent temp files
+agent/history/*.json
+agent/reports/*.json
+agent/reports/*.md
+agent/reports/*.txt
+agent/tasks/*.json
+agent/requirements/*.json
+!agent/requirements/refactor_requirement.md
+
 # Temp
 tmp/
 temp/

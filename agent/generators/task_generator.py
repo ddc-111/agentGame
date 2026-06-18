@@ -99,6 +99,26 @@ class TaskGenerator:
                 "created_at": datetime.now().isoformat()
             }
         
+        if imp_type == "refactor_opportunity":
+            return {
+                "id": self._generate_task_id(),
+                "type": "refactor",
+                "title": f"重构: {improvement.get('file', '')}",
+                "description": improvement.get("suggestion", ""),
+                "target": improvement.get("target", ""),
+                "file": improvement.get("file", ""),
+                "lines": improvement.get("lines", 0),
+                "priority": PRIORITY_MEDIUM,
+                "requirements": [
+                    "分析文件结构和功能",
+                    "识别重复和可复用的逻辑",
+                    "抽取公共函数或模块",
+                    "保持功能不变",
+                    "运行测试验证"
+                ],
+                "created_at": datetime.now().isoformat()
+            }
+        
         return None
     
     def _create_task_from_opportunity(self, opportunity: Dict) -> Dict:

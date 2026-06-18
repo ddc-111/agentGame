@@ -1,5 +1,6 @@
 """构建执行器 - 验证三端构建"""
 import subprocess
+import os
 from pathlib import Path
 from typing import Dict
 from datetime import datetime
@@ -13,6 +14,12 @@ class BuildExecutor:
         self.server_dir = root_dir / "server"
         self.client_dir = root_dir / "client"
         self.gm_dir = root_dir / "gm"
+        
+        # 设置环境变量以解决Windows编码问题
+        self.env = os.environ.copy()
+        self.env["PYTHONIOENCODING"] = "utf-8"
+        if os.name == 'nt':  # Windows
+            self.env["CHCP"] = "65001"
     
     def build_all(self) -> Dict[str, bool]:
         """构建所有端"""
@@ -30,7 +37,10 @@ class BuildExecutor:
                 cwd=self.server_dir,
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=120,
+                encoding='utf-8',
+                errors='replace',
+                env=self.env
             )
             return proc.returncode == 0
         except Exception as e:
@@ -46,7 +56,10 @@ class BuildExecutor:
                 capture_output=True,
                 text=True,
                 timeout=120,
-                shell=True
+                shell=True,
+                encoding='utf-8',
+                errors='replace',
+                env=self.env
             )
             return proc.returncode == 0
         except Exception as e:
@@ -62,7 +75,10 @@ class BuildExecutor:
                 capture_output=True,
                 text=True,
                 timeout=120,
-                shell=True
+                shell=True,
+                encoding='utf-8',
+                errors='replace',
+                env=self.env
             )
             return proc.returncode == 0
         except Exception as e:

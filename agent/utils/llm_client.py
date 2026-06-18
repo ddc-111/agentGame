@@ -101,11 +101,9 @@ class LLMClient:
 5. 文件名: {module_name}_test.go
 
 源代码:
-```go
 {source_code}
-```
 
-只返回测试代码，不要解释。""",
+只返回纯测试代码，不要包含任何Markdown标记或解释。""",
             
             "javascript": f"""为以下JavaScript代码生成完整的单元测试。
 
@@ -117,11 +115,9 @@ class LLMClient:
 5. 文件名: {module_name}.test.js
 
 源代码:
-```javascript
 {source_code}
-```
 
-只返回测试代码，不要解释。""",
+只返回纯测试代码，不要包含任何Markdown标记或解释。""",
             
             "vue": f"""为以下Vue组件/Store生成完整的单元测试。
 
@@ -133,11 +129,9 @@ class LLMClient:
 5. 文件名: {module_name}.test.js
 
 源代码:
-```vue
 {source_code}
-```
 
-只返回测试代码，不要解释。"""
+只返回纯测试代码，不要包含任何Markdown标记或解释。"""
         }
         
         prompt = prompts.get(language, prompts["javascript"])

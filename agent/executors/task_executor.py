@@ -86,6 +86,9 @@ class TaskExecutor:
         if not test_code:
             return {"success": False, "error": "LLM生成测试失败"}
         
+        # 清理生成的代码，移除Markdown标记
+        test_code = self._clean_llm_output(test_code)
+        
         # 写入测试文件
         test_file = self._get_test_file_path(target, module)
         test_file.parent.mkdir(parents=True, exist_ok=True)
@@ -125,7 +128,55 @@ class TaskExecutor:
     
     def _execute_refactor(self, task: Dict) -> Dict:
         """执行重构任务"""
-        return {"success": False, "error": "重构需要手动处理"}
+        target = task.get("target", "")
+        file_path = task.get("file", "")
+        
+        if not file_path:
+            return {"success": False, "error": "未指定要重构的文件"}
+        
+        # 获取文件完整路径
+        full_path = self._get_file_path(target, file_path)
+        if not full_path or not full_path.exists():
+            return {"success": False, "error": f"文件不存在: {file_path}"}
+        
+        # 读取源代码
+        source_code = full_path.read_text(encoding='utf-8')
+        language = self._get_language(target)
+        
+        # 使用LLM分析并重构代码
+        refactored_code = self.llm.analyze_and_improve(source_code, language)
+        
+        if not refactored_code:
+            return {"success": False, "error": "LLM重构失败"}
+        
+        # 清理LLM输出
+        refactored_code = self._clean_llm_output(refactored_code)
+        
+        # 备份原文件
+        backup_path = full_path.with_suffix(full_path.suffix + '.backup')
+        backup_path.write_text(source_code, encoding='utf-8')
+        
+        # 写入重构后的代码
+        full_path.write_text(refactored_code, encoding='utf-8')
+        
+        return {
+            "success": True,
+            "file": str(full_path),
+            "backup": str(backup_path),
+            "original_lines": len(source_code.split('\n')),
+            "refactored_lines": len(refactored_code.split('\n'))
+        }
+    
+    def _get_file_path(self, target: str, file_path: str) -> Path:
+        """获取文件完整路径"""
+        if target == "server":
+            return self.root_dir / "server" / "internal" / file_path
+        elif target == "client":
+            return self.root_dir / "client" / "src" / file_path
+        elif target == "gm":
+            return self.root_dir / "gm" / "src" / file_path
+        else:
+            return Path()
     
     def _verify_task(self, task: Dict) -> Dict:
         """验证任务结果"""
@@ -282,6 +333,26 @@ class TaskExecutor:
                     return test_file
         
         return None
+    
+    def _clean_llm_output(self, code: str) -> str:
+        """清理LLM输出，移除Markdown标记"""
+        import re
+        
+        # 移除Markdown代码块标记
+        # 匹配 ```javascript, ```js, ```vue, ```go 等
+        code = re.sub(r'^```\w*\n', '', code, flags=re.MULTILINE)
+        code = re.sub(r'\n```$', '', code, flags=re.MULTILINE)
+        
+        # 移除开头的空行
+        code = code.strip()
+        
+        # 如果代码仍然以```开头，移除第一行
+        if code.startswith('```'):
+            lines = code.split('\n', 1)
+            if len(lines) > 1:
+                code = lines[1]
+        
+        return code
     
     def _get_language(self, target: str) -> str:
         """获取编程语言"""
