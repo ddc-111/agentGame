@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -42,6 +43,7 @@ func NewNPCBehaviorManager() *NPCBehaviorManager {
 
 // NPCBehaviorStore holds runtime NPC behavior state in memory
 type NPCBehaviorStore struct {
+	mu        sync.RWMutex
 	behaviors map[string]*NPCBehavior
 }
 
@@ -54,27 +56,48 @@ func NewNPCBehaviorStore() *NPCBehaviorStore {
 
 // GetOrCreate returns existing behavior or initializes from NPC schedule
 func (s *NPCBehaviorStore) GetOrCreate(npcCode string, scheduleJSON string) *NPCBehavior {
+	s.mu.RLock()
 	if b, ok := s.behaviors[npcCode]; ok {
+		s.mu.RUnlock()
 		return b
 	}
+	s.mu.RUnlock()
+
 	b := CreateDefaultBehavior(npcCode, scheduleJSON)
+	s.mu.Lock()
+	// Double-check after acquiring write lock
+	if existing, ok := s.behaviors[npcCode]; ok {
+		s.mu.Unlock()
+		return existing
+	}
 	s.behaviors[npcCode] = b
+	s.mu.Unlock()
 	return b
 }
 
 // Get returns existing behavior or nil
 func (s *NPCBehaviorStore) Get(npcCode string) *NPCBehavior {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.behaviors[npcCode]
 }
 
 // Set stores a behavior
 func (s *NPCBehaviorStore) Set(npcCode string, behavior *NPCBehavior) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.behaviors[npcCode] = behavior
 }
 
-// All returns all stored behaviors
+// All returns a copy of all stored behaviors
 func (s *NPCBehaviorStore) All() map[string]*NPCBehavior {
-	return s.behaviors
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make(map[string]*NPCBehavior, len(s.behaviors))
+	for k, v := range s.behaviors {
+		result[k] = v
+	}
+	return result
 }
 
 // UpdateBehavior runs each game tick, moves NPCs based on schedule

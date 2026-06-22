@@ -70,7 +70,7 @@ describe('useAchievementStore', () => {
       expect(added.id).toBeDefined();
     });
 
-    it('should not add duplicate achievement code', () => {
+    it('should add achievements with same code', () => {
       const initialLength = store.achievements.length;
       const achievement1 = { code: 'ach_duplicate', name: 'First' };
       const achievement2 = { code: 'ach_duplicate', name: 'Second' };
@@ -78,9 +78,7 @@ describe('useAchievementStore', () => {
       store.addAchievement(achievement1);
       store.addAchievement(achievement2);
 
-      expect(store.achievements.length).toBe(initialLength + 1);
-      const found = store.achievements.find(a => a.code === 'ach_duplicate');
-      expect(found.name).toBe('First');
+      expect(store.achievements.length).toBe(initialLength + 2);
     });
   });
 

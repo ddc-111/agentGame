@@ -1,46 +1,46 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('./scene', () => ({
+vi.mock('@/stores/scene', () => ({
   useSceneStore: vi.fn()
 }));
 
-vi.mock('./npc', () => ({
+vi.mock('@/stores/npc', () => ({
   useNPCStore: vi.fn()
 }));
 
-vi.mock('./agent', () => ({
+vi.mock('@/stores/agent', () => ({
   useAgentStore: vi.fn()
 }));
 
-vi.mock('./llm', () => ({
+vi.mock('@/stores/llm', () => ({
   useLLMStore: vi.fn()
 }));
 
-vi.mock('./prompt', () => ({
+vi.mock('@/stores/prompt', () => ({
   usePromptStore: vi.fn()
 }));
 
-vi.mock('./shop', () => ({
+vi.mock('@/stores/shop', () => ({
   useShopStore: vi.fn()
 }));
 
-vi.mock('./task', () => ({
+vi.mock('@/stores/task', () => ({
   useTaskStore: vi.fn()
 }));
 
-vi.mock('./config', () => ({
+vi.mock('@/stores/config', () => ({
   useConfigStore: vi.fn()
 }));
 
-vi.mock('./skill', () => ({
+vi.mock('@/stores/skill', () => ({
   useSkillStore: vi.fn()
 }));
 
-vi.mock('./achievement', () => ({
+vi.mock('@/stores/achievement', () => ({
   useAchievementStore: vi.fn()
 }));
 
-vi.mock('./demo', () => ({
+vi.mock('@/stores/demo', () => ({
   useDemoStore: vi.fn()
 }));
 
@@ -56,7 +56,7 @@ import {
   useSkillStore,
   useAchievementStore,
   useDemoStore
-} from './index';
+} from '@/stores/index';
 
 describe('stores/index.js', () => {
   it('should export all stores', () => {

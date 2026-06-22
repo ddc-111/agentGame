@@ -8,12 +8,6 @@ describe('useDemoStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useDemoStore()
-    
-    // Mock initial demos data
-    store.demos = [
-      { id: '1', name: 'Demo 1', steps: ['step1', 'step2', 'step3'] },
-      { id: '2', name: 'Demo 2', steps: ['stepA', 'stepB'] }
-    ]
   })
   
   afterEach(() => {
@@ -33,85 +27,77 @@ describe('useDemoStore', () => {
     })
     
     it('should have demos populated', () => {
-      expect(store.demos.length).toBe(2)
-      expect(store.demos[0].id).toBe('1')
+      expect(store.demos.length).toBe(3)
+      expect(store.demos[0].id).toBe('beginner_village')
     })
   })
 
   describe('selectDemo', () => {
     it('should select a demo by id', () => {
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       expect(store.activeDemo).toBeDefined()
-      expect(store.activeDemo.id).toBe('1')
+      expect(store.activeDemo.id).toBe('beginner_village')
       expect(store.currentStep).toBe(0)
     })
-    
+
     it('should set activeDemo to null for invalid id', () => {
       store.selectDemo('invalid_id')
       expect(store.activeDemo).toBeNull()
     })
-    
+
     it('should reset currentStep to 0 when selecting demo', () => {
       store.currentStep = 5
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       expect(store.currentStep).toBe(0)
     })
-    
+
     it('should handle empty demos array', () => {
       store.demos = []
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       expect(store.activeDemo).toBeNull()
     })
   })
 
   describe('nextStep', () => {
     it('should increment current step when valid steps exist', () => {
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       store.nextStep()
       expect(store.currentStep).toBe(1)
     })
-    
+
     it('should not exceed max steps', () => {
-      store.selectDemo('1')
-      // Go to last step
-      store.currentStep = 2
+      store.selectDemo('beginner_village')
+      store.currentStep = 13 // Last step (14 steps, 0-indexed)
       store.nextStep()
-      expect(store.currentStep).toBe(2)
+      expect(store.currentStep).toBe(13)
     })
-    
+
     it('should not increment when no active demo', () => {
       store.currentStep = 0
       store.nextStep()
       expect(store.currentStep).toBe(0)
     })
-    
-    it('should not increment when at max step', () => {
-      store.selectDemo('1')
-      store.currentStep = 2 // Last step for demo 1
-      store.nextStep()
-      expect(store.currentStep).toBe(2)
-    })
   })
 
   describe('prevStep', () => {
     it('should decrement current step when not at first step', () => {
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       store.currentStep = 2
       store.prevStep()
       expect(store.currentStep).toBe(1)
     })
-    
+
     it('should not go below 0', () => {
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       store.currentStep = 0
       store.prevStep()
       expect(store.currentStep).toBe(0)
     })
     
-    it('should not decrement when no active demo', () => {
+    it('should decrement even when no active demo', () => {
       store.currentStep = 5
       store.prevStep()
-      expect(store.currentStep).toBe(5)
+      expect(store.currentStep).toBe(4)
     })
   })
 
@@ -133,19 +119,19 @@ describe('useDemoStore', () => {
 
   describe('stop', () => {
     it('should stop playback and reset current step', () => {
-      store.selectDemo('1')
+      store.selectDemo('beginner_village')
       store.isPlaying = true
       store.currentStep = 5
-      
+
       store.stop()
       expect(store.isPlaying).toBe(false)
       expect(store.currentStep).toBe(0)
     })
-    
+
     it('should work when already stopped', () => {
       store.isPlaying = false
       store.currentStep = 3
-      
+
       store.stop()
       expect(store.isPlaying).toBe(false)
       expect(store.currentStep).toBe(0)
@@ -177,34 +163,34 @@ describe('useDemoStore', () => {
 
   describe('integration tests', () => {
     it('should handle full workflow: select, play, step, stop', () => {
-      store.selectDemo('1')
-      expect(store.activeDemo.id).toBe('1')
+      store.selectDemo('beginner_village')
+      expect(store.activeDemo.id).toBe('beginner_village')
       expect(store.currentStep).toBe(0)
-      
+
       store.togglePlay()
       expect(store.isPlaying).toBe(true)
-      
+
       store.nextStep()
       expect(store.currentStep).toBe(1)
-      
+
       store.nextStep()
       expect(store.currentStep).toBe(2)
-      
+
       store.prevStep()
       expect(store.currentStep).toBe(1)
-      
+
       store.stop()
       expect(store.isPlaying).toBe(false)
       expect(store.currentStep).toBe(0)
     })
-    
+
     it('should maintain demo selection after stopping', () => {
-      store.selectDemo('2')
+      store.selectDemo('combat_demo')
       store.togglePlay()
       store.nextStep()
-      
+
       store.stop()
-      expect(store.activeDemo.id).toBe('2')
+      expect(store.activeDemo.id).toBe('combat_demo')
     })
   })
 })

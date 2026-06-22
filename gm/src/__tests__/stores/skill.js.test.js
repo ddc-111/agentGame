@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useSkillStore } from './skill.js';
+import { useSkillStore } from '@/stores/skill';
 
 // Mock Date.now for consistent testing
 vi.spyOn(Date, 'now').mockReturnValue(1234567890);

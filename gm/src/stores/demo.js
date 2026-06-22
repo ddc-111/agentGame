@@ -40,7 +40,7 @@ export const useDemoStore = defineStore('demo', () => {
   const demoResults = ref([]);
 
   const selectDemo = (demoId) => {
-    activeDemo.value = demos.value.find(d => d.id === demoId);
+    activeDemo.value = demos.value.find(d => d.id === demoId) || null;
     currentStep.value = 0;
     demoResults.value = [];
     isPlaying.value = false;

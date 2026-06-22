@@ -130,12 +130,22 @@ export const useAchievementStore = defineStore('achievement', () => {
     return achievements.value.find(a => a.id === id);
   };
 
+  const getAchievementByCode = (code) => {
+    return achievements.value.find(a => a.code === code);
+  };
+
+  const getAchievementByConditionType = (type) => {
+    return achievements.value.filter(a => a.condition && a.condition.type === type);
+  };
+
   return {
     achievements,
     conditionTypes,
     addAchievement,
     updateAchievement,
     deleteAchievement,
-    getAchievementById
+    getAchievementById,
+    getAchievementByCode,
+    getAchievementByConditionType
   };
 });
