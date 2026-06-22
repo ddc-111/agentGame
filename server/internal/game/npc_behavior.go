@@ -75,6 +75,30 @@ func (s *NPCBehaviorStore) GetOrCreate(npcCode string, scheduleJSON string) *NPC
 	return b
 }
 
+// GetOrCreateCopy returns a pointer to a copy of existing behavior or initializes from NPC schedule
+func (s *NPCBehaviorStore) GetOrCreateCopy(npcCode string, scheduleJSON string) *NPCBehavior {
+	s.mu.RLock()
+	if b, ok := s.behaviors[npcCode]; ok {
+		s.mu.RUnlock()
+		copy := *b
+		return &copy
+	}
+	s.mu.RUnlock()
+
+	b := CreateDefaultBehavior(npcCode, scheduleJSON)
+	s.mu.Lock()
+	// Double-check after acquiring write lock
+	if existing, ok := s.behaviors[npcCode]; ok {
+		s.mu.Unlock()
+		copy := *existing
+		return &copy
+	}
+	s.behaviors[npcCode] = b
+	s.mu.Unlock()
+	copy := *b
+	return &copy
+}
+
 // Get returns existing behavior or nil
 func (s *NPCBehaviorStore) Get(npcCode string) *NPCBehavior {
 	s.mu.RLock()

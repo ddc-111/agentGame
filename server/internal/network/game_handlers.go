@@ -46,7 +46,7 @@ func (s *Server) handleGetGameInit(c *gin.Context) {
 	npcList, _ := s.repo.GetNPCs(ctx)
 	npcsWithBehavior := make([]npcWithBehavior, 0, len(npcList))
 	for _, npc := range npcList {
-		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+		behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 		npcsWithBehavior = append(npcsWithBehavior, npcWithBehavior{
 			NPC:           npc,
 			BehaviorState: behavior.State,
@@ -268,7 +268,7 @@ func (s *Server) handleGetNPCByCode(c *gin.Context) {
 		return
 	}
 
-	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":     npc,
@@ -334,8 +334,9 @@ func (s *Server) handleNPCChat(c *gin.Context) {
 		return
 	}
 
-	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "talk")
+	s.behaviorStore.Set(npc.Code, behavior)
 
 	scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 	if len(scenes) > 0 {
@@ -569,8 +570,9 @@ func (s *Server) handleBuyItem(c *gin.Context) {
 	if shop.OwnerNPC != "" {
 		npc, err := s.repo.GetNPCByCode(ctx, shop.OwnerNPC)
 		if err == nil {
-			behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+			behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 			s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, "gift")
+			s.behaviorStore.Set(npc.Code, behavior)
 			scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 			if len(scenes) > 0 {
 				s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
@@ -728,7 +730,7 @@ func (s *Server) handleGetNPCBehavior(c *gin.Context) {
 		return
 	}
 
-	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": behavior,
@@ -775,8 +777,9 @@ func (s *Server) handleNPCBehaviorEvent(c *gin.Context) {
 		return
 	}
 
-	behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+	behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 	s.behaviorMgr.ReactToPlayer(behavior, req.PlayerID, req.Action)
+	s.behaviorStore.Set(npc.Code, behavior)
 
 	scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 	if len(scenes) > 0 {
@@ -817,7 +820,7 @@ func (s *Server) handleGameTick(c *gin.Context) {
 
 	npcs, _ := s.repo.GetNPCs(ctx)
 	for _, npc := range npcs {
-		behavior := s.behaviorStore.GetOrCreate(npc.Code, npc.Schedule)
+		behavior := s.behaviorStore.GetOrCreateCopy(npc.Code, npc.Schedule)
 		scenes, _ := s.repo.GetScenesByNPCID(ctx, npc.ID)
 		if len(scenes) > 0 {
 			s.BroadcastNPCState(npc.ID, npc.Code, npc.Name, scenes[0].Code, behavior.State, 0, 0)
