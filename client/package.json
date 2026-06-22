@@ -11,8 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "phaser": "^3.80.1",
-    "socket.io-client": "^4.7.2"
+    "phaser": "^3.80.1"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",
