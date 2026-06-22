@@ -1,13 +1,23 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDemoStore } from '@/stores/demo'
 
 describe('useDemoStore', () => {
   let store
-
+  
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useDemoStore()
+    
+    // Mock initial demos data
+    store.demos = [
+      { id: '1', name: 'Demo 1', steps: ['step1', 'step2', 'step3'] },
+      { id: '2', name: 'Demo 2', steps: ['stepA', 'stepB'] }
+    ]
+  })
+  
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   describe('initial state', () => {
@@ -21,52 +31,120 @@ describe('useDemoStore', () => {
       expect(store.isPlaying).toBe(false)
       expect(store.playbackSpeed).toBe(1)
     })
+    
+    it('should have demos populated', () => {
+      expect(store.demos.length).toBe(2)
+      expect(store.demos[0].id).toBe('1')
+    })
   })
 
   describe('selectDemo', () => {
     it('should select a demo by id', () => {
-      if (store.demos.length > 0) {
-        const demoId = store.demos[0].id
-        store.selectDemo(demoId)
-        expect(store.activeDemo).toBeDefined()
-        expect(store.currentStep).toBe(0)
-      }
+      store.selectDemo('1')
+      expect(store.activeDemo).toBeDefined()
+      expect(store.activeDemo.id).toBe('1')
+      expect(store.currentStep).toBe(0)
     })
-
-    it('should set activeDemo to null/undefined for invalid id', () => {
+    
+    it('should set activeDemo to null for invalid id', () => {
       store.selectDemo('invalid_id')
-      expect(store.activeDemo).toBeFalsy()
+      expect(store.activeDemo).toBeNull()
+    })
+    
+    it('should reset currentStep to 0 when selecting demo', () => {
+      store.currentStep = 5
+      store.selectDemo('1')
+      expect(store.currentStep).toBe(0)
+    })
+    
+    it('should handle empty demos array', () => {
+      store.demos = []
+      store.selectDemo('1')
+      expect(store.activeDemo).toBeNull()
     })
   })
 
   describe('nextStep', () => {
-    it('should increment current step', () => {
+    it('should increment current step when valid steps exist', () => {
+      store.selectDemo('1')
+      store.nextStep()
+      expect(store.currentStep).toBe(1)
+    })
+    
+    it('should not exceed max steps', () => {
+      store.selectDemo('1')
+      // Go to last step
+      store.currentStep = 2
+      store.nextStep()
+      expect(store.currentStep).toBe(2)
+    })
+    
+    it('should not increment when no active demo', () => {
       store.currentStep = 0
       store.nextStep()
-      expect(store.currentStep).toBeGreaterThanOrEqual(0)
+      expect(store.currentStep).toBe(0)
+    })
+    
+    it('should not increment when at max step', () => {
+      store.selectDemo('1')
+      store.currentStep = 2 // Last step for demo 1
+      store.nextStep()
+      expect(store.currentStep).toBe(2)
     })
   })
 
   describe('prevStep', () => {
     it('should decrement current step when not at first step', () => {
+      store.selectDemo('1')
+      store.currentStep = 2
+      store.prevStep()
+      expect(store.currentStep).toBe(1)
+    })
+    
+    it('should not go below 0', () => {
+      store.selectDemo('1')
+      store.currentStep = 0
+      store.prevStep()
+      expect(store.currentStep).toBe(0)
+    })
+    
+    it('should not decrement when no active demo', () => {
       store.currentStep = 5
       store.prevStep()
-      expect(store.currentStep).toBeLessThanOrEqual(5)
+      expect(store.currentStep).toBe(5)
     })
   })
 
   describe('togglePlay', () => {
     it('should toggle isPlaying state', () => {
-      const initialState = store.isPlaying
       store.togglePlay()
-      expect(store.isPlaying).toBe(!initialState)
+      expect(store.isPlaying).toBe(true)
+      
+      store.togglePlay()
+      expect(store.isPlaying).toBe(false)
+    })
+    
+    it('should start from beginning when no active demo', () => {
+      store.togglePlay()
+      expect(store.isPlaying).toBe(true)
+      expect(store.currentStep).toBe(0)
     })
   })
 
   describe('stop', () => {
     it('should stop playback and reset current step', () => {
+      store.selectDemo('1')
       store.isPlaying = true
       store.currentStep = 5
+      
+      store.stop()
+      expect(store.isPlaying).toBe(false)
+      expect(store.currentStep).toBe(0)
+    })
+    
+    it('should work when already stopped', () => {
+      store.isPlaying = false
+      store.currentStep = 3
       
       store.stop()
       expect(store.isPlaying).toBe(false)
@@ -78,6 +156,55 @@ describe('useDemoStore', () => {
     it('should set playback speed', () => {
       store.setSpeed(2)
       expect(store.playbackSpeed).toBe(2)
+    })
+    
+    it('should accept different speed values', () => {
+      store.setSpeed(0.5)
+      expect(store.playbackSpeed).toBe(0.5)
+      
+      store.setSpeed(4)
+      expect(store.playbackSpeed).toBe(4)
+    })
+    
+    it('should handle edge cases', () => {
+      store.setSpeed(0)
+      expect(store.playbackSpeed).toBe(0)
+      
+      store.setSpeed(10)
+      expect(store.playbackSpeed).toBe(10)
+    })
+  })
+
+  describe('integration tests', () => {
+    it('should handle full workflow: select, play, step, stop', () => {
+      store.selectDemo('1')
+      expect(store.activeDemo.id).toBe('1')
+      expect(store.currentStep).toBe(0)
+      
+      store.togglePlay()
+      expect(store.isPlaying).toBe(true)
+      
+      store.nextStep()
+      expect(store.currentStep).toBe(1)
+      
+      store.nextStep()
+      expect(store.currentStep).toBe(2)
+      
+      store.prevStep()
+      expect(store.currentStep).toBe(1)
+      
+      store.stop()
+      expect(store.isPlaying).toBe(false)
+      expect(store.currentStep).toBe(0)
+    })
+    
+    it('should maintain demo selection after stopping', () => {
+      store.selectDemo('2')
+      store.togglePlay()
+      store.nextStep()
+      
+      store.stop()
+      expect(store.activeDemo.id).toBe('2')
     })
   })
 })

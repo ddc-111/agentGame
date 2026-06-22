@@ -66,8 +66,11 @@ class TaskExecutor:
             return self._execute_add_feature(task)
         elif task_type == "refactor":
             return self._execute_refactor(task)
+        elif task_type == "add_documentation":
+            return self._execute_add_documentation(task)
         else:
-            return {"success": False, "error": f"未知任务类型: {task_type}"}
+            # 尝试作为通用任务处理
+            return self._execute_generic_task(task)
     
     def _execute_add_test(self, task: Dict) -> Dict:
         """执行添加测试的任务"""
@@ -123,8 +126,58 @@ class TaskExecutor:
     
     def _execute_add_feature(self, task: Dict) -> Dict:
         """执行添加功能的任务"""
-        # 功能添加需要更复杂的逻辑，暂时返回需要手动处理
-        return {"success": False, "error": "功能添加需要手动处理"}
+        target = task.get("target", "")
+        title = task.get("title", "")
+        description = task.get("description", "")
+        requirements = task.get("requirements", [])
+        
+        # 获取相关上下文
+        context = self._get_feature_context(target, task)
+        
+        # 确定语言
+        language = self._get_language(target)
+        
+        # 使用LLM生成功能代码
+        feature_code = self.llm.generate_feature(
+            task_description=f"{title}: {description}",
+            requirements=requirements,
+            language=language,
+            context=context
+        )
+        
+        if not feature_code:
+            return {"success": False, "error": "LLM生成功能代码失败"}
+        
+        # 清理LLM输出
+        feature_code = self._clean_llm_output(feature_code)
+        
+        # 确定文件路径
+        file_path = self._determine_feature_file(target, task, feature_code)
+        if not file_path:
+            return {"success": False, "error": "无法确定文件路径"}
+        
+        # 创建目录
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # 备份原文件（如果存在）
+        backup_path = None
+        if file_path.exists():
+            backup_path = file_path.with_suffix(file_path.suffix + '.backup')
+            backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
+        
+        # 写入文件
+        file_path.write_text(feature_code, encoding='utf-8')
+        
+        result = {
+            "success": True,
+            "file": str(file_path),
+            "lines": len(feature_code.split('\n'))
+        }
+        
+        if backup_path:
+            result["backup"] = str(backup_path)
+        
+        return result
     
     def _execute_refactor(self, task: Dict) -> Dict:
         """执行重构任务"""
@@ -166,6 +219,113 @@ class TaskExecutor:
             "original_lines": len(source_code.split('\n')),
             "refactored_lines": len(refactored_code.split('\n'))
         }
+    
+    def _execute_add_documentation(self, task: Dict) -> Dict:
+        """执行添加文档的任务"""
+        target = task.get("target", "")
+        file_path = task.get("file", "")
+        content = task.get("content", "")
+        title = task.get("title", "")
+        
+        if not file_path:
+            # 自动生成文档路径
+            if target == "server":
+                file_path = "docs/API.md"
+            else:
+                file_path = f"docs/{title.replace(' ', '_')}.md"
+        
+        # 确定完整路径
+        if target == "server":
+            full_path = self.root_dir / "server" / file_path
+        elif target == "gm":
+            full_path = self.root_dir / "gm" / file_path
+        elif target == "client":
+            full_path = self.root_dir / "client" / file_path
+        else:
+            full_path = self.root_dir / file_path
+        
+        # 如果没有预设内容，使用LLM生成
+        if not content:
+            context = self._get_feature_context(target, task)
+            content = self.llm.generate_feature(
+                task_description=f"{title}: {task.get('description', '')}",
+                requirements=task.get("requirements", []),
+                language="markdown",
+                context=context,
+                file_type="documentation"
+            )
+            
+            if not content:
+                return {"success": False, "error": "LLM生成文档失败"}
+            
+            content = self._clean_llm_output(content)
+        
+        # 创建目录
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # 写入文件
+        full_path.write_text(content, encoding='utf-8')
+        
+        return {
+            "success": True,
+            "file": str(full_path),
+            "lines": len(content.split('\n'))
+        }
+    
+    def _execute_generic_task(self, task: Dict) -> Dict:
+        """执行通用任务"""
+        target = task.get("target", "")
+        title = task.get("title", "")
+        description = task.get("description", "")
+        requirements = task.get("requirements", [])
+        
+        # 获取上下文
+        context = self._get_feature_context(target, task)
+        
+        # 确定语言
+        language = self._get_language(target)
+        
+        # 使用LLM生成代码
+        code = self.llm.generate_feature(
+            task_description=f"{title}: {description}",
+            requirements=requirements,
+            language=language,
+            context=context
+        )
+        
+        if not code:
+            return {"success": False, "error": "LLM生成代码失败"}
+        
+        # 清理输出
+        code = self._clean_llm_output(code)
+        
+        # 确定文件路径
+        file_path = self._determine_feature_file(target, task, code)
+        if not file_path:
+            return {"success": False, "error": "无法确定文件路径"}
+        
+        # 创建目录
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # 备份原文件（如果存在）
+        backup_path = None
+        if file_path.exists():
+            backup_path = file_path.with_suffix(file_path.suffix + '.backup')
+            backup_path.write_text(file_path.read_text(encoding='utf-8'), encoding='utf-8')
+        
+        # 写入文件
+        file_path.write_text(code, encoding='utf-8')
+        
+        result = {
+            "success": True,
+            "file": str(file_path),
+            "lines": len(code.split('\n'))
+        }
+        
+        if backup_path:
+            result["backup"] = str(backup_path)
+        
+        return result
     
     def _get_file_path(self, target: str, file_path: str) -> Path:
         """获取文件完整路径"""
@@ -247,10 +407,11 @@ class TaskExecutor:
         elif target == "gm":
             # 处理 stores/xxx.js 或直接 xxx.js
             if "/" in module:
-                # stores/achievement.js -> gm/src/stores/achievement.js
+                # stores/achievement -> gm/src/stores/achievement.js
+                module_with_ext = f"{module}.js"
                 paths = [
+                    self.root_dir / "gm" / "src" / module_with_ext,
                     self.root_dir / "gm" / "src" / module,
-                    self.root_dir / "gm" / "src" / module.replace("/", "\\"),
                 ]
             else:
                 paths = [
@@ -364,6 +525,172 @@ class TaskExecutor:
             return "javascript"
         else:
             return "javascript"
+    
+    def _get_feature_context(self, target: str, task: Dict) -> str:
+        """获取功能开发的上下文"""
+        context_parts = []
+        
+        # 获取相关现有代码
+        if target == "server":
+            # 获取主要的模型定义
+            models_file = self.root_dir / "server" / "internal" / "database" / "models" / "models.go"
+            if models_file.exists():
+                try:
+                    content = models_file.read_text(encoding='utf-8')
+                    context_parts.append(f"=== 数据模型 ===\n{content[:3000]}")
+                except:
+                    pass
+            
+            # 获取路由定义
+            server_file = self.root_dir / "server" / "internal" / "network" / "server.go"
+            if server_file.exists():
+                try:
+                    content = server_file.read_text(encoding='utf-8')
+                    context_parts.append(f"=== 路由定义 ===\n{content[:2000]}")
+                except:
+                    pass
+            
+            # 获取repository接口
+            repo_file = self.root_dir / "server" / "internal" / "database" / "repository" / "repository.go"
+            if repo_file.exists():
+                try:
+                    content = repo_file.read_text(encoding='utf-8')
+                    context_parts.append(f"=== Repository ===\n{content[:2000]}")
+                except:
+                    pass
+        
+        elif target == "gm":
+            # 获取API客户端
+            api_dir = self.root_dir / "gm" / "src" / "api"
+            if api_dir.exists():
+                for api_file in api_dir.glob("*.js"):
+                    try:
+                        content = api_file.read_text(encoding='utf-8')
+                        context_parts.append(f"=== API {api_file.name} ===\n{content[:1500]}")
+                    except:
+                        pass
+            
+            # 获取现有Store示例
+            stores_dir = self.root_dir / "gm" / "src" / "stores"
+            if stores_dir.exists():
+                for store_file in list(stores_dir.glob("*.js"))[:2]:
+                    try:
+                        content = store_file.read_text(encoding='utf-8')
+                        context_parts.append(f"=== Store {store_file.name} ===\n{content[:1500]}")
+                    except:
+                        pass
+        
+        elif target == "client":
+            # 获取游戏系统示例
+            systems_dir = self.root_dir / "client" / "src" / "game" / "systems"
+            if systems_dir.exists():
+                for sys_file in list(systems_dir.glob("*.js"))[:2]:
+                    try:
+                        content = sys_file.read_text(encoding='utf-8')
+                        context_parts.append(f"=== System {sys_file.name} ===\n{content[:1500]}")
+                    except:
+                        pass
+        
+        return "\n\n".join(context_parts) if context_parts else ""
+    
+    def _determine_feature_file(self, target: str, task: Dict, code: str) -> Optional[Path]:
+        """确定功能代码的文件路径"""
+        title = task.get("title", "").lower()
+        task_type = task.get("type", "")
+        
+        # 从代码中尝试提取package名或模块名
+        package_hint = self._extract_package_from_code(code, target)
+        
+        if target == "server":
+            # 根据任务标题推断目录
+            if "handler" in title or "api" in title or "endpoint" in title:
+                base_dir = self.root_dir / "server" / "internal" / "network"
+            elif "model" in title or "entity" in title or "database" in title:
+                base_dir = self.root_dir / "server" / "internal" / "database" / "models"
+            elif "repository" in title or "repo" in title or "data access" in title:
+                base_dir = self.root_dir / "server" / "internal" / "database" / "repository"
+            elif "agent" in title or "ai" in title or "llm" in title:
+                base_dir = self.root_dir / "server" / "internal" / "agent"
+            elif "game" in title or "logic" in title or "combat" in title or "npc" in title:
+                base_dir = self.root_dir / "server" / "internal" / "game"
+            elif "config" in title or "setting" in title:
+                base_dir = self.root_dir / "server" / "internal" / "config"
+            elif "test" in title:
+                base_dir = self.root_dir / "server" / "internal" / "tests"
+            else:
+                base_dir = self.root_dir / "server" / "internal" / package_hint if package_hint else self.root_dir / "server" / "internal" / "game"
+            
+            # 生成文件名
+            filename = self._generate_filename(title, "go")
+            return base_dir / filename
+        
+        elif target == "gm":
+            if "store" in title or "state" in title:
+                base_dir = self.root_dir / "gm" / "src" / "stores"
+                filename = self._generate_filename(title, "js")
+            elif "component" in title or "vue" in title:
+                base_dir = self.root_dir / "gm" / "src" / "components"
+                filename = self._generate_filename(title, "vue")
+            elif "view" in title or "page" in title:
+                base_dir = self.root_dir / "gm" / "src" / "views"
+                filename = self._generate_filename(title, "vue")
+            elif "api" in title or "service" in title:
+                base_dir = self.root_dir / "gm" / "src" / "api"
+                filename = self._generate_filename(title, "js")
+            else:
+                base_dir = self.root_dir / "gm" / "src" / "stores"
+                filename = self._generate_filename(title, "js")
+            
+            return base_dir / filename
+        
+        elif target == "client":
+            if "scene" in title:
+                base_dir = self.root_dir / "client" / "src" / "game" / "scenes"
+            elif "system" in title or "manager" in title:
+                base_dir = self.root_dir / "client" / "src" / "game" / "systems"
+            else:
+                base_dir = self.root_dir / "client" / "src" / "game" / "systems"
+            
+            filename = self._generate_filename(title, "js")
+            return base_dir / filename
+        
+        return None
+    
+    def _extract_package_from_code(self, code: str, target: str) -> str:
+        """从代码中提取包名"""
+        import re
+        
+        if target == "server":
+            # Go: package xxx
+            match = re.search(r'^package\s+(\w+)', code, re.MULTILINE)
+            if match:
+                return match.group(1)
+        
+        return ""
+    
+    def _generate_filename(self, title: str, extension: str) -> str:
+        """根据标题生成文件名"""
+        import re
+        
+        # 移除中文和特殊字符，保留英文
+        english_parts = re.findall(r'[a-zA-Z]+', title.lower())
+        
+        if not english_parts:
+            # 如果没有英文，使用默认名
+            return f"new_feature.{extension}"
+        
+        # 组合文件名
+        filename = "_".join(english_parts[:3])  # 最多取3个词
+        
+        # 添加常见后缀
+        if extension == "go":
+            if not filename.endswith("_handler") and not filename.endswith("_test"):
+                if "handler" in title.lower() or "api" in title.lower():
+                    filename += "_handlers"
+                elif "test" in title.lower():
+                    filename += "_test"
+        
+        return f"{filename}.{extension}"
     
     def get_execution_summary(self) -> Dict:
         """获取执行摘要"""

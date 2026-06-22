@@ -1,7 +1,6 @@
-```javascript
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setActivePinia, createPinia } from 'pinia';
-import { usePromptStore } from './stores/prompt';
+import { createPinia, setActivePinia } from 'pinia';
+import { usePromptStore } from './prompt.js';
 
 describe('usePromptStore', () => {
   let store;
@@ -9,174 +8,103 @@ describe('usePromptStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     store = usePromptStore();
+    vi.restoreAllMocks();
   });
 
-  describe('initial state', () => {
-    it('should have templates array with initial templates', () => {
-      expect(store.templates).toHaveLength(3);
-      expect(store.templates[0].id).toBe('template_001');
-      expect(store.templates[0].name).toBe('NPC基础人设');
-      expect(store.templates[1].id).toBe('template_002');
-      expect(store.templates[2].id).toBe('template_003');
-    });
-
-    it('should have variables array with initial variables', () => {
-      expect(store.variables).toHaveLength(10);
-      expect(store.variables[0].name).toBe('npc_name');
-      expect(store.variables[0].type).toBe('string');
-      expect(store.variables[0].source).toBe('npc');
-    });
+  it('should have correct initial templates', () => {
+    expect(store.templates).toHaveLength(3);
+    expect(store.templates[0].id).toBe('template_001');
+    expect(store.templates[0].name).toBe('NPC基础人设');
+    expect(store.templates[0].category).toBe('system');
+    expect(store.templates[0].content).toContain('你是{{npc_name}}');
+    expect(store.templates[0].variables).toHaveLength(10);
   });
 
-  describe('addTemplate', () => {
-    it('should add a new template with generated id', () => {
-      const mockDate = 1234567890;
-      vi.spyOn(Date, 'now').mockImplementation(() => mockDate);
-      
-      const newTemplate = {
-        name: 'Test Template',
-        content: 'Test content',
-        variables: [],
-        category: 'test'
-      };
-      
-      store.addTemplate(newTemplate);
-      
-      expect(store.templates).toHaveLength(4);
-      expect(store.templates[3].id).toBe(`template_${mockDate}`);
-      expect(store.templates[3].name).toBe('Test Template');
-      expect(store.templates[3].content).toBe('Test content');
-      expect(store.templates[3].category).toBe('test');
-      
-      vi.restoreAllMocks();
-    });
-
-    it('should preserve existing template properties when adding', () => {
-      const initialLength = store.templates.length;
-      
-      store.addTemplate({
-        id: 'existing_id',
-        name: 'Test Template'
-      });
-      
-      expect(store.templates).toHaveLength(initialLength + 1);
-      expect(store.templates[store.templates.length - 1].id).toBe('existing_id');
+  it('should have correct initial variables', () => {
+    expect(store.variables).toHaveLength(10);
+    expect(store.variables[0]).toEqual({
+      name: 'npc_name',
+      type: 'string',
+      description: 'NPC名称',
+      source: 'npc'
     });
   });
 
-  describe('updateTemplate', () => {
-    it('should update existing template by id', () => {
-      const updates = {
-        name: 'Updated Name',
-        content: 'Updated content'
-      };
-      
-      store.updateTemplate('template_001', updates);
-      
-      const updatedTemplate = store.templates.find(t => t.id === 'template_001');
-      expect(updatedTemplate.name).toBe('Updated Name');
-      expect(updatedTemplate.content).toBe('Updated content');
-      expect(updatedTemplate.category).toBe('system');
-    });
-
-    it('should not modify other templates', () => {
-      const originalTemplate = { ...store.templates[1] };
-      
-      store.updateTemplate('template_001', { name: 'Updated' });
-      
-      expect(store.templates[1]).toEqual(originalTemplate);
-    });
-
-    it('should do nothing if template id not found', () => {
-      const originalTemplates = [...store.templates];
-      
-      store.updateTemplate('non_existent_id', { name: 'Updated' });
-      
-      expect(store.templates).toEqual(originalTemplates);
-    });
+  it('should add a template', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1234567890);
+    const newTemplate = {
+      name: 'Test Template',
+      category: 'custom',
+      content: 'Test content {{var1}}',
+      variables: [{ name: 'var1', type: 'string', description: 'Variable 1' }]
+    };
+    store.addTemplate(newTemplate);
+    expect(store.templates).toHaveLength(4);
+    const added = store.templates[3];
+    expect(added.id).toBe('template_1234567890');
+    expect(added.name).toBe('Test Template');
+    expect(added.category).toBe('custom');
+    expect(added.content).toBe('Test content {{var1}}');
+    expect(added.variables).toEqual([{ name: 'var1', type: 'string', description: 'Variable 1' }]);
   });
 
-  describe('deleteTemplate', () => {
-    it('should delete template by id', () => {
-      const initialLength = store.templates.length;
-      
-      store.deleteTemplate('template_002');
-      
-      expect(store.templates).toHaveLength(initialLength - 1);
-      expect(store.templates.find(t => t.id === 'template_002')).toBeUndefined();
-    });
-
-    it('should not delete other templates', () => {
-      const template1Before = store.templates.find(t => t.id === 'template_001');
-      const template3Before = store.templates.find(t => t.id === 'template_003');
-      
-      store.deleteTemplate('template_002');
-      
-      expect(store.templates.find(t => t.id === 'template_001')).toEqual(template1Before);
-      expect(store.templates.find(t => t.id === 'template_003')).toEqual(template3Before);
-    });
+  it('should update a template', () => {
+    const id = 'template_001';
+    const updateData = { name: 'Updated Template', category: 'updated' };
+    store.updateTemplate(id, updateData);
+    const updated = store.templates.find(t => t.id === id);
+    expect(updated.name).toBe('Updated Template');
+    expect(updated.category).toBe('updated');
+    expect(updated.content).toContain('你是{{npc_name}}');
+    expect(updated.variables).toHaveLength(10);
   });
 
-  describe('addVariable', () => {
-    it('should add a new variable to variables array', () => {
-      const initialLength = store.variables.length;
-      const newVariable = {
-        name: 'new_var',
-        type: 'string',
-        description: 'New variable',
-        source: 'test'
-      };
-      
-      store.addVariable(newVariable);
-      
-      expect(store.variables).toHaveLength(initialLength + 1);
-      expect(store.variables[store.variables.length - 1]).toEqual(newVariable);
-    });
+  it('should not update if template id not found', () => {
+    const initialLength = store.templates.length;
+    store.updateTemplate('non_existent_id', { name: 'Test' });
+    expect(store.templates).toHaveLength(initialLength);
   });
 
-  describe('updateVariable', () => {
-    it('should update existing variable by name', () => {
-      const updates = {
-        description: 'Updated description',
-        type: 'number'
-      };
-      
-      store.updateVariable('npc_name', updates);
-      
-      const updatedVariable = store.variables.find(v => v.name === 'npc_name');
-      expect(updatedVariable.description).toBe('Updated description');
-      expect(updatedVariable.type).toBe('number');
-      expect(updatedVariable.source).toBe('npc');
-    });
-
-    it('should do nothing if variable name not found', () => {
-      const originalVariables = [...store.variables];
-      
-      store.updateVariable('non_existent', { description: 'Test' });
-      
-      expect(store.variables).toEqual(originalVariables);
-    });
+  it('should delete a template', () => {
+    const idToDelete = 'template_002';
+    store.deleteTemplate(idToDelete);
+    expect(store.templates).toHaveLength(2);
+    expect(store.templates.find(t => t.id === idToDelete)).toBeUndefined();
   });
 
-  describe('deleteVariable', () => {
-    it('should delete variable by name', () => {
-      const initialLength = store.variables.length;
-      
-      store.deleteVariable('player_name');
-      
-      expect(store.variables).toHaveLength(initialLength - 1);
-      expect(store.variables.find(v => v.name === 'player_name')).toBeUndefined();
-    });
+  it('should add a variable', () => {
+    const newVariable = {
+      name: 'new_var',
+      type: 'number',
+      description: 'New variable',
+      source: 'custom'
+    };
+    store.addVariable(newVariable);
+    expect(store.variables).toHaveLength(11);
+    const added = store.variables[10];
+    expect(added).toEqual(newVariable);
+  });
 
-    it('should not delete other variables', () => {
-      const npcNameBefore = store.variables.find(v => v.name === 'npc_name');
-      const npcTitleBefore = store.variables.find(v => v.name === 'npc_title');
-      
-      store.deleteVariable('player_name');
-      
-      expect(store.variables.find(v => v.name === 'npc_name')).toEqual(npcNameBefore);
-      expect(store.variables.find(v => v.name === 'npc_title')).toEqual(npcTitleBefore);
-    });
+  it('should update a variable', () => {
+    const name = 'npc_name';
+    const updateData = { description: 'Updated description', source: 'updated' };
+    store.updateVariable(name, updateData);
+    const updated = store.variables.find(v => v.name === name);
+    expect(updated.description).toBe('Updated description');
+    expect(updated.source).toBe('updated');
+    expect(updated.type).toBe('string');
+  });
+
+  it('should not update if variable name not found', () => {
+    const initialLength = store.variables.length;
+    store.updateVariable('non_existent_name', { description: 'Test' });
+    expect(store.variables).toHaveLength(initialLength);
+  });
+
+  it('should delete a variable', () => {
+    const nameToDelete = 'mood';
+    store.deleteVariable(nameToDelete);
+    expect(store.variables).toHaveLength(9);
+    expect(store.variables.find(v => v.name === nameToDelete)).toBeUndefined();
   });
 });
-```

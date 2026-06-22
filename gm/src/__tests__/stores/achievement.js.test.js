@@ -121,7 +121,6 @@ describe('useAchievementStore', () => {
 
       const result = store.getAchievementById(1);
       expect(result.name).toBe('Updated Achievement');
-      // Other fields should be preserved
       expect(result.code).toBe('ach_first_quest');
     });
 
@@ -152,7 +151,7 @@ describe('useAchievementStore', () => {
       expect(result.name).toBe('Multi Update');
       expect(result.description).toBe('Updated description');
       expect(result.reward).toEqual({ exp: 500, gold: 1000 });
-      expect(result.code).toBe('ach_first_quest'); // preserved
+      expect(result.code).toBe('ach_first_quest');
     });
   });
 
@@ -223,8 +222,6 @@ describe('useAchievementStore', () => {
 
   describe('isAchievementUnlocked', () => {
     it('should check if achievement is unlocked by id', () => {
-      // Assuming the store has an isAchievementUnlocked method
-      // and achievements have an unlocked property
       const achievement = store.getAchievementById(1);
       if (achievement.unlocked !== undefined) {
         const result = store.isAchievementUnlocked(1);
@@ -235,7 +232,6 @@ describe('useAchievementStore', () => {
 
   describe('unlockAchievement', () => {
     it('should unlock achievement by id', () => {
-      // Assuming the store has an unlockAchievement method
       if (typeof store.unlockAchievement === 'function') {
         store.unlockAchievement(1);
         const achievement = store.getAchievementById(1);
@@ -246,14 +242,11 @@ describe('useAchievementStore', () => {
 
   describe('resetAchievements', () => {
     it('should reset all achievements to initial state', () => {
-      // Add some achievements and modify existing ones
       store.addAchievement({ code: 'ach_temp', name: 'Temp' });
       store.updateAchievement(1, { name: 'Modified' });
       
-      // Store the initial state
-      const initialLength = 10; // Based on predefined achievements
+      const initialLength = 10;
       
-      // Reset
       if (typeof store.resetAchievements === 'function') {
         store.resetAchievements();
         expect(store.achievements.length).toBe(initialLength);

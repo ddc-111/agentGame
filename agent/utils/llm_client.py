@@ -176,3 +176,71 @@ class LLMClient:
 (完整代码)"""
         
         return self.chat([{"role": "user", "content": prompt}])
+    
+    def generate_feature(self, task_description: str, requirements: List[str], 
+                         language: str, context: str = "", file_type: str = "module") -> Optional[str]:
+        """生成功能代码"""
+        req_text = "\n".join(f"- {r}" for r in requirements)
+        
+        prompts = {
+            "go": f"""根据以下需求生成Go语言功能代码。
+
+任务描述: {task_description}
+
+需求:
+{req_text}
+
+项目上下文:
+{context}
+
+要求:
+1. 使用标准Go风格
+2. 包含必要的imports
+3. 添加适当的错误处理
+4. 使用GORM进行数据库操作（如需要）
+5. 遵循项目现有的代码风格
+6. 代码完整可运行
+
+只返回纯代码，不要包含Markdown标记或解释。""",
+            
+            "javascript": f"""根据以下需求生成功能代码。
+
+任务描述: {task_description}
+
+需求:
+{req_text}
+
+项目上下文:
+{context}
+
+要求:
+1. 使用ES6+语法
+2. 遵循项目现有的代码风格
+3. 包含必要的导入
+4. 添加适当的错误处理
+5. 代码完整可运行
+
+只返回纯代码，不要包含Markdown标记或解释。""",
+            
+            "vue": f"""根据以下需求生成Vue组件或Store代码。
+
+任务描述: {task_description}
+
+需求:
+{req_text}
+
+项目上下文:
+{context}
+
+要求:
+1. 使用Composition API
+2. 使用Pinia进行状态管理（如是Store）
+3. 遵循项目现有的代码风格
+4. 包含必要的导入
+5. 代码完整可运行
+
+只返回纯代码，不要包含Markdown标记或解释。"""
+        }
+        
+        prompt = prompts.get(language, prompts["javascript"])
+        return self.generate_code(prompt, context)

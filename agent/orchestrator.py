@@ -131,24 +131,31 @@ class Orchestrator:
         result["phases"]["gaps"] = gaps
         self.log(f"  发现 {len(gaps['critical'])} 个关键问题, {len(gaps['improvements'])} 个改进点", "WARNING" if gaps['critical'] else "SUCCESS")
         
-        # 阶段6: 生成任务
-        self.log("阶段6: 生成改进任务...", "INFO")
+        # 阶段6: 生成任务（从现有需求加载）
+        self.log("阶段6: 从现有需求加载任务...", "INFO")
+        
+        # 首先从gap分析生成任务
         tasks = self.task_generator.generate_tasks(gaps, code_analysis, test_analysis)
-        result["phases"]["tasks"] = tasks
-        self.log(f"  生成 {len(tasks)} 个任务", "SUCCESS")
         
-        # 阶段6.5: 需求生成
-        self.log("阶段6.5: 生成新需求...", "INFO")
-        current_features = self._extract_current_features(code_analysis)
-        new_requirements = self.requirement_agent.generate_requirements(
-            code_analysis, test_analysis, current_features
-        )
-        result["phases"]["requirements"] = new_requirements
+        # 然后加载现有需求文件中的任务
+        requirement_tasks = self._load_requirements_as_tasks()
+        tasks.extend(requirement_tasks)
         
-        # 保存需求
-        req_file = REQUIREMENTS_DIR / f"requirements_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        self.requirement_agent.save_requirements(req_file)
-        self.log(f"  生成 {len(new_requirements)} 个新需求", "SUCCESS")
+        # 去重（基于title）
+        seen_titles = set()
+        unique_tasks = []
+        for task in tasks:
+            title = task.get("title", "")
+            if title not in seen_titles:
+                seen_titles.add(title)
+                unique_tasks.append(task)
+        
+        result["phases"]["tasks"] = unique_tasks
+        self.log(f"  加载 {len(unique_tasks)} 个任务（需求: {len(requirement_tasks)}, 分析: {len(tasks) - len(requirement_tasks)}）", "SUCCESS")
+        
+        # 阶段6.5: 跳过需求生成（用户要求完成现有需求，不生成新需求）
+        result["phases"]["requirements"] = []
+        self.log("阶段6.5: 跳过需求生成（完成现有需求模式）", "INFO")
         
         # 阶段7: 执行任务（如果启用LLM）
         if self.config.is_llm_enabled() and self.config.get("tasks.auto_execute"):
@@ -217,21 +224,49 @@ class Orchestrator:
         self.log(f"最大迭代次数: {self.max_iterations}", "INFO")
         self.log(f"LLM状态: {'已配置' if self.config.is_llm_enabled() else '未配置'}", "INFO")
         
+        # 用于检测循环是否有效果
+        previous_metrics = None
+        stable_iterations = 0
+        max_stable_iterations = 3  # 连续3轮无变化则停止
+        
         while self.iteration < self.max_iterations:
             try:
                 result = self.run_cycle()
                 
+                # 获取当前指标
+                current_metrics = {
+                    "critical": len(result["phases"]["gaps"]["critical"]),
+                    "improvements": len(result["phases"]["gaps"]["improvements"]),
+                    "tasks": len(result["phases"]["tasks"]),
+                    "test_passed": result["phases"]["tests"]["passed"],
+                    "test_failed": result["phases"]["tests"]["failed"]
+                }
+                
                 # 检查是否还有关键问题需要解决
-                critical_count = len(result["phases"]["gaps"]["critical"])
-                if critical_count == 0:
+                if current_metrics["critical"] == 0:
                     self.log("所有关键问题已解决！", "SUCCESS")
                     
-                    # 检查是否有高优先级改进
-                    high_count = len([t for t in result["phases"]["tasks"] 
-                                     if t.get("priority") == PRIORITY_HIGH])
-                    if high_count == 0 and self.config.get("iterations.stop_on_stable"):
+                    # 检查是否有高优先级任务
+                    high_priority_tasks = [t for t in result["phases"]["tasks"] 
+                                          if t.get("priority") in [PRIORITY_CRITICAL, PRIORITY_HIGH]]
+                    
+                    # 如果没有高优先级任务，系统已稳定
+                    if len(high_priority_tasks) == 0 and self.config.get("iterations.stop_on_stable"):
                         self.log("系统已达到稳定状态，结束迭代", "SUCCESS")
                         break
+                    
+                    # 检查指标是否变化
+                    if previous_metrics and self._metrics_equal(current_metrics, previous_metrics):
+                        stable_iterations += 1
+                        self.log(f"指标无变化 ({stable_iterations}/{max_stable_iterations})", "WARNING")
+                        
+                        if stable_iterations >= max_stable_iterations:
+                            self.log(f"连续 {max_stable_iterations} 轮指标无变化，结束迭代", "SUCCESS")
+                            break
+                    else:
+                        stable_iterations = 0
+                    
+                    previous_metrics = current_metrics.copy()
                 
                 # 保存任务到文件供子Agent执行
                 self._save_tasks(result["phases"]["tasks"])
@@ -254,6 +289,16 @@ class Orchestrator:
         
         self.log(f"自循环完成，共 {self.iteration} 轮迭代", "SUCCESS")
         return self.history
+    
+    def _metrics_equal(self, metrics1: Dict, metrics2: Dict) -> bool:
+        """比较两组指标是否相等"""
+        return (
+            metrics1.get("critical") == metrics2.get("critical") and
+            metrics1.get("improvements") == metrics2.get("improvements") and
+            metrics1.get("tasks") == metrics2.get("tasks") and
+            metrics1.get("test_passed") == metrics2.get("test_passed") and
+            metrics1.get("test_failed") == metrics2.get("test_failed")
+        )
     
     def _show_trend(self):
         """显示趋势"""
@@ -282,6 +327,102 @@ class Orchestrator:
                 "tasks": tasks
             }, f, ensure_ascii=False, indent=2)
         self.log(f"  任务已保存: {task_file}", "INFO")
+    
+    def _load_requirements_as_tasks(self) -> List[Dict]:
+        """加载需求文件并转换为任务格式"""
+        tasks = []
+        
+        # 查找最新的需求文件
+        req_files = sorted(REQUIREMENTS_DIR.glob("requirements_*.json"), reverse=True)
+        if not req_files:
+            self.log("  未找到需求文件", "WARNING")
+            return tasks
+        
+        # 加载最新的需求文件
+        latest_req_file = req_files[0]
+        self.log(f"  加载需求文件: {latest_req_file.name}", "INFO")
+        
+        try:
+            with open(latest_req_file, 'r', encoding='utf-8') as f:
+                req_data = json.load(f)
+            
+            requirements = req_data.get("requirements", [])
+            
+            for req in requirements:
+                # 跳过已完成的需求（如果有状态字段）
+                if req.get("status") == "completed":
+                    continue
+                
+                # 将需求转换为任务格式
+                task = {
+                    "id": req.get("id", f"req_{len(tasks)}"),
+                    "type": self._map_req_type_to_task_type(req.get("type", "feature")),
+                    "title": req.get("title", ""),
+                    "description": req.get("description", ""),
+                    "target": self._determine_target_from_req(req),
+                    "priority": req.get("priority", "medium"),
+                    "requirements": req.get("acceptance_criteria", []),
+                    "source": "requirement",
+                    "category": req.get("category", ""),
+                    "created_at": req.get("created_at", datetime.now().isoformat())
+                }
+                
+                # 根据类别设置更具体的target
+                category = req.get("category", "")
+                if category in ["ai_integration", "NPC智能基础", "AI对话系统深化", "多Agent协作机制"]:
+                    task["target"] = "server"
+                elif category in ["developer_experience", "workflow", "开发者工具与易用性"]:
+                    # 可能涉及多个目标
+                    if "前端" in req.get("title", "") or "GM" in req.get("title", ""):
+                        task["target"] = "gm"
+                    elif "客户端" in req.get("title", "") or "Phaser" in req.get("title", ""):
+                        task["target"] = "client"
+                    else:
+                        task["target"] = "server"
+                elif category in ["core_features", "quality", "code_quality"]:
+                    task["target"] = "server"
+                elif category in ["modernization", "competitiveness"]:
+                    task["target"] = "server"
+                
+                tasks.append(task)
+            
+            # 按优先级排序
+            priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+            tasks.sort(key=lambda t: priority_order.get(t.get("priority", "low"), 4))
+            
+        except Exception as e:
+            self.log(f"  加载需求文件失败: {e}", "ERROR")
+        
+        return tasks
+    
+    def _map_req_type_to_task_type(self, req_type: str) -> str:
+        """将需求类型映射为任务类型"""
+        mapping = {
+            "feature": "add_feature",
+            "refactor": "refactor",
+            "testing": "add_test",
+            "innovation": "add_feature",
+            "upgrade": "refactor",
+            "documentation": "add_documentation"
+        }
+        return mapping.get(req_type, "add_feature")
+    
+    def _determine_target_from_req(self, req: Dict) -> str:
+        """根据需求确定目标（server/client/gm）"""
+        title = req.get("title", "").lower()
+        description = req.get("description", "").lower()
+        category = req.get("category", "")
+        
+        # 前端相关
+        if any(kw in title or kw in description for kw in ["前端", "gm", "编辑器", "vue", "组件", "可视化"]):
+            return "gm"
+        
+        # 客户端相关
+        if any(kw in title or kw in description for kw in ["客户端", "client", "phaser", "游戏场景", "渲染"]):
+            return "client"
+        
+        # 默认服务器端
+        return "server"
     
     def _extract_current_features(self, code_analysis: Dict) -> List[str]:
         """提取当前已实现的功能"""

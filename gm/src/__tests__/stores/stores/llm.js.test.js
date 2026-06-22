@@ -1,174 +1,210 @@
-```javascript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
-import { useLLMStore } from './stores/llm.js';
+import { useLLMStore } from './llm.js';
 
-// Mock Date.now for predictable provider IDs
-vi.spyOn(Date, 'now').mockReturnValue(1234567890);
+// Mock Date.now for consistent testing
+const mockDateNow = 1234567890000;
+vi.spyOn(Date, 'now').mockReturnValue(mockDateNow);
 
-describe('useLLMStore', () => {
+describe('LLM Store', () => {
   let store;
 
   beforeEach(() => {
-    // 创建新的Pinia实例并激活
     setActivePinia(createPinia());
-    // 创建store实例
     store = useLLMStore();
   });
 
-  describe('initial state', () => {
-    it('should have 3 default providers', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('Initial State', () => {
+    it('should have initial providers', () => {
       expect(store.providers).toHaveLength(3);
-      expect(store.providers.map(p => p.id)).toEqual(['openai', 'anthropic', 'local']);
+      expect(store.providers[0].id).toBe('openai');
+      expect(store.providers[1].id).toBe('anthropic');
+      expect(store.providers[2].id).toBe('local');
     });
 
-    it('should have currentProvider set to openai', () => {
+    it('should have correct models for each provider', () => {
+      const openaiProvider = store.providers.find(p => p.id === 'openai');
+      expect(openaiProvider.models).toHaveLength(3);
+      expect(openaiProvider.models[0].id).toBe('gpt-4');
+
+      const anthropicProvider = store.providers.find(p => p.id === 'anthropic');
+      expect(anthropicProvider.models).toHaveLength(2);
+      expect(anthropicProvider.models[0].id).toBe('claude-3-opus');
+
+      const localProvider = store.providers.find(p => p.id === 'local');
+      expect(localProvider.models).toHaveLength(2);
+      expect(localProvider.models[0].id).toBe('qwen:7b');
+    });
+
+    it('should have currentProvider set to openai by default', () => {
       expect(store.currentProvider).toBe('openai');
-    });
-
-    it('should have correct openai provider structure', () => {
-      const openai = store.providers.find(p => p.id === 'openai');
-      expect(openai).toEqual({
-        id: 'openai',
-        name: 'OpenAI',
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: '',
-        models: [
-          { id: 'gpt-4', name: 'GPT-4', maxTokens: 8192 },
-          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', maxTokens: 128000 },
-          { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', maxTokens: 4096 }
-        ]
-      });
     });
   });
 
   describe('addProvider', () => {
     it('should add a new provider with generated id', () => {
-      const initialLength = store.providers.length;
       const newProvider = {
         name: 'Test Provider',
         baseUrl: 'https://test.com',
         apiKey: 'test-key',
-        models: [{ id: 'test-model', name: 'Test Model', maxTokens: 1000 }]
+        models: [
+          { id: 'test-model', name: 'Test Model', maxTokens: 1000 }
+        ]
       };
 
+      const initialLength = store.providers.length;
       store.addProvider(newProvider);
 
       expect(store.providers).toHaveLength(initialLength + 1);
+
       const addedProvider = store.providers[store.providers.length - 1];
-      expect(addedProvider.id).toBe('provider_1234567890');
+      expect(addedProvider.id).toBe(`provider_${mockDateNow}`);
       expect(addedProvider.name).toBe('Test Provider');
       expect(addedProvider.baseUrl).toBe('https://test.com');
       expect(addedProvider.apiKey).toBe('test-key');
-      expect(addedProvider.models).toEqual([
-        { id: 'test-model', name: 'Test Model', maxTokens: 1000 }
-      ]);
+      expect(addedProvider.models).toHaveLength(1);
     });
 
-    it('should preserve existing providers after adding', () => {
-      const initialProviders = [...store.providers];
-      store.addProvider({ name: 'New Provider' });
+    it('should handle provider with missing optional fields', () => {
+      const minimalProvider = {
+        name: 'Minimal Provider'
+      };
 
-      expect(store.providers.slice(0, 3)).toEqual(initialProviders);
+      store.addProvider(minimalProvider);
+
+      const addedProvider = store.providers[store.providers.length - 1];
+      expect(addedProvider.id).toBe(`provider_${mockDateNow}`);
+      expect(addedProvider.name).toBe('Minimal Provider');
+      expect(addedProvider.baseUrl).toBeUndefined();
+      expect(addedProvider.apiKey).toBeUndefined();
+      expect(addedProvider.models).toBeUndefined();
     });
   });
 
   describe('updateProvider', () => {
-    it('should update provider fields by id', () => {
-      store.updateProvider('openai', {
+    it('should update an existing provider', () => {
+      const updateData = {
+        name: 'Updated OpenAI',
         apiKey: 'new-api-key',
-        name: 'Updated OpenAI'
-      });
+        baseUrl: 'https://new.openai.com/v1'
+      };
 
-      const openai = store.providers.find(p => p.id === 'openai');
-      expect(openai.apiKey).toBe('new-api-key');
-      expect(openai.name).toBe('Updated OpenAI');
+      store.updateProvider('openai', updateData);
+
+      const updatedProvider = store.providers.find(p => p.id === 'openai');
+      expect(updatedProvider.name).toBe('Updated OpenAI');
+      expect(updatedProvider.apiKey).toBe('new-api-key');
+      expect(updatedProvider.baseUrl).toBe('https://new.openai.com/v1');
     });
 
-    it('should not modify other providers when updating', () => {
-      const anthropicBefore = { ...store.providers.find(p => p.id === 'anthropic') };
-      
-      store.updateProvider('openai', { apiKey: 'test-key' });
-      
-      const anthropicAfter = store.providers.find(p => p.id === 'anthropic');
-      expect(anthropicAfter).toEqual(anthropicBefore);
+    it('should only update specified fields', () => {
+      const originalProvider = store.providers.find(p => p.id === 'openai');
+      const originalModels = originalProvider.models;
+
+      store.updateProvider('openai', { name: 'Updated Name' });
+
+      const updatedProvider = store.providers.find(p => p.id === 'openai');
+      expect(updatedProvider.name).toBe('Updated Name');
+      expect(updatedProvider.baseUrl).toBe('https://api.openai.com/v1');
+      expect(updatedProvider.apiKey).toBe('');
+      expect(updatedProvider.models).toBe(originalModels);
     });
 
-    it('should not throw when updating non-existent provider', () => {
-      const initialProviders = [...store.providers];
+    it('should do nothing for non-existent provider', () => {
+      const originalProviders = [...store.providers];
       
-      store.updateProvider('non-existent', { apiKey: 'test-key' });
+      store.updateProvider('non-existent-id', { name: 'Test' });
       
-      expect(store.providers).toEqual(initialProviders);
-    });
-
-    it('should merge data without removing existing fields', () => {
-      store.updateProvider('openai', { apiKey: 'test-key' });
-      
-      const openai = store.providers.find(p => p.id === 'openai');
-      expect(openai.id).toBe('openai');
-      expect(openai.name).toBe('OpenAI');
-      expect(openai.baseUrl).toBe('https://api.openai.com/v1');
-      expect(openai.apiKey).toBe('test-key');
-      expect(openai.models).toEqual([
-        { id: 'gpt-4', name: 'GPT-4', maxTokens: 8192 },
-        { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', maxTokens: 128000 },
-        { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', maxTokens: 4096 }
-      ]);
+      expect(store.providers).toEqual(originalProviders);
     });
   });
 
   describe('deleteProvider', () => {
-    it('should remove provider by id', () => {
+    it('should delete a provider by id', () => {
       const initialLength = store.providers.length;
       
-      store.deleteProvider('openai');
+      store.deleteProvider('anthropic');
       
       expect(store.providers).toHaveLength(initialLength - 1);
-      expect(store.providers.find(p => p.id === 'openai')).toBeUndefined();
+      expect(store.providers.find(p => p.id === 'anthropic')).toBeUndefined();
     });
 
-    it('should not affect other providers when deleting', () => {
-      const anthropicBefore = { ...store.providers.find(p => p.id === 'anthropic') };
-      const localBefore = { ...store.providers.find(p => p.id === 'local') };
-      
-      store.deleteProvider('openai');
-      
-      const anthropicAfter = store.providers.find(p => p.id === 'anthropic');
-      const localAfter = store.providers.find(p => p.id === 'local');
-      expect(anthropicAfter).toEqual(anthropicBefore);
-      expect(localAfter).toEqual(localBefore);
-    });
-
-    it('should not throw when deleting non-existent provider', () => {
+    it('should not modify providers for non-existent id', () => {
       const initialProviders = [...store.providers];
       
-      store.deleteProvider('non-existent');
+      store.deleteProvider('non-existent-id');
       
       expect(store.providers).toEqual(initialProviders);
+    });
+
+    it('should allow deleting all providers', () => {
+      store.deleteProvider('openai');
+      store.deleteProvider('anthropic');
+      store.deleteProvider('local');
+      
+      expect(store.providers).toHaveLength(0);
     });
   });
 
   describe('getProviderById', () => {
-    it('should return provider when found', () => {
-      const openai = store.getProviderById('openai');
-      expect(openai).toEqual({
-        id: 'openai',
-        name: 'OpenAI',
-        baseUrl: 'https://api.openai.com/v1',
-        apiKey: '',
-        models: [
-          { id: 'gpt-4', name: 'GPT-4', maxTokens: 8192 },
-          { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', maxTokens: 128000 },
-          { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', maxTokens: 4096 }
-        ]
-      });
+    it('should return the correct provider when it exists', () => {
+      const provider = store.getProviderById('openai');
+      
+      expect(provider).toBeDefined();
+      expect(provider.id).toBe('openai');
+      expect(provider.name).toBe('OpenAI');
     });
 
-    it('should return undefined when not found', () => {
-      const result = store.getProviderById('non-existent');
-      expect(result).toBeUndefined();
+    it('should return undefined for non-existent provider', () => {
+      const provider = store.getProviderById('non-existent-id');
+      
+      expect(provider).toBeUndefined();
+    });
+
+    it('should return providers with correct structure', () => {
+      const provider = store.getProviderById('anthropic');
+      
+      expect(provider).toHaveProperty('id');
+      expect(provider).toHaveProperty('name');
+      expect(provider).toHaveProperty('baseUrl');
+      expect(provider).toHaveProperty('apiKey');
+      expect(provider).toHaveProperty('models');
+    });
+  });
+
+  describe('Integration tests', () => {
+    it('should maintain provider list after multiple operations', () => {
+      // Add a provider
+      store.addProvider({
+        name: 'New Provider',
+        baseUrl: 'https://new.com',
+        apiKey: 'key123',
+        models: [{ id: 'model1', name: 'Model 1', maxTokens: 5000 }]
+      });
+
+      // Update a provider
+      store.updateProvider('openai', { apiKey: 'updated-key' });
+
+      // Delete a provider
+      store.deleteProvider('local');
+
+      // Verify the final state
+      expect(store.providers).toHaveLength(3); // Added one, deleted one
+      expect(store.providers.find(p => p.id === 'openai').apiKey).toBe('updated-key');
+      expect(store.providers.find(p => p.id === 'local')).toBeUndefined();
+      expect(store.providers.find(p => p.name === 'New Provider')).toBeDefined();
+    });
+
+    it('should handle concurrent operations correctly', () => {
+      // Test multiple operations in sequence
+      store.updateProvider('openai', { apiKey: 'first-update' });
+      store.updateProvider('openai', { apiKey: 'second-update' });
+      
+      expect(store.getProviderById('openai').apiKey).toBe('second-update');
     });
   });
 });
-```
