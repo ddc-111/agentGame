@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -117,6 +118,7 @@ func (s *Server) setupRoutes() {
 	s.router.Use(CORSMiddleware(s.cfg.CORS.AllowedOrigins))
 	s.router.Use(RequestIDMiddleware())
 	s.router.Use(RequestLoggingMiddleware())
+	s.router.Use(ManagementAuthMiddleware(s.cfg.Auth.JWTSecret))
 
 	// MCP端点
 	s.router.POST("/mcp", func(c *gin.Context) {
@@ -141,9 +143,8 @@ func (s *Server) setupRoutes() {
 		// GM登录
 		api.POST("/gm/login", s.handleGMLogin)
 
-		// GM受保护路由
+		// GM受保护路由（由全局 ManagementAuthMiddleware 鉴权）
 		gm := api.Group("/gm")
-		gm.Use(AuthMiddleware(s.cfg.Auth.JWTSecret))
 		{
 			gm.GET("/me", s.handleGMMe)
 		}
@@ -225,7 +226,7 @@ func (s *Server) setupRoutes() {
 		api.PUT("/flows/:id", s.handleUpdateFlow)
 		api.DELETE("/flows/:id", s.handleDeleteFlow)
 
-		// 玩家API
+		// 玩家管理API
 		api.GET("/players", s.handleGetPlayers)
 		api.POST("/players", s.handleCreatePlayer)
 		api.PUT("/players/:id", s.handleUpdatePlayer)
@@ -249,7 +250,7 @@ func (s *Server) setupRoutes() {
 		api.GET("/npc/:code/behavior", s.handleGetNPCBehavior)
 		api.POST("/npc/:code/behavior/event", s.handleNPCBehaviorEvent)
 
-		// 玩家API
+		// 玩家游戏API
 		api.POST("/player/create", s.handleCreatePlayer)
 		api.GET("/player/:id", s.handleGetPlayer)
 		api.PUT("/player/:id/pos", s.handleUpdatePlayerPos)
@@ -261,7 +262,7 @@ func (s *Server) setupRoutes() {
 		chat.POST("", s.handleNPCChat)
 
 		// 商店购买
-		api.POST("/shop/buy", s.handleBuyItem)
+		api.POST("/shop/buy", s.handlePurchaseItem)
 
 		s.registerCombatRoutes(api)
 		s.registerInventoryRoutes(api)
@@ -274,12 +275,21 @@ func (s *Server) setupRoutes() {
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.cfg.Server.Port)
 	s.http = &http.Server{
-		Addr:    addr,
-		Handler: s.router,
+		Addr:              addr,
+		Handler:           s.router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+		// WriteTimeout is intentionally left unset for WebSocket and SSE endpoints.
 	}
 
 	slog.Info("Starting server", "addr", addr)
-	slog.Info("Generator enabled", "enabled", s.generator.IsEnabled())
+	if s.generator != nil {
+		slog.Info("Generator enabled", "enabled", s.generator.IsEnabled())
+	} else {
+		slog.Warn("Generator unavailable")
+	}
 	slog.Info("MCP endpoint", "port", s.cfg.Server.Port, "path", "/mcp")
 	return s.http.ListenAndServe()
 }
@@ -288,10 +298,22 @@ func (s *Server) Shutdown() error {
 	if s.cancel != nil {
 		s.cancel()
 	}
-	if s.db != nil {
-		s.db.Close()
+
+	var httpErr error
+	if s.http != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		httpErr = s.http.Shutdown(ctx)
+		cancel()
+		if httpErr != nil {
+			httpErr = errors.Join(httpErr, s.http.Close())
+		}
 	}
-	return s.http.Shutdown(context.Background())
+
+	var dbErr error
+	if s.db != nil {
+		dbErr = s.db.Close()
+	}
+	return errors.Join(httpErr, dbErr)
 }
 
 func (s *Server) initNPCBehaviors() {
