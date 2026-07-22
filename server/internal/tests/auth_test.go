@@ -88,7 +88,12 @@ func TestGMProtectedEndpointWithoutToken(t *testing.T) {
 	ts := setupTestServer()
 	defer ts.Close()
 
-	resp, err := http.Get(ts.URL + "/api/gm/me")
+	req, err := http.NewRequest(http.MethodGet, ts.URL+"/api/gm/me", nil)
+	if err != nil {
+		t.Fatalf("创建请求失败: %v", err)
+	}
+	req.Header.Set(skipTestAuthHeader, "true")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatalf("请求失败: %v", err)
 	}

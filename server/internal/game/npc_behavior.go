@@ -9,13 +9,13 @@ import (
 
 // NPCBehavior defines what an NPC does autonomously
 type NPCBehavior struct {
-	NPCCode  string         `json:"npc_code"`
-	State    string         `json:"state"` // idle, patrolling, talking, trading
-	Location string         `json:"location"`
-	Target   string         `json:"target"`
+	NPCCode  string          `json:"npc_code"`
+	State    string          `json:"state"` // idle, patrolling, talking, trading
+	Location string          `json:"location"`
+	Target   string          `json:"target"`
 	Schedule []ScheduleEntry `json:"schedule"`
-	Mood     string         `json:"mood"` // happy, neutral, angry, scared
-	Memory   []NPCEvent     `json:"memory"`
+	Mood     string          `json:"mood"` // happy, neutral, angry, scared
+	Memory   []NPCEvent      `json:"memory"`
 }
 
 // ScheduleEntry defines an NPC's scheduled action
@@ -27,10 +27,10 @@ type ScheduleEntry struct {
 
 // NPCEvent records something that happened to an NPC
 type NPCEvent struct {
-	Time      string `json:"time"`
-	Type      string `json:"type"` // talked, attacked, gifted, etc.
-	PlayerID  uint   `json:"player_id"`
-	Detail    string `json:"detail"`
+	Time     string `json:"time"`
+	Type     string `json:"type"` // talked, attacked, gifted, etc.
+	PlayerID uint   `json:"player_id"`
+	Detail   string `json:"detail"`
 }
 
 // NPCBehaviorManager manages NPC autonomous behaviors
@@ -41,7 +41,10 @@ func NewNPCBehaviorManager() *NPCBehaviorManager {
 	return &NPCBehaviorManager{}
 }
 
-// NPCBehaviorStore holds runtime NPC behavior state in memory
+// NPCBehaviorStore holds runtime NPC behavior state in memory.
+//
+// Snapshot-returning methods deep-copy slice fields so callers cannot mutate
+// store-owned memory after the lock has been released.
 type NPCBehaviorStore struct {
 	mu        sync.RWMutex
 	behaviors map[string]*NPCBehavior
@@ -54,7 +57,23 @@ func NewNPCBehaviorStore() *NPCBehaviorStore {
 	}
 }
 
-// GetOrCreate returns existing behavior or initializes from NPC schedule
+// cloneNPCBehavior returns a deep copy of a behavior snapshot.
+func cloneNPCBehavior(behavior *NPCBehavior) *NPCBehavior {
+	if behavior == nil {
+		return nil
+	}
+
+	clone := *behavior
+	clone.Schedule = append([]ScheduleEntry(nil), behavior.Schedule...)
+	clone.Memory = append([]NPCEvent(nil), behavior.Memory...)
+	return &clone
+}
+
+// GetOrCreate returns existing behavior or initializes from NPC schedule.
+//
+// Deprecated: this method exposes the store-owned pointer and is retained for
+// initialization compatibility. Runtime request handlers should use
+// GetOrCreateCopy and persist changes with Set.
 func (s *NPCBehaviorStore) GetOrCreate(npcCode string, scheduleJSON string) *NPCBehavior {
 	s.mu.RLock()
 	if b, ok := s.behaviors[npcCode]; ok {
@@ -75,13 +94,14 @@ func (s *NPCBehaviorStore) GetOrCreate(npcCode string, scheduleJSON string) *NPC
 	return b
 }
 
-// GetOrCreateCopy returns a pointer to a copy of existing behavior or initializes from NPC schedule
+// GetOrCreateCopy returns an independent snapshot of existing behavior or
+// initializes it from the NPC schedule.
 func (s *NPCBehaviorStore) GetOrCreateCopy(npcCode string, scheduleJSON string) *NPCBehavior {
 	s.mu.RLock()
 	if b, ok := s.behaviors[npcCode]; ok {
+		copy := cloneNPCBehavior(b)
 		s.mu.RUnlock()
-		copy := *b
-		return &copy
+		return copy
 	}
 	s.mu.RUnlock()
 
@@ -89,39 +109,57 @@ func (s *NPCBehaviorStore) GetOrCreateCopy(npcCode string, scheduleJSON string) 
 	s.mu.Lock()
 	// Double-check after acquiring write lock
 	if existing, ok := s.behaviors[npcCode]; ok {
+		copy := cloneNPCBehavior(existing)
 		s.mu.Unlock()
-		copy := *existing
-		return &copy
+		return copy
 	}
-	s.behaviors[npcCode] = b
+	s.behaviors[npcCode] = cloneNPCBehavior(b)
+	copy := cloneNPCBehavior(b)
 	s.mu.Unlock()
-	copy := *b
-	return &copy
+	return copy
 }
 
-// Get returns existing behavior or nil
+// Get returns an independent snapshot of an existing behavior or nil.
 func (s *NPCBehaviorStore) Get(npcCode string) *NPCBehavior {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.behaviors[npcCode]
+	return cloneNPCBehavior(s.behaviors[npcCode])
 }
 
-// Set stores a behavior
+// Set stores an independent copy of a behavior.
 func (s *NPCBehaviorStore) Set(npcCode string, behavior *NPCBehavior) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.behaviors[npcCode] = behavior
+	if behavior == nil {
+		delete(s.behaviors, npcCode)
+		return
+	}
+	s.behaviors[npcCode] = cloneNPCBehavior(behavior)
 }
 
-// All returns a copy of all stored behaviors
+// All returns independent snapshots of all stored behaviors.
 func (s *NPCBehaviorStore) All() map[string]*NPCBehavior {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	result := make(map[string]*NPCBehavior, len(s.behaviors))
 	for k, v := range s.behaviors {
-		result[k] = v
+		result[k] = cloneNPCBehavior(v)
 	}
 	return result
+}
+
+// UpdateAll applies a mutation to every store-owned behavior while holding the
+// write lock. The callback must not call back into the store.
+func (s *NPCBehaviorStore) UpdateAll(update func(*NPCBehavior)) {
+	if update == nil {
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, behavior := range s.behaviors {
+		update(behavior)
+	}
 }
 
 // UpdateBehavior runs each game tick, moves NPCs based on schedule
@@ -222,9 +260,9 @@ func (bm *NPCBehaviorManager) GetDialogContext(behavior *NPCBehavior) string {
 
 // UpdateAllBehaviors updates all behaviors in the store based on current hour
 func (bm *NPCBehaviorManager) UpdateAllBehaviors(store *NPCBehaviorStore, currentHour int) {
-	for _, behavior := range store.All() {
+	store.UpdateAll(func(behavior *NPCBehavior) {
 		bm.UpdateBehavior(behavior, currentHour)
-	}
+	})
 }
 
 // actionToState converts schedule action to NPC state

@@ -1,13 +1,13 @@
 server:
   port: 8080
-  mode: debug
+  mode: debug # release 模式会强制校验安全配置
   log_level: info
 
 database:
   # 使用SQLite（默认）
   driver: sqlite
   dsn: game.db
-  
+
   # 使用MySQL（取消注释以下配置）
   # driver: mysql
   # host: localhost
@@ -29,7 +29,7 @@ ai:
 generator:
   enabled: true
   provider: openai
-  base_url: https://api.openai.com/v1  # 可以配置不同的大模型地址
+  base_url: https://api.openai.com/v1 # 可以配置不同的大模型地址
   api_key: your-generator-api-key-here
   model: gpt-4-turbo
   temperature: 0.7
@@ -41,6 +41,7 @@ game:
   tick_rate: 20
 
 auth:
+  # release 模式必须使用至少32字符的随机密钥，并修改默认管理员账号密码
   jwt_secret: change-me-in-production
   token_expiry: 24
   gm_username: admin
