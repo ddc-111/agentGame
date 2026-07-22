@@ -33,9 +33,9 @@ func main() {
 		}
 		log.Printf("Config file not found, using development defaults")
 		cfg = config.Default()
-		if err := cfg.Validate(); err != nil {
-			log.Fatalf("Invalid default config: %v", err)
-		}
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Invalid config: %v", err)
 	}
 
 	server := network.NewServer(cfg)
