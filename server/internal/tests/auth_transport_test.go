@@ -7,12 +7,20 @@ import (
 	"github.com/ddc-111/agentGame/server/internal/network"
 )
 
+const skipTestAuthHeader = "X-AgentGame-Test-Skip-Auth"
+
 type managementAuthTransport struct {
 	base  http.RoundTripper
 	token string
 }
 
 func (t managementAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get(skipTestAuthHeader) != "" {
+		clone := req.Clone(req.Context())
+		clone.Header = req.Header.Clone()
+		clone.Header.Del(skipTestAuthHeader)
+		return t.base.RoundTrip(clone)
+	}
 	if !isManagementTestPath(req.URL.Path) || req.Header.Get("Authorization") != "" {
 		return t.base.RoundTrip(req)
 	}
