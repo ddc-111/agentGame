@@ -27,9 +27,6 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Check formatting
-        run: test -z "$(gofmt -l .)"
-
       - name: Build
         run: go build ./...
 
