@@ -34,7 +34,18 @@ jobs:
         run: go vet ./...
 
       - name: Test all packages with race detector
-        run: go test ./... -v -count=1 -timeout 180s -race
+        run: |
+          set -o pipefail
+          go test ./... -v -count=1 -timeout 180s -race 2>&1 | tee test-output.log
+
+      - name: Upload server test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-test-output
+          path: server/test-output.log
+          if-no-files-found: error
+          retention-days: 3
 
   client-build:
     name: Client - Test & Build
